@@ -39,21 +39,50 @@ namespace Okey.Core.Stones
             return _positions.TryGetValue(stoneId, out var slot) ? slot : -1;
         }
 
-        public void Move(int stoneId, int destination)
+        public IReadOnlyList<StoneInstance> Move(int stoneId, int destination)
         {
             if (destination < 0 || destination >= Capacity)
                 throw new ArgumentOutOfRangeException(nameof(destination));
             if (!_positions.TryGetValue(stoneId, out var source))
                 throw new ArgumentException("The stone does not belong to this rack.", nameof(stoneId));
             if (source == destination)
-                return;
+                return Array.Empty<StoneInstance>();
 
-            var displaced = _slots[destination];
-            _slots[destination] = _slots[source];
-            _slots[source] = displaced;
+            var stone = _slots[source];
+            _slots[source] = null;
+            var gap = FindNearestGap(destination);
+            var moved = new List<StoneInstance>(Math.Abs(gap - destination) + 1);
+            var direction = gap < destination ? 1 : -1;
+            while (gap != destination)
+            {
+                var next = gap + direction;
+                var shifted = _slots[next];
+                _slots[gap] = shifted;
+                _positions[shifted.Id] = gap;
+                moved.Add(shifted);
+                gap = next;
+            }
+
+            _slots[destination] = stone;
             _positions[stoneId] = destination;
-            if (displaced != null)
-                _positions[displaced.Id] = source;
+            moved.Add(stone);
+            return moved.AsReadOnly();
+        }
+
+        private int FindNearestGap(int destination)
+        {
+            for (var distance = 0; distance < Capacity; distance++)
+            {
+                var right = destination + distance;
+                if (right < Capacity && _slots[right] == null)
+                    return right;
+
+                var left = destination - distance;
+                if (left >= 0 && _slots[left] == null)
+                    return left;
+            }
+
+            throw new InvalidOperationException("The rack must contain a gap after lifting a stone.");
         }
     }
 }

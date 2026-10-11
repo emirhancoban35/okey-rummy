@@ -62,19 +62,44 @@ namespace Okey.Tests.PlayMode
         }
 
         [Test]
-        public void DroppingOnOccupiedSlotSwapsModelAndBothAnimatedViews()
+        public void InsertingIntoOccupiedSlotShiftsAllAffectedViewsAndPreservesOrder()
         {
+            CompleteHandMovement();
             var views = HandViews;
             Assert.That(Interaction.TryBeginDrag(views[0]), Is.True);
             Assert.That(Interaction.TryBeginDrag(views[1]), Is.False);
-            Interaction.DragTo(views[0], SlotWorldPosition(1));
-            Interaction.EndDrag(views[0], SlotWorldPosition(1));
+            Interaction.DragTo(views[0], SlotWorldPosition(4));
+            Interaction.EndDrag(views[0], SlotWorldPosition(4));
+            var tween = DOTween.TweensByTarget(views[1].transform).Single();
+            tween.Goto(tween.Duration() / 2);
+            Assert.That(views[1].transform.position.x,
+                Is.GreaterThan(SlotWorldPosition(0).x).And.LessThan(SlotWorldPosition(1).x));
             CompleteHandMovement();
 
-            Assert.That(Arrangement.FindSlot(views[0].Instance.Id), Is.EqualTo(1));
-            Assert.That(Arrangement.FindSlot(views[1].Instance.Id), Is.Zero);
-            Assert.That(Vector3.Distance(views[0].transform.position, SlotWorldPosition(1)), Is.LessThan(0.001f));
-            Assert.That(Vector3.Distance(views[1].transform.position, SlotWorldPosition(0)), Is.LessThan(0.001f));
+            Assert.That(Arrangement.Slots.Take(5).Select(stone => stone.Id),
+                Is.EqualTo(new[] { views[1], views[2], views[3], views[4], views[0] }.Select(view => view.Instance.Id)));
+            foreach (var view in views)
+                Assert.That(Vector3.Distance(view.transform.position,
+                    SlotWorldPosition(Arrangement.FindSlot(view.Instance.Id))), Is.LessThan(0.001f));
+        }
+
+        [Test]
+        public void InsertionFromOtherRowUsesNearbyGapWithoutCollapsingExistingGroups()
+        {
+            var views = HandViews;
+            Interaction.TryBeginDrag(views[2]);
+            Interaction.EndDrag(views[2], SlotWorldPosition(27));
+            Interaction.TryBeginDrag(views[20]);
+            Interaction.EndDrag(views[20], SlotWorldPosition(1));
+            CompleteHandMovement();
+
+            Assert.That(Arrangement.FindSlot(views[20].Instance.Id), Is.EqualTo(1));
+            Assert.That(Arrangement.FindSlot(views[1].Instance.Id), Is.EqualTo(2));
+            Assert.That(Arrangement.FindSlot(views[2].Instance.Id), Is.EqualTo(27));
+            Assert.That(Arrangement.Slots[20], Is.Null);
+            foreach (var view in views)
+                Assert.That(Vector3.Distance(view.transform.position,
+                    SlotWorldPosition(Arrangement.FindSlot(view.Instance.Id))), Is.LessThan(0.001f));
         }
 
         [Test]

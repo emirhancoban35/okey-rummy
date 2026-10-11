@@ -54,13 +54,14 @@ namespace Okey.Composition
                 return;
 
             _dragged = null;
-            var source = _arrangement.FindSlot(stone.Instance.Id);
             if (_rack.TryFindSlot(worldPosition, out var destination))
             {
-                var displaced = _arrangement.Slots[destination];
-                _arrangement.Move(stone.Instance.Id, destination);
-                if (displaced != null && displaced.Id != stone.Instance.Id)
-                    _rack.MoveToSlot(_views[displaced.Id], source, true);
+                var moved = _arrangement.Move(stone.Instance.Id, destination);
+                foreach (var shifted in moved)
+                {
+                    if (shifted.Id != stone.Instance.Id)
+                        _rack.MoveToSlot(_views[shifted.Id], _arrangement.FindSlot(shifted.Id), true);
+                }
             }
 
             _rack.MoveToSlot(stone, _arrangement.FindSlot(stone.Instance.Id), true);
