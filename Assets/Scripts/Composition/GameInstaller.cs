@@ -1,6 +1,7 @@
 using System;
 using Okey.Configuration;
 using Okey.Core.Decks;
+using Okey.Core.Games;
 using Okey.Core.Dealing;
 using Okey.Core.Stones;
 using Okey.Core.Tables;
@@ -38,12 +39,13 @@ namespace Okey.Composition
             Container.Bind<MeldPlanner>().AsSingle();
             Container.Bind<RackMeldEvaluator>().AsSingle();
             Container.Bind<IRandomSource>().To<SeededRandomSource>().AsSingle().WithArguments(_openingDealSettings.CreateSeed());
-            Container.Bind<IPlayerStrategy>().To<MeldPlayerStrategy>().AsSingle();
+            Container.Bind<ITableGame>().FromMethod(context => _tableSettings.ActiveProfile.CreateGame(context.Container.Resolve<MeldPlanner>())).AsSingle();
+            Container.Bind<IPlayerStrategy>().FromMethod(context => _tableSettings.ActiveProfile.CreateStrategy(context.Container.Resolve<MeldPlanner>())).AsSingle();
             Container.Bind<TableSession>().FromMethod(context => new TableSession(
                 context.Container.Resolve<OkeyRules>(), context.Container.Resolve<IStoneShuffler>().Shuffle(
                     context.Container.Resolve<DeckFactory>().Create(context.Container.Resolve<DeckDefinition>()),
                     _openingDealSettings.CreateSeed()), _rackView.Capacity, startingSeat: _tableSettings.NextStartingSeat(),
-                    options: _tableSettings.CreateOptions())).AsSingle();
+                    options: _tableSettings.CreateOptions(), game: context.Container.Resolve<ITableGame>())).AsSingle();
             Container.Bind<Stone>().FromInstance(_stonePrefab).WhenInjectedInto<StoneViewFactory>();
             Container.Bind<StoneViewFactory>().AsSingle();
             Container.BindInstance(_rackView);

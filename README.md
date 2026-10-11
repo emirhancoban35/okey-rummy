@@ -1,8 +1,8 @@
 # Okey Rummy
 
-A Unity portfolio project for tile-based Okey and Rummy games, with a warm coffeehouse table, a configurable 101 Okey ruleset and three local AI opponents.
+A Unity portfolio project for tile-based Okey and Rummy games, with a warm coffeehouse table, configurable Classic Okey and 101 Okey rulesets and three local AI opponents.
 
-Game rules and state live in a Unity-independent C# assembly. Zenject connects the application, while editable prefabs and ScriptableObjects control presentation and configuration. The current playable game is 101 Okey; the architecture provides extension points for other tile games.
+Game rules and state live in a Unity-independent C# assembly. Zenject connects the application, while editable prefabs and ScriptableObjects control presentation and configuration. Classic Okey and 101 Okey share the same table, rack and input infrastructure, with separate gameplay policies, rule profiles, scoring and bot strategies.
 
 ![Coffeehouse table](Docs/Images/coffeehouse-table.png)
 
@@ -11,12 +11,13 @@ Game rules and state live in a Unity-independent C# assembly. Zenject connects t
 1. Clone the repository and open it with **Unity 6000.3.15f1** through Unity Hub.
 2. Let Unity restore the packages and import the assets.
 3. Open **Assets/Scenes/MainMenu.unity** and press Play.
-4. Choose individual or partnership play, humanlike or fast opponents, and fixed or rising opening thresholds. Select **Play** to start a table.
+4. Choose Classic Okey or 101 Okey, individual or partnership play, and humanlike or fast opponents. 101 tables also support fixed or rising opening thresholds. Select **Play** to start a table.
 
 The main menu is the first scene in Build Settings. **SampleScene.unity** can also be opened directly for table development. Zenject and DOTween are included in the repository; no separate plugin installation is needed.
 
 ## Features
 
+- Classic Okey: closed 14-tile hands, seven-pair finishes, high-one runs and discard pickup before opening.
 - One human player and three AI opponents, with individual and opposite-seat partnership modes.
 - Runs, sets and pairs, indicator-based real jokers and physical fake jokers.
 - Series and pair opening thresholds, configurable penalties, round scoring and rising openings (*katlamalı*).
@@ -37,16 +38,35 @@ The main menu is the first scene in Build Settings. **SampleScene.unity** can al
 | Draw | Click the closed pile, or drag its top tile to the rack during your turn. |
 | Arrange | Drag a tile to a rack slot. Occupied slots shift toward the nearest gap. |
 | Separate groups | Leave an empty slot between groups. Groups do not cross rack rows. |
-| Open series or pairs | Use the opening card showing the matching tile example and current total. |
+| Open series or pairs in 101 | Use the opening card showing the matching tile example and current total. |
+| Finish Classic Okey | Discard the spare tile from a complete hand, or select **Finish** when enabled. |
 | Lay off a tile | Drag it into the highlighted empty cell of a compatible public meld. |
 | Discard | Drop a tile into the bottom-right tray, or double-tap it during your discard phase. |
 | Flip a tile | Hold it for half a second. Hold again to turn it face up. |
-| Take the previous discard | Once opened, click the previous player's tray to immediately extend a compatible meld. |
+| Take the previous discard | Classic: click the previous player's tray to take the tile into your rack. 101: once opened, click it to immediately extend a compatible public meld. |
 | Start another game | Open table settings and select **New Game** to return to the menu. |
 
 Rack rearrangement is available during other players' turns. Draws, openings, layoffs and discards always pass through the table's legality checks.
 
 ## Rules in this build
+
+### Classic Okey
+
+The starting seat receives **15 tiles**, the other seats receive **14**, and a standard deck leaves **48 tiles** in the stock after the indicator is set aside. Hands remain closed: there are no public openings, layoffs, 101 opening penalties or rising thresholds. A player may draw from the pile or take the previous seat's latest discard directly into their rack.
+
+Discarding the spare tile wins when all fourteen remaining physical tiles can be assigned exactly once to runs and sets, or to seven identical pairs. The validator finds a complete disjoint partition, rather than judging the total value of a few high-scoring melds. The **Finish** action chooses a legal spare tile when a complete hand exists. Adjacent rack groups still drive the progress cards. A completed winning hand is exposed in the center of the table, including bot wins.
+
+Classic runs allow **12–13–1**, but reject **13–1–2**. Real jokers substitute for missing tiles; fake jokers retain the real joker's fixed printed identity. Seven-pair completion takes priority if the same hand can also form runs. The bot protects tile coverage and considers useful previous-seat discards while keeping its hand closed.
+
+The default score records round loss points: an ordinary winner receives zero and other players receive two. Pair and joker finishes use the profile's configurable multipliers; in this build they stack, giving four for either bonus and eight for both. Partnership tables exclude the winning partner and sum individual loss points by team. This uses the project's round-score convention; there is no cumulative twenty-point match or indicator-show bonus.
+
+An empty stock leaves the previous discard available. Taking it continues the turn; choosing the empty pile instead ends a drawn round with zero score. Timers and the existing humanlike/fast bot modes work in both games.
+
+The base hand, meld and pickup rules follow the [Okey rules reference](https://www.pagat.com/rummy/okey.html); score aggregation and combined bonus multipliers above are explicit project choices.
+
+![Classic Okey table](Docs/Images/classic-okey-table.png)
+
+### 101 Okey
 
 The default table uses a 106-tile deck. A random starting seat receives 22 tiles; the other seats receive 21. An indicator is set aside and 20 tiles remain in the stock. Subsequent tables rotate the starting seat. The indicator determines the real joker; fake jokers represent that fixed color and value.
 
@@ -54,7 +74,7 @@ An initial series opening needs **101 points**, or a pair opening needs **five p
 
 Rising openings increase the series and pair thresholds independently. Each successful initial opening sets its corresponding next threshold to the opened total plus a configurable increment, which defaults to one. Additional melds and invalid attempts do not raise thresholds.
 
-This build forbids taking a discard while closed. An opened player may take only the previous seat's latest discard, and only to immediately extend a public meld. Failed pickups change neither the discard nor the stock.
+101 forbids taking a discard while closed. An opened player may take only the previous seat's latest discard, and only to immediately extend a public meld. Failed pickups change neither the discard nor the stock.
 
 Successful openings refresh the turn timer. When time expires, the game cancels any drag, draws if required and discards legally. Discarding the final tile finishes the round. Partnership scoring groups opposite seats and excludes the winning partner's remaining hand.
 
@@ -62,7 +82,7 @@ Successful openings refresh the turn timer. When time expires, the game cancels 
 
 Layout preview using a custom stress-test deck: number-aligned runs, fixed color slots and twenty public melds across two pages.
 
-These are the project's explicit rule choices. Regional variations, special immediate-finish cases and cumulative multi-round matches are not implemented.
+These are the project's explicit rule choices. Other regional variants, indicator-show bonuses and cumulative multi-round matches are not implemented.
 
 ## Architecture
 
@@ -82,7 +102,7 @@ flowchart TD
 | `Okey.Presentation` | Tile faces, pointer input, rack anchors, progress bars, menus and animations. |
 | `Okey.Composition` | Creates dependencies, coordinates views with the table and routes local, bot and timeout actions. |
 
-`TableSession` owns hands, turn phase, public melds and discard histories. Presentation does not decide move legality. `RackArrangement` manages physical tile placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
+`TableSession` owns hands, turn phase, public melds and discard histories. `ITableGame` supplies public-meld permissions, discard behavior, finish validation and scoring through `Okey101Game` or `ClassicOkeyGame`. The table has no game-name or mode-enum branches. Presentation does not decide move legality. `RackArrangement` manages physical tile placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
 
 `StoneInstance` gives each physical tile an ID; duplicate printed tiles remain separate objects. Deck generation, shuffling, distribution and view creation are separate responsibilities. `IStoneShuffler` supports replaceable ordering, and seeded implementations support deterministic tests.
 
@@ -91,7 +111,8 @@ flowchart TD
 | Change | Boundary |
 | --- | --- |
 | Deck composition, tile range or copy count | `DeckSettings` / `DeckDefinition` |
-| Run, set, pair or joker validation | `IMeldRules` |
+| A new game mode | Derive a `TableRuleProfile`, supply an `ITableGame` and `IPlayerStrategy`, then add the asset to `TableSettings` |
+| Run, set, pair or joker validation | `IMeldRules` / `OkeyRules.AllowsHighOne` |
 | End-of-round scoring | `IRoundScoring` |
 | Opponent decisions | `IPlayerStrategy` |
 | Behavioral randomness | `IRandomSource` |
@@ -106,7 +127,9 @@ Multiplayer is not implemented. A future transport adapter can submit actions to
 
 | Asset | Editable values |
 | --- | --- |
-| `Assets/Settings/Dealing/Standard101Table.asset` | Player count, hand size, opening thresholds, rising increment, penalties, scoring, partnerships, pickup rules, starter selection, timers and bot behavior. |
+| `Assets/Settings/Dealing/Standard101Table.asset` | Available rule profiles, selected profile, player count, rising increment, partnerships, pickup rules, starter selection, timers and bot behavior. |
+| `Assets/Settings/Dealing/Okey101Rules.asset` | 101 hand size, tile range, opening thresholds, penalties and score multipliers. |
+| `Assets/Settings/Dealing/ClassicOkeyRules.asset` | Classic hand size, tile range, pair count, round loss points and score multipliers. |
 | `Assets/Settings/Decks/StandardOkeyDeck.asset` | Tile types, colors, number ranges and copies. |
 | `Assets/Settings/Dealing/StandardOpeningDeal.asset` | Fixed or random shuffle seed. Its practice-hand fields are separate from table settings. |
 | `Assets/Settings/Dealing/SceneNavigation.asset` | Menu and table scene names. |

@@ -22,6 +22,7 @@ namespace Okey.Composition
         private int[] _handIds;
         private MeldPlan _series;
         private MeldPlan _pairs;
+        private int _finishingDiscard = -1;
         private Stone _drawnDragView;
         private bool _initialized;
         private bool _disposed;
@@ -62,6 +63,7 @@ namespace Okey.Composition
         private void TakeDiscard(DiscardAreaView area)
         {
             if (_disposed || _interaction.IsDragging || area != _controls.DiscardAreas[_session.Players.Count - 1]) return;
+            if (!_session.Game.RequiresOpenDiscardPickup && _session.TryTakeDiscard(0)) return;
             for (var meld = 0; meld < _session.Melds.Count; meld++)
                 if (_session.TryTakeDiscard(0, meld)) return;
         }
@@ -107,6 +109,11 @@ namespace Okey.Composition
         {
             if (_disposed || _interaction.IsDragging) return;
             UpdatePlans();
+            if (!_session.Game.AllowsPublicMelds)
+            {
+                if (_finishingDiscard >= 0) TryDiscard(_hand.Views.Single(view => view.Instance.Id == _finishingDiscard));
+                return;
+            }
             var before = _session.Players[0].Penalty;
             var opened = _session.TryOpen(0, mode, (mode == OpeningMode.Pairs ? _pairs : _series).Melds);
             var penalty = _session.Players[0].Penalty - before;
@@ -149,6 +156,9 @@ namespace Okey.Composition
             var ids = hand.Select(stone => stone?.Id ?? -1).ToArray();
             if (_handIds != null && _handIds.SequenceEqual(ids)) return;
             _handIds = ids;
+            _finishingDiscard = -1;
+            if (!_session.Game.AllowsPublicMelds)
+                _session.Game.TryFindFinish(hand.Where(stone => stone != null).ToArray(), _session.MeldRules, _session.Rules, out _finishingDiscard);
             _series = _evaluator.Find(hand, _rack.RowCapacity, _session.MeldRules, OpeningMode.Series);
             _pairs = _evaluator.Find(hand, _rack.RowCapacity, _session.MeldRules, OpeningMode.Pairs);
         }
@@ -160,13 +170,18 @@ namespace Okey.Composition
             _hand.Refresh();
             UpdatePlans();
             var local = _session.Players[0];
+            _controls.ConfigureGame(_session.Game.AllowsPublicMelds);
+
             _controls.DiscardAreas[_session.Players.Count - 1].SetAvailable(!_interaction.IsDragging && _session.CanTakeDiscard(0));
             _controls.Render(_session.Phase, _session.ActiveSeat, local.Hand.Count, _session.RemainingCount,
                 _series.Points, _pairs.Melds.Count, _session.SeriesThreshold, _session.PairThreshold,
                 _session.Phase == TurnPhase.Finished ? local.Score : local.Penalty,
-                !_interaction.IsDragging && _session.CanDraw(0),
+                !_interaction.IsDragging && (_session.CanDraw(0) || _session.CanEndDrawnRound(0)),
                 !_interaction.IsDragging && _session.ActiveSeat == 0 && _session.Phase == TurnPhase.AwaitingDiscard);
-            _controls.RenderGroups(_series, _pairs, local.Opening);
+            if (_session.Game.AllowsPublicMelds) _controls.RenderGroups(_series, _pairs, local.Opening);
+            else _controls.RenderClosedHand(_series, _pairs, _session.Rules.HandSize,
+                !_interaction.IsDragging && _finishingDiscard >= 0 && _session.ActiveSeat == 0 && _session.Phase == TurnPhase.AwaitingDiscard);
+            if (_session.Phase == TurnPhase.Finished) _controls.RenderRoundResult(_session.Winner);
             var grouped = local.Opening == OpeningMode.Pairs || local.Opening == OpeningMode.Closed &&
                 _pairs.Melds.Count >= _session.PairThreshold && _series.Points < _session.SeriesThreshold ? _pairs : _series;
             var ids = grouped.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();

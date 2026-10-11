@@ -7,6 +7,9 @@ namespace Okey.Presentation.Menus
 {
     public sealed class NewGameMenuView : MonoBehaviour
     {
+        [SerializeField] private Button _ruleButton;
+        [SerializeField] private TMP_Text _ruleText;
+        [SerializeField] private string _unavailableLabel = "NOT USED";
         [SerializeField] private Button _playButton;
         [SerializeField] private Button _partnershipButton;
         [SerializeField] private Button _botModeButton;
@@ -23,22 +26,27 @@ namespace Okey.Presentation.Menus
         [SerializeField] private CanvasGroup _card;
         [SerializeField, Min(0)] private float _fadeDuration = .25f;
         private Tween _fade;
+        public event Action RulesRequested;
         public event Action PlayRequested;
         public event Action PartnershipRequested;
         public event Action BotModeRequested;
         public event Action EscalatingRequested;
-        public void Render(bool partnerships, bool humanlike, bool escalating)
+        public void Render(bool partnerships, bool humanlike, bool escalating, string rulesLabel, bool publicMelds)
         {
+            _ruleText.text = rulesLabel;
+            _escalatingButton.interactable = publicMelds;
             _partnershipText.text = partnerships ? _partnershipLabel : _individualLabel;
             _botModeText.text = humanlike ? _humanlikeLabel : _fastLabel;
-            _escalatingText.text = escalating ? _risingLabel : _fixedLabel;
+            _escalatingText.text = !publicMelds ? _unavailableLabel : escalating ? _risingLabel : _fixedLabel;
         }
+        private void ToggleRules() => RulesRequested?.Invoke();
         private void Play() => PlayRequested?.Invoke();
         private void TogglePartnership() => PartnershipRequested?.Invoke();
         private void ToggleBots() => BotModeRequested?.Invoke();
         private void ToggleEscalating() => EscalatingRequested?.Invoke();
         private void OnEnable()
         {
+            _ruleButton.onClick.AddListener(ToggleRules);
             _playButton.onClick.AddListener(Play);
             _partnershipButton.onClick.AddListener(TogglePartnership);
             _botModeButton.onClick.AddListener(ToggleBots);
@@ -49,6 +57,7 @@ namespace Okey.Presentation.Menus
         private void OnDisable()
         {
             _fade?.Kill();
+            _ruleButton.onClick.RemoveListener(ToggleRules);
             _playButton.onClick.RemoveListener(Play);
             _partnershipButton.onClick.RemoveListener(TogglePartnership);
             _botModeButton.onClick.RemoveListener(ToggleBots);

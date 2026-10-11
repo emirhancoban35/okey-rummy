@@ -13,18 +13,10 @@ MonoBehaviour:
   m_Name: Standard101Table
   m_EditorClassIdentifier: Okey.Configuration::Okey.Configuration.TableSettings
   _playerCount: 4
-  _handSize: 21
-  _minimumValue: 1
-  _maximumValue: 13
-  _seriesThreshold: 101
-  _pairThreshold: 5
-  _invalidOpeningPenalty: 101
-  _unopenedScore: 202
-  _jokerScore: 101
-  _discardPenalty: 101
-  _winnerScore: -101
-  _pairMultiplier: 2
-  _jokerFinishMultiplier: 2
+  _ruleProfiles:
+  - {fileID: 11400000, guid: 9a407ce9f10d4c7781e02d037e5a1e98, type: 2}
+  - {fileID: 11400000, guid: 9f5d95ad7e014525a0743f14224917fd, type: 2}
+  _ruleIndex: 0
   _botActionDelay: 0.8
   _partnerships: 0
   _escalatingOpenings: 0

@@ -25,6 +25,7 @@ namespace Okey.Composition
         private readonly List<(int Index, MeldBoardView Board, MeldBoardCell Cell)> _layOffTargets = new List<(int, MeldBoardView, MeldBoardCell)>();
         private int _targetStoneId = -1;
         private readonly Stone[] _discards;
+        private bool _winningHandShown;
         private bool _initialized;
         private bool _disposed;
 
@@ -155,6 +156,19 @@ namespace Okey.Composition
         {
             if (_disposed) return;
             _controls.SetMeldCount(_session.Melds.Count);
+            if (!_winningHandShown && !_session.Game.AllowsPublicMelds && _session.WinningHand != null)
+            {
+                _winningHandShown = true;
+                for (var group = 0; group < _session.WinningHand.Melds.Count; group++)
+                {
+                    var meld = _session.WinningHand.Melds[group];
+                    for (var tile = 0; tile < meld.Tiles.Count; tile++)
+                    {
+                        var view = CreatePublicStone(meld.Tiles[tile].Stone, _controls.WinningHandRoot, _controls.WinningTileScale);
+                        view.Motion.SnapTo(_controls.WinningTilePosition(group, tile, meld.Kind == MeldKind.Pair));
+                    }
+                }
+            }
             for (var seat = 0; seat < _session.Players.Count; seat++)
             {
                 var player = _session.Players[seat];

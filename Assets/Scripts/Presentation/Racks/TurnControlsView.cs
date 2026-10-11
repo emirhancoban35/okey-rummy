@@ -10,6 +10,55 @@ namespace Okey.Presentation.Racks
 {
     public sealed class TurnControlsView : MonoBehaviour
     {
+        [SerializeField] private GameObject[] _publicMeldVisuals;
+        [SerializeField] private GameObject _classicPanel;
+        [SerializeField] private Transform _winningHandRoot;
+        [SerializeField] private Vector3 _winningTileScale = new Vector3(.5f, .6f, 1);
+        [SerializeField] private Vector2 _winningTileSpacing = new Vector2(.56f, .72f);
+        public Transform WinningHandRoot => _winningHandRoot;
+        public Vector3 WinningTileScale => _winningTileScale;
+        public Vector3 WinningTilePosition(int group, int tile, bool pair) => pair
+            ? new Vector3(group % 4 * _winningTileSpacing.x * 3 + tile * _winningTileSpacing.x, -group / 4 * _winningTileSpacing.y, 0)
+            : new Vector3(tile * _winningTileSpacing.x, -group * _winningTileSpacing.y, 0);
+        [SerializeField] private TMP_Text _seriesActionLabel;
+        [SerializeField] private TMP_Text _pairActionLabel;
+        [SerializeField] private TMP_Text _helpText;
+        [SerializeField] private string _openLabel = "OPEN";
+        [SerializeField] private string _finishLabel = "FINISH";
+        [SerializeField] private string _pairsLabel = "PAIRS";
+        [SerializeField] private string _openHelp = "Drag to a matching meld. Double tap a tile to discard.";
+        [SerializeField] private string _classicHelp = "Draw from the pile or the previous discard. Keep your hand closed. Complete all tiles as runs and sets, or seven pairs. Discard the spare tile to win.";
+        [SerializeField] private string _emptyStockStatus = "Take discard or end.";
+        [SerializeField] private string _classicDiscardStatus = "Arrange, then discard.";
+        [SerializeField] private string _winnerFormat = "{0} wins";
+        [SerializeField] private string _drawnRoundLabel = "Stock empty. Round drawn.";
+        private bool _publicMelds = true;
+        public void ConfigureGame(bool publicMelds)
+        {
+            _publicMelds = publicMelds;
+            foreach (var visual in _publicMeldVisuals) visual.SetActive(publicMelds);
+            _classicPanel.SetActive(!publicMelds);
+            if (!publicMelds) _emptyMeldHint.SetActive(false);
+            _seriesActionLabel.text = publicMelds ? _openLabel : _finishLabel;
+            _pairActionLabel.text = publicMelds ? _openLabel : _pairsLabel;
+            _helpText.text = publicMelds ? _openHelp : _classicHelp;
+            _escalatingButton.gameObject.SetActive(publicMelds);
+        }
+        public void RenderClosedHand(MeldPlan series, MeldPlan pairs, int handSize, bool canFinish)
+        {
+            _seriesPointsText.text = string.Format(_progressFormat, series.TileCount, handSize);
+            _pairCountText.text = string.Format(_progressFormat, pairs.Melds.Count, _pairThreshold);
+            _seriesProgress.fillAmount = Mathf.Clamp01((float)series.TileCount / handSize);
+            _pairProgress.fillAmount = Mathf.Clamp01((float)pairs.Melds.Count / _pairThreshold);
+            _seriesButton.interactable = canFinish;
+            _pairsButton.interactable = false;
+        }
+        public void RenderRoundResult(int winner)
+        {
+            if (!_publicMelds && winner >= 0) _classicPanel.SetActive(false);
+            _statusText.text = winner < 0 ? _drawnRoundLabel :
+                string.Format(_winnerFormat, winner == 0 ? _localSeatName : _seatNames[winner - 1]);
+        }
         [SerializeField] private Button _settingsButton;
         [SerializeField] private Button _helpButton;
         [SerializeField] private Button _closeSettingsButton;
@@ -189,7 +238,7 @@ namespace Okey.Presentation.Racks
             _pairsButton.interactable = canOpen;
             _discardAreas[0].SetAvailable(canDiscard);
             _statusText.text = phase == TurnPhase.Finished ? _finishedStatus : seat != 0 ? string.Format(_waitingFormat, _seatNames[seat - 1]) :
-                phase == TurnPhase.AwaitingDraw ? _drawStatus : _discardStatus;
+                phase == TurnPhase.AwaitingDraw ? (!_publicMelds && pileCount == 0 ? _emptyStockStatus : _drawStatus) : _publicMelds ? _discardStatus : _classicDiscardStatus;
             _handText.text = string.Format(_handFormat, handCount);
             _pileText.text = string.Format(_pileFormat, pileCount);
             _pointsText.text = string.Format(_pointsFormat, points, threshold, pairs, pairThreshold);
@@ -203,7 +252,7 @@ namespace Okey.Presentation.Racks
             _opponentHighlights[seat - 1].color = active ? _activeSeatColor : _idleSeatColor;
         }
 
-        public void SetMeldCount(int count) => _emptyMeldHint.SetActive(count == 0);
+        public void SetMeldCount(int count) => _emptyMeldHint.SetActive(_publicMelds && count == 0);
 
         public void ShowOpeningResult(bool success, int penalty)
         {

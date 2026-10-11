@@ -17,18 +17,21 @@ namespace Okey.Composition
         }
         public void Initialize()
         {
+            _view.RulesRequested += ToggleRules;
             _view.PlayRequested += _navigation.StartTable;
             _view.PartnershipRequested += TogglePartnership;
             _view.BotModeRequested += ToggleBots;
             _view.EscalatingRequested += ToggleEscalating;
             Render();
         }
+        private void ToggleRules() { _settings.NextRules(); Render(); }
         private void TogglePartnership() { _settings.TogglePartnerships(); Render(); }
         private void ToggleBots() { _settings.ToggleBotMode(); Render(); }
         private void ToggleEscalating() { _settings.ToggleEscalatingOpenings(); Render(); }
-        private void Render() => _view.Render(_settings.Partnerships, _settings.HumanlikeBots, _settings.EscalatingOpenings);
+        private void Render() => _view.Render(_settings.Partnerships, _settings.HumanlikeBots, _settings.EscalatingOpenings, _settings.ActiveProfile.Label, _settings.ActiveProfile.AllowsPublicMelds);
         public void Dispose()
         {
+            _view.RulesRequested -= ToggleRules;
             _view.PlayRequested -= _navigation.StartTable;
             _view.PartnershipRequested -= TogglePartnership;
             _view.BotModeRequested -= ToggleBots;

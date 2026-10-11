@@ -69,7 +69,18 @@ namespace Okey.Composition
             PrepareTurn();
             if (_table.Phase == TurnPhase.AwaitingDraw)
             {
-                if (_table.CanTakeDiscard(seat))
+                if (_table.CanTakeDiscard(seat) && !_table.Game.RequiresOpenDiscardPickup)
+                {
+                    var previous = _table.Players[(seat + _table.Players.Count - 1) % _table.Players.Count];
+                    var tile = previous.Discards[previous.Discards.Count - 1];
+                    var hand = Observe(seat);
+                    var extended = new PlayerObservation(hand.Hand.Append(tile), hand.Melds, hand.Opening, hand.Rules, hand.MeldRules);
+                    var before = _strategy.PlanOpening(hand, out _);
+                    var after = _strategy.PlanOpening(extended, out _);
+                    if (after.TileCount > before.TileCount && after.Melds.SelectMany(meld => meld.Tiles).Any(used => used.Stone.Id == tile.Id) &&
+                        _table.TryTakeDiscard(seat)) return;
+                }
+                if (_table.CanTakeDiscard(seat) && _table.Game.RequiresOpenDiscardPickup)
                     for (var index = 0; index < _table.Melds.Count; index++)
                         if (_table.TryTakeDiscard(seat, index)) return;
                 _table.TryDraw(seat);
@@ -81,7 +92,12 @@ namespace Okey.Composition
             var canOpen = plan.Melds.Count > 0 && (player.Opening != OpeningMode.Closed ||
                 (mode == OpeningMode.Pairs ? plan.Melds.Count >= _table.PairThreshold : plan.Points >= _table.SeriesThreshold));
             var shouldOpen = player.Opening != OpeningMode.Closed || !_holdOpening || plan.TileCount >= player.Hand.Count - 2 || _table.RemainingCount <= _table.Players.Count;
-            if (canOpen && shouldOpen && _table.TryOpen(seat, mode, plan.Melds)) return;
+            if (_table.Game.AllowsPublicMelds && canOpen && shouldOpen && _table.TryOpen(seat, mode, plan.Melds)) return;
+            if (_table.TryFindFinish(seat, out var finishingDiscard))
+            {
+                _table.TryDiscard(seat, finishingDiscard);
+                return;
+            }
             var mistake = _random.NextDouble() < _settings.MistakeChance;
             if (!mistake)
                 foreach (var stone in observation.Hand)
