@@ -16,6 +16,7 @@ namespace Okey.Composition
         public Stone Selected { get; private set; }
         public bool IsDragging => _dragged != null;
         public event Action Changed;
+        public event Func<Stone, Vector3, bool> DropRequested;
 
         public RackInteractionController(RackArrangement arrangement, RackView rack)
         {
@@ -84,6 +85,11 @@ namespace Okey.Composition
                 return;
 
             _dragged = null;
+            if (DropRequested?.Invoke(stone, worldPosition) == true)
+            {
+                Changed?.Invoke();
+                return;
+            }
             if (_rack.TryFindSlot(worldPosition, out var destination))
             {
                 var moved = _arrangement.Move(stone.Instance.Id, destination);

@@ -6,7 +6,7 @@ The project is developed in small, working steps. Multiplayer is outside the sco
 
 ## Current foundation
 
-`Assets/Scripts/Core` contains the Unity-independent `Okey.Core` assembly. It cannot reference Unity engine APIs. Stone definitions are immutable and contain their type, color and number. Number ranges, scoring and move legality belong to the future rule system, rather than the stone constructor.
+`Assets/Scripts/Core` contains the Unity-independent `Okey.Core` assembly. It cannot reference Unity engine APIs. Stone definitions are immutable and contain their type, color and number. Number ranges, scoring and move legality belong to the rule system rather than the stone constructor.
 
 A real joker is a role determined by game rules, rather than a separate physical stone type. A fake joker is a physical stone type. `StoneColor.None` supports stones without a printed color.
 
@@ -38,15 +38,25 @@ HandPresenter uses Zenject's initialization lifecycle to create and animate the 
 
 `RackArrangement` owns a Unity-independent snapshot of physical stones in configurable slots. Moving to an empty slot leaves a gap. Inserting into an occupied slot shifts its contiguous neighbors toward the nearest empty slot after lifting the dragged stone; equal distances prefer the right side. Other groups and gaps remain in place. Moves preserve membership and identity and return the affected stones so presentation only animates changed positions. Its read-only slot collection reflects the current arrangement. This is a local rack layout, not turn state or move legality.
 
-Drag a stone in SampleScene to rearrange the rack. StoneDragHandler receives EventSystem pointer events through the camera's Physics2DRaycaster and the stone's BoxCollider2D. It projects the pointer onto the rack plane, preserves the click offset and raises the whole stone through its SortingGroup. RackInteractionController coordinates the arrangement and view movement. An outside drop returns the stone to its current slot; disabling the handler or losing application focus cancels the drag. One pointer can rearrange the rack at a time.
+Drag a stone in SampleScene to rearrange the rack. StoneDragHandler receives EventSystem pointer events through the camera's Physics2DRaycaster and the stone's BoxCollider2D. It projects the pointer onto the rack plane, preserves the click offset and raises the whole stone through its SortingGroup. RackInteractionController coordinates the arrangement and view movement. A drop outside the rack returns the stone to its current slot unless a legal discard or layoff target accepts it; disabling the handler or losing application focus cancels the drag. One pointer can rearrange the rack at a time.
 
 RackView's drop radius is measured in the stone root's local space and is editable in the Inspector. Slot positions, input collider size and drag sorting order are prefab data. Repositioning uses the same StoneMotion settings as the opening deal, without replaying its origin or staggered delay.
 
-`SinglePlayerSession` owns the draw/discard sequence using a live rack and draw pile. One draw requires one discard before the next draw. Invalid actions and full-rack draws leave the state unchanged. Discarding leaves a rack gap; the next draw uses the first free slot. The final drawn stone can still be discarded before the session finishes. The immutable discard history and remaining pile count are exposed for presentation. This practice flow does not yet evaluate winning hands, melds, jokers or penalties.
+## Playing the 101 table
 
-`StandardOpeningDeal.asset` also configures the initial phase. The default starts with drawing from a 21-stone hand. Set an appropriate hand size and AwaitingDiscard to start with a discard instead.
+SampleScene starts a local 101 table with you and three bots. The first seat receives 22 stones and starts by discarding; the other seats receive 21. A regular indicator is set aside and the remaining 20 stones form the closed pile. The indicator determines the real joker; fake jokers represent that fixed color and value.
 
-`Assets/Prefabs/GameControls.prefab` contains the draw and discard buttons, phase and count labels, display text and discard anchor. Click a stone to toggle its selection highlight, then discard it with the button. Actions are disabled during dragging. TurnController coordinates the session, hand refresh and animated last-discard display through Zenject. Button labels, colors, layout, selection highlight and discard scale remain editable prefab data.
+Click the face-down pile near the center to draw during your turn. Drop a stone into the bottom-right outlined area to discard. The four corner areas display each seat's latest discard. Opponent hands are represented by face-down covers and counts; their physical stones never receive face-up scene views. Rearranging your rack remains available during other seats' turns.
+
+The header shows the maximum opening series value, pair count, thresholds, remaining pile and your penalty or final score. `SERI AC` finds disjoint runs and sets; `CIFT AC` finds identical pairs. Both reserve a stone for the required final discard. An initial series opening needs 101 points; a pair opening needs five pairs. Invalid attempts apply the configured penalty without changing the hand. Once opened, additional melds must use the same opening mode. Drag a stone onto an open meld to extend it. Joker assignments remain fixed after opening. Discarding the final tile finishes the hand and calculates scores.
+
+`Assets/Settings/Dealing/Standard101Table.asset` controls player count, hand size, number range, opening thresholds, penalties, scoring and bot action delay. `StandardOpeningDeal.asset` supplies the shuffle seed; its practice-hand size and phase fields are not used by the table. `SinglePlayerSession` remains an isolated draw/discard practice model.
+
+`TableSession` owns hands, turn legality, public melds and discard histories. `IRoundScoring` supplies replaceable scoring, with `Okey101Scoring` as the default. `IMeldRules` supplies replaceable meld validation; the baseline `MeldRules` validates runs, sets and pairs; `MeldPlanner` searches compatible candidates for disjoint melds. `IPlayerStrategy` receives an immutable snapshot of its own hand and public melds, without opponents' hands or the draw pile. The initial strategy protects completed melds, opens when eligible, extends public melds and discards weak tiles. Bot actions pass through the same table methods as local input.
+
+`Assets/Prefabs/GameControls.prefab` owns the draw surface, four discard areas, opening buttons, public meld root, opponent covers, labels, text formats, scales and spacing. These are editable prefab references. Zenject binds the table, strategy and controllers; DOTween animates rack movement, discard placement and public meld positioning.
+
+The baseline supports drawing from the closed pile. Taking the previous player's discard, special immediate-finish exceptions and multi-hand match progression are not implemented yet. The rule reference is [Pagat's 101 Okey rules](https://www.pagat.com/rummy/okey101.html); this implementation uses the configurable baseline described above rather than every published variation.
 
 `Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
 
@@ -73,4 +83,4 @@ PlayMode tests load the real scene and verify dependency resolution, prefab crea
 
 ## Next steps
 
-Introduce interchangeable rules, meld validation, winning hands and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.
+Add discard pickup with immediate melding, special finish variations and multi-hand match progression. Improve bot planning through IPlayerStrategy. Persistence and network synchronization can build on the existing table boundary.

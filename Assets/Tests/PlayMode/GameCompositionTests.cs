@@ -6,6 +6,8 @@ using NUnit.Framework;
 using Okey.Composition;
 using Okey.Core.Decks;
 using Okey.Core.Dealing;
+using Okey.Core.Tables;
+using Okey.Core.Rules;
 using Okey.Core.Stones;
 using Okey.Presentation.Stones;
 using Okey.Presentation.Racks;
@@ -63,79 +65,140 @@ namespace Okey.Tests.PlayMode
         }
 
         private TurnControlsView Controls => _context.Container.Resolve<TurnControlsView>();
-        private Button DrawButton => Controls.GetComponentsInChildren<Button>().Single(button => button.name == "DrawButton");
-        private Button DiscardButton => Controls.GetComponentsInChildren<Button>().Single(button => button.name == "DiscardButton");
+        [UnityTest]
+        public IEnumerator TableStartsWithDiscardAndDraggingToRightAreaAdvancesTheBots()
+        {
+            var session = _context.Container.Resolve<TableSession>();
+            Assert.That(Controls.DrawSource.CanDraw, Is.False);
+            var stone = HandViews[0];
+            var id = stone.Instance.Id;
+            Interaction.TryBeginDrag(stone);
+            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            Assert.That(session.ActiveSeat, Is.EqualTo(1));
+            Assert.That(session.Players[0].Hand.Count, Is.EqualTo(21));
+            Assert.That(HandViews.Any(view => view.Instance.Id == id), Is.False);
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var action = 0; action < 6; action++) bot.Act();
+            Assert.That(session.ActiveSeat, Is.Zero);
+            Assert.That(Controls.DrawSource.CanDraw, Is.True);
+            var data = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left };
+            Controls.DrawSource.OnPointerClick(data);
+            Controls.DrawSource.OnPointerClick(data);
+            Assert.That(session.Players[0].Hand.Count, Is.EqualTo(22));
+            Assert.That(session.RemainingCount, Is.EqualTo(16));
+            Assert.That(Controls.DiscardAreas.Take(4).All(area => area.StoneRoot.GetComponentInChildren<Stone>() != null), Is.True);
+            yield return null;
+        }
+
+        [Test]
+        public void DraggingBlocksDrawingAndOtherDiscardAreasRejectLocalStones()
+        {
+            var session = _context.Container.Resolve<TableSession>();
+            var stone = HandViews[0];
+            Interaction.TryBeginDrag(stone);
+            Interaction.EndDrag(stone, Controls.DiscardAreas[1].StoneRoot.position);
+            Assert.That(session.Players[0].Hand.Count, Is.EqualTo(22));
+            Assert.That(session.ActiveSeat, Is.Zero);
+            Interaction.TryBeginDrag(stone);
+            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var action = 0; action < 6; action++) bot.Act();
+            Interaction.TryBeginDrag(HandViews[0]);
+            _context.Container.Resolve<TurnController>().Draw();
+            Assert.That(Controls.DrawSource.CanDraw, Is.False);
+            Assert.That(session.Players[0].Hand.Count, Is.EqualTo(21));
+            Interaction.CancelDrag(HandViews[0]);
+            Assert.That(Controls.DrawSource.CanDraw, Is.True);
+        }
+
+        [Test]
+        public void PublicViewsUseAnchorsAndNeverExposeOpponentHands()
+        {
+            var table = _context.Container.Resolve<TableSession>();
+            var indicator = Controls.IndicatorRoot.GetComponentInChildren<Stone>();
+            Assert.That(indicator.Instance, Is.SameAs(table.Indicator));
+            Assert.That(indicator.IsFaceUp, Is.True);
+            Assert.That(indicator.transform.localPosition, Is.EqualTo(Vector3.zero));
+            var opponentIds = table.Players.Skip(1).SelectMany(player => player.Hand.Slots)
+                .Where(stone => stone != null).Select(stone => stone.Id).ToHashSet();
+            var visible = Controls.GetComponentsInChildren<Stone>().Concat(HandViews);
+            Assert.That(visible.Any(view => view.Instance != null && opponentIds.Contains(view.Instance.Id)), Is.False);
+            Assert.That(visible.Count(view => view.Instance == null && !view.IsFaceUp), Is.EqualTo(10));
+        }
 
         [UnityTest]
-        public IEnumerator ButtonsDrawSelectDiscardAndUpdateLiveViews()
+        public IEnumerator OpenMeldPresentationExtendsExistingViewsAndCleansUp()
         {
-            var session = _context.Container.Resolve<SinglePlayerSession>();
-            Assert.That(DrawButton.interactable, Is.True);
-            Assert.That(DiscardButton.interactable, Is.False);
-            DrawButton.onClick.Invoke();
-            DrawButton.onClick.Invoke();
-            Assert.That(session.Hand.Count, Is.EqualTo(22));
-            Assert.That(session.RemainingCount, Is.EqualTo(84));
-            Assert.That(HandViews.Length, Is.EqualTo(22));
-            Assert.That(DrawButton.interactable, Is.False);
-            var stone = HandViews[0];
-            ExecuteEvents.Execute(stone.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-            Assert.That(Interaction.Selected, Is.SameAs(stone));
-            Assert.That(stone.transform.Find("SelectionHighlight").gameObject.activeSelf, Is.True);
-            Assert.That(DiscardButton.interactable, Is.True);
-            var discardedId = stone.Instance.Id;
-            DiscardButton.onClick.Invoke();
-            DiscardButton.onClick.Invoke();
-            Assert.That(session.Hand.Count, Is.EqualTo(21));
-            Assert.That(HandViews.Length, Is.EqualTo(21));
-            Assert.That(HandViews.Any(view => view.Instance.Id == discardedId), Is.False);
-            Assert.That(Interaction.Selected, Is.Null);
-            Assert.That(DrawButton.interactable, Is.True);
-            Assert.That(DiscardButton.interactable, Is.False);
-            var discard = Controls.DiscardRoot.GetComponentInChildren<Stone>();
-            Assert.That(discard.Instance.Id, Is.EqualTo(discardedId));
-            Assert.That(discard.DragHandler.enabled, Is.False);
-            DOTween.Complete(discard.transform);
-            Assert.That(discard.transform.localPosition, Is.EqualTo(Vector3.zero));
-            Assert.That(Controls.GetComponentsInChildren<TMPro.TMP_Text>().Single(text => text.name == "HandCount").text, Is.EqualTo("Hand: 21"));
-            Assert.That(Controls.GetComponentsInChildren<TMPro.TMP_Text>().Single(text => text.name == "PileCount").text, Is.EqualTo("Pile: 84"));
+            _context.Container.Resolve<TablePresenter>().Dispose();
+            var deck = _context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>()).ToArray();
+            StoneInstance Tile(int id, int value, StoneColor color = StoneColor.Red) =>
+                new StoneInstance(id, new StoneData(StoneType.Regular, color, value));
+            deck[0] = Tile(0, 13);
+            deck[1] = Tile(1, 10);
+            deck[2] = Tile(2, 11);
+            deck[3] = Tile(3, 12);
+            deck[4] = Tile(4, 10, StoneColor.Blue);
+            deck[5] = Tile(5, 11, StoneColor.Blue);
+            deck[6] = Tile(6, 12, StoneColor.Blue);
+            deck[7] = Tile(7, 13);
+            deck[8] = Tile(8, 2, StoneColor.Black);
+            var table = new TableSession(new OkeyRules(4, 7, 1, 13, 66, 5, 101, 202, 101, -101, 101, 2, 2), deck, 28);
+            var presenter = new TablePresenter(table, Controls, _context.Container.Resolve<StoneViewFactory>());
+            presenter.Initialize();
+            table.MeldRules.TryCreate(deck.Skip(1).Take(3), MeldKind.Run, out var first);
+            table.MeldRules.TryCreate(deck.Skip(4).Take(3), MeldKind.Run, out var second);
+            Assert.That(table.TryOpen(0, OpeningMode.Series, new[] {first, second}), Is.True);
+            var original = Controls.MeldRoot.GetComponentsInChildren<Stone>();
+            Assert.That(original.Length, Is.EqualTo(6));
+            Assert.That(table.TryLayOff(0, 7, 0), Is.True);
+            var extended = Controls.MeldRoot.GetComponentsInChildren<Stone>();
+            Assert.That(extended.Length, Is.EqualTo(7));
+            foreach (var view in original) Assert.That(extended, Does.Contain(view));
+            foreach (var view in extended)
+            {
+                DOTween.Complete(view.transform);
+                Assert.That(view.IsFaceUp, Is.True);
+                Assert.That(view.DragHandler.enabled, Is.False);
+            }
+            Assert.That(presenter.TryFindMeld(extended[0].transform.position, out var index), Is.True);
+            Assert.That(index, Is.Zero);
+            presenter.Dispose();
+            Assert.That(extended.All(view => !view.gameObject.activeSelf), Is.True);
             yield return null;
-            Assert.That(stone == null, Is.True);
+            Assert.That(extended.All(view => view == null), Is.True);
         }
 
         [Test]
-        public void DraggingBlocksTurnActionsAndSelectionCanBeToggled()
+        public void DrawPileReceivesPointerClicksThroughItsFaceDownStone()
         {
-            var session = _context.Container.Resolve<SinglePlayerSession>();
-            var controller = _context.Container.Resolve<TurnController>();
             var stone = HandViews[0];
-            Interaction.Select(stone);
-            Interaction.Select(stone);
-            Assert.That(Interaction.Selected, Is.Null);
             Interaction.TryBeginDrag(stone);
-            controller.Draw();
-            Assert.That(DrawButton.interactable, Is.False);
-            Assert.That(session.Hand.Count, Is.EqualTo(21));
-            Interaction.CancelDrag(stone);
-            controller.Draw();
-            Interaction.Select(stone);
-            Interaction.TryBeginDrag(stone);
-            controller.DiscardSelected();
-            Assert.That(DiscardButton.interactable, Is.False);
-            Assert.That(session.Hand.Count, Is.EqualTo(22));
-            Interaction.CancelDrag(stone);
-            Assert.That(DiscardButton.interactable, Is.True);
+            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var action = 0; action < 6; action++) bot.Act();
+            Physics2D.SyncTransforms();
+            var camera = _scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Single(value => value != null);
+            var data = new PointerEventData(EventSystem.current)
+            {
+                position = camera.WorldToScreenPoint(Controls.DrawSource.transform.position),
+                button = PointerEventData.InputButton.Left
+            };
+            var hits = new List<RaycastResult>();
+            camera.GetComponent<Physics2DRaycaster>().Raycast(data, hits);
+            var hit = hits.First(result => result.gameObject.transform.IsChildOf(Controls.DrawSource.transform));
+            ExecuteEvents.ExecuteHierarchy(hit.gameObject, data, ExecuteEvents.pointerClickHandler);
+            Assert.That(_context.Container.Resolve<TableSession>().Players[0].Hand.Count, Is.EqualTo(22));
         }
 
         [Test]
-        public void RefreshKeepsExistingStoneViewsAndDrawReusesEmptySlot()
+        public void RefreshPreservesExistingViewsAndReusesDiscardedSlot()
         {
             var original = HandViews;
-            var controller = _context.Container.Resolve<TurnController>();
-            controller.Draw();
-            Interaction.Select(original[3]);
-            controller.DiscardSelected();
-            controller.Draw();
+            Interaction.TryBeginDrag(original[3]);
+            Interaction.EndDrag(original[3], Controls.DiscardAreas[0].StoneRoot.position);
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var action = 0; action < 6; action++) bot.Act();
+            _context.Container.Resolve<TurnController>().Draw();
             var current = HandViews;
             foreach (var view in original.Where(view => view != original[3]))
                 Assert.That(current, Does.Contain(view));
@@ -143,7 +206,6 @@ namespace Okey.Tests.PlayMode
             Assert.That(Arrangement.FindSlot(newest.Instance.Id), Is.EqualTo(3));
             DOTween.Complete(newest.transform);
             Assert.That(Vector3.Distance(newest.transform.position, SlotWorldPosition(3)), Is.LessThan(0.001f));
-            Assert.That(Controls.DiscardRoot.childCount, Is.EqualTo(1));
         }
 
         [Test]
@@ -296,38 +358,30 @@ namespace Okey.Tests.PlayMode
         }
 
         [Test]
-        public void SceneProvidesOneOpeningDealWithConfiguredHandAndRemainingPile()
+        public void SceneProvidesFourUniqueHandsAndAConfiguredPile()
         {
-            var deal = _context.Container.Resolve<OpeningDeal>();
-
-            Assert.That(_context.Container.Resolve<OpeningDeal>(), Is.SameAs(deal));
-            Assert.That(deal.InitialHand.Count, Is.EqualTo(21));
-            Assert.That(deal.DrawPile.RemainingCount, Is.EqualTo(85));
-            var allIds = deal.InitialHand.Concat(deal.DrawPile.Draw(85)).Select(stone => stone.Id);
-            Assert.That(allIds, Is.EquivalentTo(Enumerable.Range(0, 106)));
+            var table = _context.Container.Resolve<TableSession>();
+            Assert.That(table.Players.Count, Is.EqualTo(4));
+            Assert.That(table.RemainingCount, Is.EqualTo(20));
+            Assert.That(table.Players.SelectMany(player => player.Hand.Slots).Where(stone => stone != null)
+                .Select(stone => stone.Id).Distinct().Count(), Is.EqualTo(85));
         }
 
         [Test]
-        public void OpeningHandDisplaysEachPhysicalStoneOnceAndInitializationIsIdempotent()
+        public void OpeningHandDisplaysLocalPhysicalStonesOnceAndInitializationIsIdempotent()
         {
             var presenter = _context.Container.Resolve<HandPresenter>();
-            var deal = _context.Container.Resolve<OpeningDeal>();
             var rack = _context.Container.Resolve<RackView>();
             var views = presenter.Views.ToArray();
-
             presenter.Initialize();
-
             Assert.That(presenter.Views, Is.EqualTo(views));
-            Assert.That(views.Select(view => view.Instance.Id),
-                Is.EqualTo(deal.InitialHand.Select(stone => stone.Id)));
-            Assert.That(views.Length, Is.EqualTo(21));
-            Assert.That(views.Select(view => view.Instance.Id).Distinct().Count(), Is.EqualTo(21));
-            Assert.That(rack.StoneRoot.childCount, Is.EqualTo(21));
+            Assert.That(views.Select(view => view.Instance.Id), Is.EqualTo(Arrangement.Slots.Where(stone => stone != null).Select(stone => stone.Id)));
+            Assert.That(views.Length, Is.EqualTo(22));
+            Assert.That(rack.StoneRoot.childCount, Is.EqualTo(22));
             for (var index = 0; index < views.Length; index++)
             {
                 DOTween.Complete(views[index].transform);
-                Assert.That(Vector3.Distance(views[index].transform.localPosition,
-                    rack.GetSlotLocalPosition(index)), Is.LessThan(0.001f));
+                Assert.That(Vector3.Distance(views[index].transform.localPosition, rack.GetSlotLocalPosition(index)), Is.LessThan(0.001f));
             }
         }
 

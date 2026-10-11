@@ -3,6 +3,8 @@ using Okey.Configuration;
 using Okey.Core.Decks;
 using Okey.Core.Dealing;
 using Okey.Core.Stones;
+using Okey.Core.Tables;
+using Okey.Core.Rules;
 using Okey.Presentation.Stones;
 using Okey.Presentation.Racks;
 using UnityEngine;
@@ -17,37 +19,39 @@ namespace Okey.Composition
         [SerializeField] private OpeningDealSettings _openingDealSettings;
         [SerializeField] private RackView _rackView;
         [SerializeField] private TurnControlsView _controlsView;
+        [SerializeField] private TableSettings _tableSettings;
 
         public override void InstallBindings()
         {
-            if (_deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null || _controlsView == null)
-                throw new InvalidOperationException("Deck settings, opening deal settings, stone prefab, rack view and turn controls must be assigned to the game installer.");
+            if (_deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null || _controlsView == null || _tableSettings == null)
+                throw new InvalidOperationException("Deck settings, opening deal settings, stone prefab, rack view, turn controls and table settings must be assigned to the game installer.");
 
             Container.BindInstance(_deckSettings.CreateDefinition());
             Container.Bind<DeckFactory>().AsSingle();
             Container.Bind<IStoneShuffler>().To<SeededStoneShuffler>().AsSingle();
             Container.Bind<OpeningDealFactory>().AsSingle();
-            Container.Bind<OpeningDeal>().FromMethod(CreateOpeningDeal).AsSingle();
+            Container.BindInstance(_tableSettings);
+            Container.BindInstance(_tableSettings.CreateRules());
+            Container.Bind<MeldPlanner>().AsSingle();
+            Container.Bind<IPlayerStrategy>().To<MeldPlayerStrategy>().AsSingle();
+            Container.Bind<TableSession>().FromMethod(context => new TableSession(
+                context.Container.Resolve<OkeyRules>(), context.Container.Resolve<IStoneShuffler>().Shuffle(
+                    context.Container.Resolve<DeckFactory>().Create(context.Container.Resolve<DeckDefinition>()),
+                    _openingDealSettings.CreateSeed()), _rackView.Capacity)).AsSingle();
             Container.Bind<Stone>().FromInstance(_stonePrefab).WhenInjectedInto<StoneViewFactory>();
             Container.Bind<StoneViewFactory>().AsSingle();
             Container.BindInstance(_rackView);
             Container.Bind<RackArrangement>().FromMethod(context =>
-                new RackArrangement(context.Container.Resolve<OpeningDeal>().InitialHand, _rackView.Capacity)).AsSingle();
+                context.Container.Resolve<TableSession>().Players[0].Hand).AsSingle();
             Container.Bind<RackInteractionController>().AsSingle();
             Container.BindInstance(_controlsView);
-            Container.Bind<SinglePlayerSession>().FromMethod(context => new SinglePlayerSession(
-                context.Container.Resolve<RackArrangement>(), context.Container.Resolve<OpeningDeal>().DrawPile,
-                _openingDealSettings.InitialPhase)).AsSingle();
             Container.BindInterfacesAndSelfTo<HandPresenter>().AsSingle();
+            Container.BindInterfacesAndSelfTo<TablePresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<TurnController>().AsSingle();
+            Container.BindInterfacesAndSelfTo<BotTurnController>().AsSingle();
             Container.BindExecutionOrder<HandPresenter>(-10);
+            Container.BindExecutionOrder<TablePresenter>(-5);
         }
 
-        private OpeningDeal CreateOpeningDeal(InjectContext context)
-        {
-            var factory = context.Container.Resolve<OpeningDealFactory>();
-            var definition = context.Container.Resolve<DeckDefinition>();
-            return factory.Create(definition, _openingDealSettings.InitialHandSize, _openingDealSettings.CreateSeed());
-        }
     }
 }

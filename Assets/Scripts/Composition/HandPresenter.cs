@@ -82,6 +82,14 @@ namespace Okey.Composition
             }
         }
 
+        public void AnimateDraw(int stoneId, UnityEngine.Vector3 worldOrigin)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(HandPresenter));
+            var view = _viewById[stoneId];
+            view.Motion.SnapTo(_rack.StoneRoot.InverseTransformPoint(worldOrigin));
+            _rack.MoveToSlot(view, _hand.FindSlot(stoneId), true);
+        }
+
         public void Dispose()
         {
             if (_disposed)
