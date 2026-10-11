@@ -1,0 +1,6 @@
+{
+    "name": "DOTween.Modules",
+    "references": [
+        "Unity.ugui"
+    ]
+}
