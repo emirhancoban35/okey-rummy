@@ -6,10 +6,10 @@ namespace Okey.Composition
 {
     public sealed class NewGameMenuController : IInitializable, IDisposable
     {
-        private readonly TableSettings _settings;
+        private readonly GameSetup _settings;
         private readonly NewGameMenuView _view;
         private readonly ITableNavigation _navigation;
-        public NewGameMenuController(TableSettings settings, NewGameMenuView view, ITableNavigation navigation)
+        public NewGameMenuController(GameSetup settings, NewGameMenuView view, ITableNavigation navigation)
         {
             _settings = settings;
             _view = view;

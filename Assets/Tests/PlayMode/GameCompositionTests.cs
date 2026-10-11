@@ -41,6 +41,8 @@ namespace Okey.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            var existing = UnityEngine.Object.FindFirstObjectByType<GameFlowState>();
+            if (existing != null) UnityEngine.Object.DestroyImmediate(existing.gameObject);
             _settings = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
             _randomStart = _settings.RandomStartingSeat;
             _humanlike = _settings.HumanlikeBots;
@@ -63,6 +65,8 @@ namespace Okey.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            var flow = UnityEngine.Object.FindFirstObjectByType<GameFlowState>();
+            if (flow != null) UnityEngine.Object.DestroyImmediate(flow.gameObject);
             SetSetting("_randomStartingSeat", _randomStart);
             SetSetting("_humanlikeBots", _humanlike);
             if (_scene.IsValid() && _scene.isLoaded)
@@ -71,7 +75,7 @@ namespace Okey.Tests.PlayMode
 
         private Stone[] HandViews => _context.Container.Resolve<HandPresenter>().Views.ToArray();
         private RackView Rack => _context.Container.Resolve<RackView>();
-        private RackArrangement Arrangement => _context.Container.Resolve<RackArrangement>();
+        private IRackLayout Arrangement => _context.Container.Resolve<IRackLayout>();
         private RackInteractionController Interaction => _context.Container.Resolve<RackInteractionController>();
 
         private Vector3 SlotWorldPosition(int index)
@@ -157,7 +161,7 @@ namespace Okey.Tests.PlayMode
         [Test]
         public void EscalatingToggleAppliesToTheNextTable()
         {
-            var settings = _context.Container.Resolve<TableSettings>();
+            var settings = _context.Container.Resolve<GameSetup>();
             var table = _context.Container.Resolve<TableSession>();
             var original = settings.EscalatingOpenings;
             var button = (Button)new SerializedObject(Controls.Options).FindProperty("_escalatingButton").objectReferenceValue;
@@ -225,6 +229,79 @@ namespace Okey.Tests.PlayMode
         }
 
         [Test]
+        public void BotControllerExecutesInjectedDecisionsAndLeavesTheLocalSeatAlone()
+        {
+            var deck = _context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>());
+            var session = new TableSession(_context.Container.Resolve<OkeyRules>(), deck, Rack.Capacity, game: new Okey.Core.Games.Okey101Game());
+            var decisions = new RecordingDecisions();
+            var controller = new BotTurnController(session, decisions,
+                new BotPreferences(false, 0, 0, 0, 0, 0, 2), new SeededRandomSource(42), new LocalPlayerContext(2, 4));
+            controller.Act();
+            controller.Act();
+            controller.Act();
+            Assert.That(session.ActiveSeat, Is.EqualTo(2));
+            Assert.That(decisions.Count, Is.EqualTo(3));
+            controller.Act();
+            Assert.That(decisions.Count, Is.EqualTo(3));
+            Assert.That(session.Players[0].Discards.Count, Is.EqualTo(1));
+            Assert.That(session.Players[1].Discards.Count, Is.EqualTo(1));
+            Assert.That(session.Players[2].Discards, Is.Empty);
+        }
+
+        private sealed class RecordingDecisions : IBotDecisionPolicy
+        {
+            public int Count { get; private set; }
+            public bool ShouldHoldOpening(BotPreferences preferences) => false;
+            public PlayerAction Decide(PlayerTurnObservation turn, BotPreferences preferences, bool holdOpening)
+            {
+                Count++;
+                return turn.Phase == TurnPhase.AwaitingDraw ? PlayerAction.Draw() : PlayerAction.Discard(turn.Player.Hand[0].Id);
+            }
+        }
+
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        public void LocalPlayerCanUseAnySeatWithoutChangingControllers(int localSeat)
+        {
+            _context.Container.Resolve<TurnController>().Dispose();
+            _context.Container.Resolve<TableHudPresenter>().Dispose();
+            _context.Container.Resolve<HandPresenter>().Dispose();
+            _context.Container.Resolve<TablePresenter>().Dispose();
+            var deck = _context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>());
+            var session = new TableSession(_context.Container.Resolve<OkeyRules>(), deck, Rack.Capacity, startingSeat: localSeat, game: new Okey.Core.Games.Okey101Game());
+            var local = new LocalPlayerContext(localSeat, session.Players.Count);
+            var interaction = new RackInteractionController(session.Players[localSeat].Layout, Rack);
+            var factory = _context.Container.Resolve<StoneViewFactory>();
+            var hand = new HandPresenter(session.Players[localSeat].Hand, factory, Rack, interaction);
+            var table = new TablePresenter(session, Controls, factory, local);
+            var controller = new TurnController(session, hand, interaction, Controls, table, Rack, local);
+            var hud = new TableHudPresenter(session, Controls, hand, interaction, table, Rack, local);
+            try
+            {
+                hand.Initialize(); table.Initialize(); hud.Initialize(); controller.Initialize();
+                Assert.That(hand.Views.Select(view => view.Instance.Id), Is.EquivalentTo(
+                    session.Players[localSeat].Hand.Slots.Where(tile => tile != null).Select(tile => tile.Id)));
+                var clock = new TurnClockController(session, _context.Container.Resolve<IPlayerStrategy>(), Controls, interaction, local);
+                clock.RenderClock(localSeat, 20, false, 0, 40);
+                var sliders = new SerializedObject(Controls.Clock).FindProperty("_turnSliders");
+                Assert.That(((Slider)sliders.GetArrayElementAtIndex(0).objectReferenceValue).value, Is.EqualTo(.5f));
+                var stone = hand.Views[0];
+                stone.Selection.OnPointerClick(new PointerEventData(EventSystem.current)
+                {
+                    button = PointerEventData.InputButton.Left, clickCount = 2
+                });
+                Assert.That(session.Players[localSeat].Discards.Single().Id, Is.EqualTo(stone.Instance.Id));
+                Assert.That(session.Players[0].Discards, Is.Empty);
+                var shown = Controls.Surface.DiscardAreas[0].StoneRoot.GetComponentInChildren<Stone>();
+                Assert.That(shown.Instance.Id, Is.EqualTo(stone.Instance.Id));
+                Assert.That(local.ViewSeat(localSeat), Is.Zero);
+                Assert.That(local.TableSeat(session.Players.Count - 1), Is.EqualTo((localSeat + session.Players.Count - 1) % session.Players.Count));
+            }
+            finally { controller.Dispose(); hud.Dispose(); table.Dispose(); hand.Dispose(); }
+        }
+
+        [Test]
         public void MovingGroupsUpdatesTheDisplayedPointsAndOpeningUsesThatSameArrangement()
         {
             _context.Container.Resolve<TurnController>().Dispose();
@@ -238,17 +315,17 @@ namespace Okey.Tests.PlayMode
             for (var index = 1; index <= 6; index++) deck[index] = Tile(index,10+(index-1)%3,index<=3?StoneColor.Red:StoneColor.Black);
             deck[7] = Tile(7,13);
             deck[8] = Tile(8,5,StoneColor.Blue);
-            var session = new TableSession(new OkeyRules(4,7,1,13,66,5,101,202,101,-101,101,2,2),deck,28);
-            var interaction = new RackInteractionController(session.Players[0].Hand,Rack);
+            var session = new TableSession(new OkeyRules(4,7,1,13,66,5,101,202,101,-101,101,2,2),deck,28, game: new Okey.Core.Games.Okey101Game());
+            var interaction = new RackInteractionController(session.Players[0].Layout,Rack);
             var factory = _context.Container.Resolve<StoneViewFactory>();
             var hand = new HandPresenter(session.Players[0].Hand,factory,Rack,interaction);
-            var table = new TablePresenter(session,Controls,factory);
-            var controller = new TurnController(session,hand,interaction,Controls,table,new RackMeldEvaluator(),Rack);
-            var hud = new TableHudPresenter(session,Controls,hand,interaction,table,new RackMeldEvaluator(),Rack);
+            var table = new TablePresenter(session,Controls,factory,new LocalPlayerContext(0,session.Players.Count));
+            var controller = new TurnController(session,hand,interaction,Controls,table,Rack,new LocalPlayerContext(0,session.Players.Count));
+            var hud = new TableHudPresenter(session,Controls,hand,interaction,table,Rack,new LocalPlayerContext(0,session.Players.Count));
             try
             {
                 hand.Initialize();table.Initialize();hud.Initialize();controller.Initialize();
-                var serialized = new SerializedObject(Controls.SeriesAction);
+                var serialized = new SerializedObject(Controls.Actions[0]);
                 var points = (TMPro.TMP_Text)serialized.FindProperty("_progressText").objectReferenceValue;
                 Assert.That(points.text, Is.EqualTo("66 / 66"));
                 var moved = hand.Views.Single(view=>view.Instance.Id==2);
@@ -342,8 +419,8 @@ namespace Okey.Tests.PlayMode
             foreach(var start in starts)
                 for(var tile=0;tile<15;tile++) deck[start+tile]=Tile(start+tile,3+tile%3);
             deck[69]=Tile(69,6);
-            var table=new TableSession(new OkeyRules(4,16,1,13,1,5,101,202,101,-101,101,2,2),deck,28);
-            var presenter=new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>());
+            var table=new TableSession(new OkeyRules(4,16,1,13,1,5,101,202,101,-101,101,2,2),deck,28, game: new Okey.Core.Games.Okey101Game());
+            var presenter=new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count));
             presenter.Initialize();
             try
             {
@@ -413,8 +490,8 @@ namespace Okey.Tests.PlayMode
             deck[6] = Tile(6, 12, StoneColor.Blue);
             deck[7] = Tile(7, 13);
             deck[8] = Tile(8, 2, StoneColor.Black);
-            var table = new TableSession(new OkeyRules(4, 7, 1, 13, 66, 5, 101, 202, 101, -101, 101, 2, 2), deck, 28);
-            var presenter = new TablePresenter(table, Controls, _context.Container.Resolve<StoneViewFactory>());
+            var table = new TableSession(new OkeyRules(4, 7, 1, 13, 66, 5, 101, 202, 101, -101, 101, 2, 2), deck, 28, game: new Okey.Core.Games.Okey101Game());
+            var presenter = new TablePresenter(table, Controls, _context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count));
             presenter.Initialize();
             table.MeldRules.TryCreate(deck.Skip(1).Take(3), MeldKind.Run, out var first);
             table.MeldRules.TryCreate(deck.Skip(4).Take(3), MeldKind.Run, out var second);
@@ -485,7 +562,7 @@ namespace Okey.Tests.PlayMode
         {
             var deck = new SeededStoneShuffler().Shuffle(_context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>()),42);
             var rules = new OkeyRules(4,21,1,13,1,5,101,202,101,-101,101,2,2);
-            var table = new TableSession(rules,deck,28,startingSeat:1);
+            var table = new TableSession(rules,deck,28,startingSeat:1, game: new Okey.Core.Games.Okey101Game());
             var planner = new MeldPlanner();
             var strategy = new MeldPlayerStrategy(planner);
             var observation = new PlayerObservation(table.Players[1].Hand.Slots.Where(tile => tile != null),table.Melds,OpeningMode.Closed,rules,table.MeldRules);
@@ -496,7 +573,7 @@ namespace Okey.Tests.PlayMode
             typeof(TableSettings).GetField("_humanlikeBots",System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(settings,humanlike);
             try
             {
-                new BotTurnController(table,strategy,settings,new FixedRandom(.1)).Act();
+                new BotTurnController(table,new BotDecisionPolicy(strategy,new FixedRandom(.1)),new BotPreferences(humanlike,.01,.35,1.2,3.8,.8,2),new FixedRandom(.1),new LocalPlayerContext(0,table.Players.Count)).Act();
                 Assert.That(table.Players[1].Opening,Is.EqualTo(humanlike ? OpeningMode.Closed : mode));
                 Assert.That(table.Players[1].Discards.Count,Is.EqualTo(humanlike ? 1 : 0));
                 Assert.That(table.ActiveSeat,Is.EqualTo(humanlike ? 2 : 1));
@@ -520,11 +597,11 @@ namespace Okey.Tests.PlayMode
         public IEnumerator PairsUseTheirOwnBoardAndCleanUpTheirViews()
         {
             var deck = _context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>());
-            var table = new TableSession(new OkeyRules(4,21,1,13,101,1,101,202,101,-101,101,2,2),deck,28);
+            var table = new TableSession(new OkeyRules(4,21,1,13,101,1,101,202,101,-101,101,2,2),deck,28, game: new Okey.Core.Games.Okey101Game());
             var pair = table.Players[0].Hand.Slots.Where(tile => tile != null && !table.MeldRules.IsWild(tile))
                 .GroupBy(tile => tile.Data.Value).First(group => group.Count() == 2).ToArray();
             table.MeldRules.TryCreate(pair, MeldKind.Pair, out var meld);
-            var presenter = new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>());
+            var presenter = new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count));
             presenter.Initialize();
             Assert.That(table.TryOpen(0,OpeningMode.Pairs,new[] {meld}),Is.True);
             Assert.That(Controls.Surface.PairsBoard.transform.GetComponentsInChildren<Stone>().Length,Is.EqualTo(2));
@@ -815,7 +892,7 @@ namespace Okey.Tests.PlayMode
             for (var count = 0; table.ActiveSeat != 0 && table.Phase != TurnPhase.Finished && count < 100; count++) bot.Act();
             if (table.Phase == TurnPhase.AwaitingDraw) table.TryDraw(0);
             var definition = _context.Container.Resolve<DeckDefinition>();
-            var deal = _context.Container.Resolve<OpeningDealFactory>().Create(definition, rack.Capacity + 1, 42);
+            var deal = new OpeningDealFactory(new DeckFactory(),new SeededStoneShuffler()).Create(definition, rack.Capacity + 1, 42);
             var hand = new RackArrangement(deal.InitialHand, rack.Capacity + 1);
             var interaction = new RackInteractionController(hand, rack);
             var presenter = new HandPresenter(hand, _context.Container.Resolve<StoneViewFactory>(), rack, interaction);

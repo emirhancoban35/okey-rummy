@@ -13,7 +13,7 @@ namespace Okey.Tests.EditMode
         {
             var deck = new DeckFactory().Create(new DeckDefinition(Enumerable.Range(0, 4).Select(color => new StoneSetDefinition(StoneType.Regular, (StoneColor)color, 1, 13, 2)).Append(new StoneSetDefinition(StoneType.FakeJoker, StoneColor.None, 0, 0, 2))));
             return new TableSession(new OkeyRules(4, 21, 1, 13, 1, 5, 101, 202, 101, -101, 101, 2, 2), deck, 28,
-                startingSeat: start, options: new TableOptions(partners, true, 10));
+                startingSeat: start, options: new TableOptions(partners, true, 10), game: new Okey.Core.Games.Okey101Game());
         }
         [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
         public void EverySeatCanStartAndReceivesTheExtraTile(int seat)
@@ -84,7 +84,7 @@ namespace Okey.Tests.EditMode
             for (var index = 0; index < values.Length; index++) deck[index + 1] = Tile(index + 1, values[index], index < 5 ? StoneColor.Red : StoneColor.Blue);
             deck[21] = Tile(21, 6, StoneColor.Red);
             var rules = new OkeyRules(4,4,1,13,1,5,101,202,101,-101,101,2,2);
-            var table = new TableSession(rules, deck, 8);
+            var table = new TableSession(rules, deck, 8, game: new Okey.Core.Games.Okey101Game());
             table.MeldRules.TryCreate(deck.Skip(1).Take(3), MeldKind.Run, out var red);
             Assert.That(table.TryOpen(0, OpeningMode.Series, new[] { red }), Is.True);
             table.TryDiscard(0, 5);

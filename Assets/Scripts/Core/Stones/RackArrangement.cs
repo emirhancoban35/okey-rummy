@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Okey.Core.Stones
 {
-    public sealed class RackArrangement
+    public sealed class RackArrangement : IRackLayout
     {
         private readonly StoneInstance[] _slots;
         private readonly Dictionary<int, int> _positions = new Dictionary<int, int>();

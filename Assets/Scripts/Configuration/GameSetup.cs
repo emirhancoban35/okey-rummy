@@ -1,0 +1,62 @@
+using System;
+using Okey.Core.Rules;
+using Okey.Core.Tables;
+
+namespace Okey.Configuration
+{
+    public sealed class GameSetup
+    {
+        private readonly TableRuleProfile[] _profiles;
+        private readonly double _mistakeChance;
+        private readonly double _openingPatience;
+        private readonly double _thinkingMinimum;
+        private readonly double _thinkingMaximum;
+        private readonly double _fastDelay;
+        private readonly int _lateHandMargin;
+        private readonly bool _allowDiscardPickup;
+        private readonly double _turnSeconds;
+        private readonly int _openingIncrement;
+        public int PlayerCount { get; }
+        public int RuleIndex { get; private set; }
+        public TableRuleProfile ActiveProfile => _profiles[RuleIndex];
+        public bool Partnerships { get; private set; }
+        public bool HumanlikeBots { get; private set; }
+        public bool EscalatingOpenings { get; private set; }
+        public bool RandomStartingSeat { get; }
+
+        public GameSetup(TableSettings defaults)
+        {
+            _profiles = defaults.RuleProfiles;
+            if (_profiles.Length == 0 || Array.Exists(_profiles, profile => profile == null))
+                throw new ArgumentException("At least one assigned rule profile is required.", nameof(defaults));
+            RuleIndex = defaults.RuleIndex;
+            if (RuleIndex < 0 || RuleIndex >= _profiles.Length)
+                throw new ArgumentOutOfRangeException(nameof(defaults), "The selected rule profile does not exist.");
+            PlayerCount = defaults.PlayerCount;
+            Partnerships = defaults.Partnerships;
+            HumanlikeBots = defaults.HumanlikeBots;
+            EscalatingOpenings = defaults.EscalatingOpenings;
+            RandomStartingSeat = defaults.RandomStartingSeat;
+            _mistakeChance = defaults.MistakeChance;
+            _openingPatience = defaults.OpeningPatience;
+            _thinkingMinimum = defaults.ThinkingSeconds.x;
+            _thinkingMaximum = defaults.ThinkingSeconds.y;
+            _fastDelay = defaults.BotActionDelay;
+            _lateHandMargin = defaults.BotLateHandMargin;
+            _allowDiscardPickup = defaults.AllowDiscardPickup;
+            _turnSeconds = defaults.TurnSeconds;
+            _openingIncrement = defaults.OpeningIncrement;
+        }
+
+        public void NextRules() => RuleIndex = (RuleIndex + 1) % _profiles.Length;
+        public void TogglePartnerships() { if (PlayerCount == 4) Partnerships = !Partnerships; }
+        public void ToggleBotMode() => HumanlikeBots = !HumanlikeBots;
+        public void SetBotMode(bool humanlike) => HumanlikeBots = humanlike;
+        public void ToggleEscalatingOpenings() => EscalatingOpenings = !EscalatingOpenings;
+        public OkeyRules CreateRules() => ActiveProfile.CreateRules(PlayerCount);
+        public TableOptions CreateOptions() => new TableOptions(Partnerships, _allowDiscardPickup, _turnSeconds,
+            EscalatingOpenings && ActiveProfile.AllowsPublicMelds, _openingIncrement);
+        public BotPreferences CreateBotPreferences() => new BotPreferences(HumanlikeBots, _mistakeChance,
+            _openingPatience, _thinkingMinimum, _thinkingMaximum, _fastDelay, _lateHandMargin);
+    }
+}

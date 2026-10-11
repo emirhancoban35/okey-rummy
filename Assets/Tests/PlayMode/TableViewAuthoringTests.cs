@@ -32,13 +32,15 @@ namespace Okey.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            var flow = Object.FindFirstObjectByType<GameFlowState>();
+            if (flow != null) Object.DestroyImmediate(flow.gameObject);
             if (SceneManager.sceneCount == 1) SceneManager.CreateScene("ViewTestCleanup");
             yield return SceneManager.UnloadSceneAsync(_scene);
         }
         [Test]
         public void RenderingPreservesPrefabTypographyAndRectTransformEdits()
         {
-            var label = _view.SeriesAction.ProgressText;
+            var label = _view.Actions[0].ProgressText;
             var originalSize = label.fontSize;
             var originalPosition = label.rectTransform.anchoredPosition;
             var originalDimensions = label.rectTransform.sizeDelta;
@@ -75,8 +77,8 @@ namespace Okey.Tests.PlayMode
             try
             {
                 _context.Container.Resolve<TableHudPresenter>().Refresh();
-                Assert.That(_view.SeriesAction.Label.text, Is.EqualTo(_context.Container.Resolve<Okey.Core.Tables.TableSession>().Game.AllowsPublicMelds ? "CUSTOM OPEN" : "CUSTOM FINISH"));
-                Assert.That(_view.SeriesAction.ProgressText.text, Does.StartWith("["));
+                Assert.That(_view.Actions[0].Label.text, Is.EqualTo(_context.Container.Resolve<Okey.Core.Tables.TableSession>().Game.AllowsPublicMelds ? "CUSTOM OPEN" : "CUSTOM FINISH"));
+                Assert.That(_view.Actions[0].ProgressText.text, Does.StartWith("["));
             }
             finally
             {

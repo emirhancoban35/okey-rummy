@@ -22,6 +22,7 @@ namespace Okey.Composition
         [SerializeField] private RackView _rackView;
         [SerializeField] private TableView _controlsView;
         [SerializeField] private TableSettings _tableSettings;
+        [SerializeField, Min(0)] private int _localSeat;
         [SerializeField] private SceneNavigationSettings _navigationSettings;
 
         public override void InstallBindings()
@@ -32,26 +33,32 @@ namespace Okey.Composition
             Container.BindInstance(_deckSettings.CreateDefinition());
             Container.Bind<DeckFactory>().AsSingle();
             Container.Bind<IStoneShuffler>().To<SeededStoneShuffler>().AsSingle();
-            Container.Bind<OpeningDealFactory>().AsSingle();
-            Container.BindInstance(_tableSettings);
+            var flow = GameFlowState.Resolve(_tableSettings);
+            var setup = flow.Setup;
+            Container.BindInstance(setup);
+            Container.BindInstance(new LocalPlayerContext(_localSeat, setup.PlayerCount));
+            Container.BindInstance(setup.CreateBotPreferences());
             Container.BindInstance(_navigationSettings);
             Container.Bind<ITableNavigation>().To<SceneTableNavigation>().AsSingle();
-            Container.BindInstance(_tableSettings.CreateRules());
+            Container.BindInstance(setup.CreateRules());
             Container.Bind<MeldPlanner>().AsSingle();
             Container.Bind<RackMeldEvaluator>().AsSingle();
+            Container.Bind<IBotDecisionPolicy>().FromMethod(context => setup.ActiveProfile.CreateBotDecisions(
+                context.Container.Resolve<IPlayerStrategy>(), context.Container.Resolve<IRandomSource>())).AsSingle();
             Container.Bind<IRandomSource>().To<SeededRandomSource>().AsSingle().WithArguments(_openingDealSettings.CreateSeed());
-            Container.Bind<ITableGame>().FromMethod(context => _tableSettings.ActiveProfile.CreateGame(context.Container.Resolve<MeldPlanner>())).AsSingle();
-            Container.Bind<IPlayerStrategy>().FromMethod(context => _tableSettings.ActiveProfile.CreateStrategy(context.Container.Resolve<MeldPlanner>())).AsSingle();
+            Container.Bind<ITableGame>().FromMethod(context => setup.ActiveProfile.CreateGame(context.Container.Resolve<MeldPlanner>())).AsSingle();
+            Container.Bind<IPlayerStrategy>().FromMethod(context => setup.ActiveProfile.CreateStrategy(context.Container.Resolve<MeldPlanner>())).AsSingle();
             Container.Bind<TableSession>().FromMethod(context => new TableSession(
                 context.Container.Resolve<OkeyRules>(), context.Container.Resolve<IStoneShuffler>().Shuffle(
                     context.Container.Resolve<DeckFactory>().Create(context.Container.Resolve<DeckDefinition>()),
-                    _openingDealSettings.CreateSeed()), _rackView.Capacity, startingSeat: _tableSettings.NextStartingSeat(),
-                    options: _tableSettings.CreateOptions(), game: context.Container.Resolve<ITableGame>())).AsSingle();
+                    _openingDealSettings.CreateSeed()), _rackView.Capacity, startingSeat: flow.StartingSeats.Next(setup.PlayerCount, setup.RandomStartingSeat),
+                    options: setup.CreateOptions(), game: context.Container.Resolve<ITableGame>())).AsSingle();
             Container.Bind<Stone>().FromInstance(_stonePrefab).WhenInjectedInto<StoneViewFactory>();
             Container.Bind<StoneViewFactory>().AsSingle();
             Container.BindInstance(_rackView);
-            Container.Bind<RackArrangement>().FromMethod(context =>
-                context.Container.Resolve<TableSession>().Players[0].Hand).AsSingle();
+            Container.Bind<IRackLayout>().FromMethod(context =>
+                context.Container.Resolve<TableSession>().Players[_localSeat].Layout).AsSingle();
+            Container.Bind<IReadOnlyRack>().FromMethod(context => context.Container.Resolve<IRackLayout>()).AsSingle();
             Container.Bind<RackInteractionController>().AsSingle();
             Container.BindInstance(_controlsView);
             Container.BindInterfacesAndSelfTo<HandPresenter>().AsSingle();

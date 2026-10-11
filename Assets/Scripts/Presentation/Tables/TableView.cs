@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using Okey.Presentation.Text;
 
 namespace Okey.Presentation.Tables
@@ -8,8 +9,7 @@ namespace Okey.Presentation.Tables
         [SerializeField] private TableTextCatalog _texts;
         [SerializeField] private TableSurfaceView _surface;
         [SerializeField] private TableHudView _hud;
-        [SerializeField] private MeldActionView _seriesAction;
-        [SerializeField] private MeldActionView _pairAction;
+        [SerializeField] private MeldActionView[] _actions;
         [SerializeField] private TurnClockView _clock;
         [SerializeField] private TablePlayersView _players;
         [SerializeField] private OverlayPanelsView _panels;
@@ -18,8 +18,7 @@ namespace Okey.Presentation.Tables
         public TableTextCatalog Texts => _texts;
         public TableSurfaceView Surface => _surface;
         public TableHudView Hud => _hud;
-        public MeldActionView SeriesAction => _seriesAction;
-        public MeldActionView PairAction => _pairAction;
+        public IReadOnlyList<MeldActionView> Actions => _actions;
         public TurnClockView Clock => _clock;
         public TablePlayersView Players => _players;
         public OverlayPanelsView Panels => _panels;

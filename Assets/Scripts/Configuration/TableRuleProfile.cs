@@ -25,6 +25,8 @@ namespace Okey.Configuration
         protected abstract bool AllowsHighOne { get; }
         public abstract ITableGame CreateGame(MeldPlanner planner);
         public abstract IPlayerStrategy CreateStrategy(MeldPlanner planner);
+        public virtual IBotDecisionPolicy CreateBotDecisions(IPlayerStrategy strategy, IRandomSource random) =>
+            new BotDecisionPolicy(strategy, random);
         public OkeyRules CreateRules(int playerCount) => new OkeyRules(playerCount, _handSize, _minimumValue, _maximumValue,
             _seriesThreshold, _pairThreshold, _invalidOpeningPenalty, _unopenedScore, _jokerScore, _winnerScore,
             _discardPenalty, _pairMultiplier, _jokerFinishMultiplier, AllowsHighOne);

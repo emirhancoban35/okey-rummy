@@ -20,7 +20,7 @@ namespace Okey.Tests.EditMode
         [Test]
         public void DealConservesAllPhysicalStonesAndStartsWithAnExtraTile()
         {
-            var table = new TableSession(Rules(), Deck(), 28);
+            var table = new TableSession(Rules(), Deck(), 28, game: new Okey.Core.Games.Okey101Game());
             Assert.That(table.Players.Select(player => player.Hand.Count), Is.EqualTo(new[] {22, 21, 21, 21}));
             Assert.That(table.RemainingCount, Is.EqualTo(20));
             Assert.That(table.Players.SelectMany(player => player.Hand.Slots).Where(tile => tile != null)
@@ -93,7 +93,7 @@ namespace Okey.Tests.EditMode
         [Test]
         public void InvalidOpeningPenalizesWithoutChangingHandOrPublicMelds()
         {
-            var table = new TableSession(Rules(), Deck(), 28);
+            var table = new TableSession(Rules(), Deck(), 28, game: new Okey.Core.Games.Okey101Game());
             var ids = table.Players[0].Hand.Slots.Where(tile => tile != null).Select(tile => tile.Id).ToArray();
             Assert.That(table.TryOpen(0, OpeningMode.Series, Array.Empty<Meld>()), Is.False);
             Assert.That(table.Players[0].Penalty, Is.EqualTo(101));
@@ -113,7 +113,7 @@ namespace Okey.Tests.EditMode
             deck[6] = Tile(6, 12, StoneColor.Blue);
             deck[7] = Tile(7, 13);
             deck[8] = Tile(8, 2, StoneColor.Black);
-            var table = new TableSession(Rules(7, 66), deck, 28);
+            var table = new TableSession(Rules(7, 66), deck, 28, game: new Okey.Core.Games.Okey101Game());
             Assert.That(table.MeldRules.TryCreate(deck.Skip(1).Take(3), MeldKind.Run, out var first), Is.True);
             Assert.That(table.MeldRules.TryCreate(deck.Skip(4).Take(3), MeldKind.Run, out var second), Is.True);
             Assert.That(table.TryLayOff(0, 7, 0), Is.False);
@@ -132,7 +132,7 @@ namespace Okey.Tests.EditMode
         [Test]
         public void OpeningRevalidatesTileDataInsteadOfTrustingAnotherRulesInstance()
         {
-            var table = new TableSession(Rules(21, 20), Deck(), 28);
+            var table = new TableSession(Rules(21, 20), Deck(), 28, game: new Okey.Core.Games.Okey101Game());
             var forged = new[] {Tile(1, 10), Tile(2, 11), Tile(3, 12)};
             var foreignRules = new MeldRules(Rules(), Tile(999, 12, StoneColor.Black));
             Assert.That(foreignRules.TryCreate(forged, MeldKind.Run, out var meld), Is.True);
@@ -144,7 +144,7 @@ namespace Okey.Tests.EditMode
         [Test]
         public void DiscardingAWildTileAppliesPenaltyWhileHandRemains()
         {
-            var table = new TableSession(Rules(), Deck(), 28);
+            var table = new TableSession(Rules(), Deck(), 28, game: new Okey.Core.Games.Okey101Game());
             Assert.That(table.Indicator.Data.Value, Is.EqualTo(1));
             Assert.That(table.MeldRules.IsWild(table.Players[0].Hand.Slots[0]), Is.True);
             Assert.That(table.TryDiscard(0, table.Players[0].Hand.Slots[0].Id), Is.True);
@@ -156,7 +156,7 @@ namespace Okey.Tests.EditMode
         [TestCase(2026)]
         public void StrategiesPlayCompleteRoundsWithoutDuplicatingOrLeakingTiles(int seed)
         {
-            var table = new TableSession(Rules(), new SeededStoneShuffler().Shuffle(Deck(), seed), 28);
+            var table = new TableSession(Rules(), new SeededStoneShuffler().Shuffle(Deck(), seed), 28, game: new Okey.Core.Games.Okey101Game());
             var strategy = new MeldPlayerStrategy(new MeldPlanner());
             var steps = 0;
             PlayerObservation Observe(int seat) => new PlayerObservation(table.Players[seat].Hand.Slots.Where(tile => tile != null),

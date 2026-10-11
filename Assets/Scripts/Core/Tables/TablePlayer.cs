@@ -7,14 +7,17 @@ namespace Okey.Core.Tables
     public sealed class TablePlayer
     {
         private readonly List<StoneInstance> _discards = new List<StoneInstance>();
-        public RackArrangement Hand { get; }
+        internal RackArrangement OwnedHand { get; }
+        public IReadOnlyRack Hand => Layout;
+        public IRackLayout Layout { get; }
         public IReadOnlyList<StoneInstance> Discards { get; }
         public OpeningMode Opening { get; internal set; }
         public int Penalty { get; internal set; }
         public int Score { get; internal set; }
         internal TablePlayer(RackArrangement hand)
         {
-            Hand = hand;
+            OwnedHand = hand;
+            Layout = new RackLayout(hand);
             Discards = _discards.AsReadOnly();
         }
         internal StoneInstance TakeDiscard()

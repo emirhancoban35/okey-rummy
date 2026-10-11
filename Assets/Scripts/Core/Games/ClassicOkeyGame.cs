@@ -11,6 +11,7 @@ namespace Okey.Core.Games
     {
         private readonly MeldPlanner _planner;
         public ClassicOkeyGame(MeldPlanner planner) => _planner = planner ?? throw new ArgumentNullException(nameof(planner));
+        public IOpeningPolicy OpeningPolicy { get; } = new ClosedHandOpeningPolicy();
         public bool AllowsPublicMelds => false;
         public bool RequiresOpenDiscardPickup => false;
         public bool AllowsEmptyStockPlay => true;
@@ -41,6 +42,22 @@ namespace Okey.Core.Games
                 return true;
             }
             return false;
+        }
+
+        public RackActionState PlanRackActions(RackActionRequest request)
+        {
+            var evaluator = new RackMeldEvaluator();
+            var series = evaluator.Find(request.Slots, request.RowCapacity, request.MeldRules, OpeningMode.Series);
+            var pairs = evaluator.Find(request.Slots, request.RowCapacity, request.MeldRules, OpeningMode.Pairs);
+            var canFinish = TryFindFinish(request.Slots.Where(stone => stone != null).ToArray(), request.MeldRules, request.Rules, out _);
+            var grouped = pairs.TileCount >= series.TileCount ? pairs : series;
+            return new RackActionState(new[]
+            {
+                new RackActionPlan(RackActionKind.Finish, OpeningMode.Series, series,
+                    series.TileCount, request.Rules.HandSize, canFinish),
+                new RackActionPlan(RackActionKind.PreviewPairs, OpeningMode.Pairs, pairs,
+                    pairs.Melds.Count, request.PairThreshold, false)
+            }, grouped);
         }
 
         public IRoundScoring CreateScoring(OkeyRules rules, IMeldRules meldRules) => new ClassicOkeyScoring(rules);

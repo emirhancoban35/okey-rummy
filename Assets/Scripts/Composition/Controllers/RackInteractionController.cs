@@ -9,7 +9,7 @@ namespace Okey.Composition
 {
     public sealed class RackInteractionController : IStoneDragTarget
     {
-        private readonly RackArrangement _arrangement;
+        private readonly IRackLayout _arrangement;
         private readonly RackView _rack;
         private readonly Dictionary<int, Stone> _views = new Dictionary<int, Stone>();
         private Stone _dragged;
@@ -21,7 +21,7 @@ namespace Okey.Composition
         public event Action<Stone, Vector3> DragMoved;
         public event Func<Stone, Vector3, bool> DropRequested;
 
-        public RackInteractionController(RackArrangement arrangement, RackView rack)
+        public RackInteractionController(IRackLayout arrangement, RackView rack)
         {
             _arrangement = arrangement ?? throw new ArgumentNullException(nameof(arrangement));
             _rack = rack != null ? rack : throw new ArgumentNullException(nameof(rack));

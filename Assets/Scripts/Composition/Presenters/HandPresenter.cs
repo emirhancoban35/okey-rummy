@@ -10,7 +10,7 @@ namespace Okey.Composition
 {
     public sealed class HandPresenter : IInitializable, IDisposable
     {
-        private readonly RackArrangement _hand;
+        private readonly IReadOnlyRack _hand;
         private readonly StoneViewFactory _factory;
         private readonly RackView _rack;
         private readonly RackInteractionController _interaction;
@@ -21,7 +21,7 @@ namespace Okey.Composition
 
         public IReadOnlyList<Stone> Views { get; }
 
-        public HandPresenter(RackArrangement hand, StoneViewFactory factory, RackView rack,
+        public HandPresenter(IReadOnlyRack hand, StoneViewFactory factory, RackView rack,
             RackInteractionController interaction)
         {
             _hand = hand ?? throw new ArgumentNullException(nameof(hand));

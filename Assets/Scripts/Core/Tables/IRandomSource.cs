@@ -1,4 +1,3 @@
-using System;
 namespace Okey.Core.Tables
 {
     public interface IRandomSource

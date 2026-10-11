@@ -1,8 +1,8 @@
 using Okey.Presentation.Tables;
 using System;
 using System.Linq;
-using Okey.Core.Dealing;
-using Okey.Core.Rules;
+using System.Collections.Generic;
+using Okey.Core.Games;
 using Okey.Core.Tables;
 using Okey.Presentation.Racks;
 using Okey.Presentation.Stones;
@@ -13,26 +13,27 @@ namespace Okey.Composition
 {
     public sealed class TurnController : IInitializable, IDisposable
     {
+        private readonly LocalPlayerContext _local;
         private readonly TableSession _session;
         private readonly HandPresenter _hand;
         private readonly RackInteractionController _interaction;
         private readonly TableView _controls;
         private readonly TablePresenter _table;
-        private readonly RackMeldEvaluator _evaluator;
+        private readonly List<Action> _actionHandlers = new List<Action>();
         private readonly RackView _rack;
         private Stone _drawnDragView;
         private bool _initialized;
         private bool _disposed;
 
         public TurnController(TableSession session, HandPresenter hand, RackInteractionController interaction,
-            TableView controls, TablePresenter table, RackMeldEvaluator evaluator, RackView rack)
+            TableView controls, TablePresenter table, RackView rack, LocalPlayerContext local)
         {
             _session = session;
+            _local = local;
             _hand = hand;
             _interaction = interaction;
             _controls = controls;
             _table = table;
-            _evaluator = evaluator;
             _rack = rack;
         }
 
@@ -47,8 +48,13 @@ namespace Okey.Composition
             _controls.Surface.DrawSource.Dragged += DragDraw;
             _controls.Surface.DrawSource.DragEnded += EndDrawDrag;
             _controls.Surface.DrawSource.DragCancelled += CancelDrawDrag;
-            _controls.SeriesAction.Requested += OpenSeries;
-            _controls.PairAction.Requested += OpenPairs;
+            for (var index = 0; index < _controls.Actions.Count; index++)
+            {
+                var actionIndex = index;
+                Action handler = () => ExecuteAction(actionIndex);
+                _actionHandlers.Add(handler);
+                _controls.Actions[index].Requested += handler;
+            }
             _interaction.DropRequested += Drop;
             _interaction.DiscardRequested += Discard;
             _interaction.DragMoved += PreviewLayOff;
@@ -58,20 +64,20 @@ namespace Okey.Composition
         private void TakeDiscard(DiscardAreaView area)
         {
             if (_disposed || _interaction.IsDragging || area != _controls.Surface.DiscardAreas[_session.Players.Count - 1]) return;
-            if (!_session.Game.RequiresOpenDiscardPickup && _session.TryTakeDiscard(0)) return;
+            if (!_session.Game.RequiresOpenDiscardPickup && _session.TryTakeDiscard(_local.Seat)) return;
             for (var meld = 0; meld < _session.Melds.Count; meld++)
-                if (_session.TryTakeDiscard(0, meld)) return;
+                if (_session.TryTakeDiscard(_local.Seat, meld)) return;
         }
 
         public void Draw()
         {
-            if (!_disposed && !_interaction.IsDragging && _session.TryDraw(0, out var stone))
+            if (!_disposed && !_interaction.IsDragging && _session.TryDraw(_local.Seat, out var stone))
                 _hand.AnimateDraw(stone.Id, _controls.Surface.DrawSource.transform.position);
         }
 
         private bool BeginDrawDrag(Vector3 position)
         {
-            if (_disposed || _interaction.IsDragging || !_session.TryDraw(0, out var stone)) return false;
+            if (_disposed || _interaction.IsDragging || !_session.TryDraw(_local.Seat, out var stone)) return false;
             _drawnDragView = _hand.Views.Single(view => view.Instance.Id == stone.Id);
             _interaction.TryBeginDrag(_drawnDragView);
             _interaction.DragTo(_drawnDragView, position);
@@ -97,21 +103,24 @@ namespace Okey.Composition
             if (view != null) _interaction.CancelDrag(view);
         }
 
-        public void OpenSeries() => Open(OpeningMode.Series);
-        public void OpenPairs() => Open(OpeningMode.Pairs);
-
-        private void Open(OpeningMode mode)
+        private void ExecuteAction(int index)
         {
             if (_disposed || _interaction.IsDragging) return;
-            if (!_session.Game.AllowsPublicMelds)
+            var player = _session.Players[_local.Seat];
+            var actions = _session.Game.PlanRackActions(new RackActionRequest(player.Hand.Slots, _rack.RowCapacity,
+                _session.MeldRules, _session.Rules, player.Opening, _session.SeriesThreshold, _session.PairThreshold));
+            if (index >= actions.Actions.Count) return;
+            var action = actions.Actions[index];
+            if (!action.CanExecute) return;
+            if (action.Kind == RackActionKind.Finish)
             {
-                if (_session.TryFindFinish(0, out var discardId)) TryDiscard(_hand.Views.Single(view => view.Instance.Id == discardId));
+                if (_session.TryFindFinish(_local.Seat, out var discardId)) TryDiscard(_hand.Views.Single(view => view.Instance.Id == discardId));
                 return;
             }
-            var plan = _evaluator.Find(_session.Players[0].Hand.Slots, _rack.RowCapacity, _session.MeldRules, mode);
-            var before = _session.Players[0].Penalty;
-            var opened = _session.TryOpen(0, mode, plan.Melds);
-            var penalty = _session.Players[0].Penalty - before;
+            if (action.Kind != RackActionKind.OpenMelds) return;
+            var before = _session.Players[_local.Seat].Penalty;
+            var opened = _session.TryApply(_local.Seat, PlayerAction.Open(action.Mode, action.Plan.Melds));
+            var penalty = _session.Players[_local.Seat].Penalty - before;
             if (opened || penalty > 0) _controls.Feedback.Show(opened ? _controls.Texts.OpeningSuccessText :
                 string.Format(_controls.Texts.OpeningFailureFormat, penalty), opened);
         }
@@ -125,8 +134,8 @@ namespace Okey.Composition
         {
             if (_disposed || stone == null || stone.Instance == null) return false;
             var origin = _controls.Surface.DiscardAreas[0].StoneRoot.InverseTransformPoint(stone.transform.position);
-            if (!_session.TryDiscard(0, stone.Instance.Id)) return false;
-            _table.AnimateDiscard(0, origin);
+            if (!_session.TryDiscard(_local.Seat, stone.Instance.Id)) return false;
+            _table.AnimateDiscard(_local.Seat, origin);
             return true;
         }
 
@@ -141,7 +150,7 @@ namespace Okey.Composition
             if (_disposed) return false;
             if (_controls.Surface.DiscardAreas[0].Contains(position)) return TryDiscard(stone);
             var origin = stone.transform.position;
-            if (!_table.TryFindMeld(stone.Instance, position, out var index) || !_session.TryLayOff(0, stone.Instance.Id, index)) return false;
+            if (!_table.TryFindMeld(stone.Instance, position, out var index) || !_session.TryLayOff(_local.Seat, stone.Instance.Id, index)) return false;
             _table.AnimateLayOff(stone.Instance.Id, origin);
             return true;
         }
@@ -157,8 +166,9 @@ namespace Okey.Composition
             _controls.Surface.DrawSource.Dragged -= DragDraw;
             _controls.Surface.DrawSource.DragEnded -= EndDrawDrag;
             _controls.Surface.DrawSource.DragCancelled -= CancelDrawDrag;
-            _controls.SeriesAction.Requested -= OpenSeries;
-            _controls.PairAction.Requested -= OpenPairs;
+            for (var index = 0; index < _actionHandlers.Count; index++)
+                _controls.Actions[index].Requested -= _actionHandlers[index];
+            _actionHandlers.Clear();
             _interaction.DropRequested -= Drop;
             _interaction.DiscardRequested -= Discard;
             _interaction.DragMoved -= PreviewLayOff;

@@ -18,7 +18,7 @@ namespace Okey.Tests.PlayMode
 {
     public sealed class NewGameMenuTests
     {
-        private TableSettings _settings;
+        private GameSetup _settings;
         private bool _partnerships;
         private bool _humanlike;
         private bool _escalating;
@@ -30,18 +30,22 @@ namespace Okey.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            _settings = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
-            _partnerships = _settings.Partnerships;
-            _humanlike = _settings.HumanlikeBots;
-            _escalating = _settings.EscalatingOpenings;
+            var existing = Object.FindFirstObjectByType<GameFlowState>();
+            if (existing != null) Object.DestroyImmediate(existing.gameObject);
             yield return SceneManager.LoadSceneAsync("MainMenu", LoadSceneMode.Additive);
             yield return null;
             _context = Context(SceneManager.GetSceneByName("MainMenu"));
+            _settings = _context.Container.Resolve<GameSetup>();
+            _partnerships = _settings.Partnerships;
+            _humanlike = _settings.HumanlikeBots;
+            _escalating = _settings.EscalatingOpenings;
             _view = _context.Container.Resolve<NewGameMenuView>();
         }
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            var flow = Object.FindFirstObjectByType<GameFlowState>();
+            if (flow != null) Object.DestroyImmediate(flow.gameObject);
             if (_settings.Partnerships != _partnerships) _settings.TogglePartnerships();
             if (_settings.HumanlikeBots != _humanlike) _settings.ToggleBotMode();
             if (_settings.EscalatingOpenings != _escalating) _settings.ToggleEscalatingOpenings();

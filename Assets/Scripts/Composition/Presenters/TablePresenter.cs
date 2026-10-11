@@ -15,6 +15,7 @@ namespace Okey.Composition
 {
     public sealed class TablePresenter : IInitializable, IDisposable
     {
+        private readonly LocalPlayerContext _local;
         private readonly TableSession _session;
         private readonly TableView _controls;
         private readonly StoneViewFactory _factory;
@@ -30,9 +31,10 @@ namespace Okey.Composition
         private bool _initialized;
         private bool _disposed;
 
-        public TablePresenter(TableSession session, TableView controls, StoneViewFactory factory)
+        public TablePresenter(TableSession session, TableView controls, StoneViewFactory factory, LocalPlayerContext local)
         {
             _session = session;
+            _local = local;
             _controls = controls;
             _factory = factory;
             _discards = new Stone[session.Players.Count];
@@ -72,9 +74,9 @@ namespace Okey.Composition
         public bool TryFindMeld(StoneInstance stone, Vector3 position, out int index)
         {
             index = -1;
-            if (_session.ActiveSeat != 0 || _session.Phase != TurnPhase.AwaitingDiscard ||
-                _session.Players[0].Opening == OpeningMode.Closed || _session.Players[0].Hand.Count <= 1 ||
-                _session.Players[0].Hand.FindSlot(stone.Id) < 0) return false;
+            if (_session.ActiveSeat != _local.Seat || _session.Phase != TurnPhase.AwaitingDiscard ||
+                !_session.Game.OpeningPolicy.CanLayOff(_session.Players[_local.Seat].Opening, _session.Players[_local.Seat].Hand.Count) ||
+                _session.Players[_local.Seat].Hand.FindSlot(stone.Id) < 0) return false;
             CacheLayOffTargets(stone);
             var nearest = float.MaxValue;
             foreach (var target in _layOffTargets)
@@ -173,11 +175,11 @@ namespace Okey.Composition
             for (var seat = 0; seat < _session.Players.Count; seat++)
             {
                 var player = _session.Players[seat];
-                if (seat > 0)
+                if (seat != _local.Seat)
                 {
                     var active = seat == _session.ActiveSeat && _session.Phase != TurnPhase.Finished;
-                    _controls.Players.RenderOpponent(seat, string.Format(_controls.Texts.OpponentFormat,
-                        _controls.Texts.SeatName(seat), player.Hand.Count, player.Penalty, player.Score,
+                    _controls.Players.RenderOpponent(_local.ViewSeat(seat), string.Format(_controls.Texts.OpponentFormat,
+                        _controls.Texts.SeatName(_local.ViewSeat(seat)), player.Hand.Count, player.Penalty, player.Score,
                         active ? _controls.Texts.ActiveSeatText : string.Empty), active);
                 }
                 if (player.Discards.Count == 0)
@@ -188,7 +190,7 @@ namespace Okey.Composition
                 if (_discards[seat] != null) _discards[seat].gameObject.SetActive(true);
                 var last = player.Discards[player.Discards.Count - 1];
                 if (_discards[seat] == null)
-                    _discards[seat] = CreatePublicStone(last, _controls.Surface.DiscardAreas[seat].StoneRoot, _controls.Surface.DiscardScale);
+                    _discards[seat] = CreatePublicStone(last, _controls.Surface.DiscardAreas[_local.ViewSeat(seat)].StoneRoot, _controls.Surface.DiscardScale);
                 else if (_discards[seat].Instance.Id != last.Id) _discards[seat].Initialize(last);
             }
             ClearPreview();

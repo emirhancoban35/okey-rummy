@@ -23,7 +23,8 @@ namespace Okey.Tests.PlayMode
 {
     public sealed class ClassicOkeyCompositionTests
     {
-        private TableSettings _settings;
+        private GameSetup _settings;
+        private TableSettings _defaults;
         private int _originalIndex;
         private bool _originalEscalating;
         private bool _randomStart;
@@ -31,25 +32,30 @@ namespace Okey.Tests.PlayMode
             .Select(root => root.GetComponent<SceneContext>()).Single(value => value != null);
         private void Set(string field, bool value)
         {
-            var serial = new SerializedObject(_settings);
+            var serial = new SerializedObject(_defaults);
             serial.FindProperty(field).boolValue = value;
             serial.ApplyModifiedPropertiesWithoutUndo();
         }
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            _settings = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
-            _originalIndex = _settings.RuleIndex;
-            _originalEscalating = _settings.EscalatingOpenings;
-            _randomStart = _settings.RandomStartingSeat;
-            while (_settings.RuleIndex != 0) _settings.NextRules();
+            var existing = Object.FindFirstObjectByType<GameFlowState>();
+            if (existing != null) Object.DestroyImmediate(existing.gameObject);
+            _defaults = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
+            _randomStart = _defaults.RandomStartingSeat;
             Set("_randomStartingSeat",false);
             yield return SceneManager.LoadSceneAsync("MainMenu",LoadSceneMode.Additive);
             yield return null;
+            _settings = Context("MainMenu").Container.Resolve<GameSetup>();
+            _originalIndex = _settings.RuleIndex;
+            _originalEscalating = _settings.EscalatingOpenings;
+            while (_settings.RuleIndex != 0) _settings.NextRules();
         }
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            var flow = Object.FindFirstObjectByType<GameFlowState>();
+            if (flow != null) Object.DestroyImmediate(flow.gameObject);
             while (_settings.RuleIndex != _originalIndex) _settings.NextRules();
             if (_settings.EscalatingOpenings != _originalEscalating) _settings.ToggleEscalatingOpenings();
             Set("_randomStartingSeat",_randomStart);
@@ -86,8 +92,8 @@ namespace Okey.Tests.PlayMode
             var controls=context.Container.Resolve<TableView>();
             var fields=new SerializedObject(controls.Surface);
             Assert.That(((GameObject)fields.FindProperty("_classicPanel").objectReferenceValue).activeSelf,Is.True);
-            Assert.That(controls.SeriesAction.Label.text,Is.EqualTo("FINISH"));
-            Assert.That(controls.PairAction.Label.text,Is.EqualTo("PAIRS"));
+            Assert.That(controls.Actions[0].Label.text,Is.EqualTo("FINISH"));
+            Assert.That(controls.Actions[1].Label.text,Is.EqualTo("PAIRS"));
             var visuals=fields.FindProperty("_publicMeldVisuals");
             Assert.That(visuals.arraySize,Is.GreaterThanOrEqualTo(4));
             for(var index=0;index<visuals.arraySize;index++)
@@ -124,10 +130,10 @@ namespace Okey.Tests.PlayMode
                 .Concat(Enumerable.Range(100,76).Select(id=>Tile(id,id%13+1,(StoneColor)(id%4)))).ToArray();
             var table = new TableSession(_settings.CreateRules(),deck,28,startingSeat:1,game:new ClassicOkeyGame(new MeldPlanner()));
             var controls = container.Resolve<TableView>();
-            var presenter = new TablePresenter(table,controls,container.Resolve<StoneViewFactory>());
+            var presenter = new TablePresenter(table,controls,container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count));
             presenter.Initialize();
             Assert.That(controls.Surface.WinningHandRoot.childCount,Is.Zero);
-            var bot = new BotTurnController(table,new ClassicOkeyStrategy(new MeldPlanner()),_settings,new SeededRandomSource(7));
+            var bot = new BotTurnController(table,new BotDecisionPolicy(new ClassicOkeyStrategy(new MeldPlanner()),new SeededRandomSource(7)),_settings.CreateBotPreferences(),new SeededRandomSource(7),new LocalPlayerContext(0,table.Players.Count));
             bot.Act();
             Assert.That(table.Winner,Is.EqualTo(1));
             Assert.That(table.Phase,Is.EqualTo(TurnPhase.Finished));

@@ -10,10 +10,15 @@ namespace Okey.Core.Rules
         public MeldKind Kind { get; }
         public IReadOnlyList<MeldTile> Tiles { get; }
         public int Points { get; }
-        internal Meld(MeldKind kind, IEnumerable<MeldTile> tiles)
+        public Meld(MeldKind kind, IEnumerable<MeldTile> tiles)
         {
-            Kind = kind;
+            if (!Enum.IsDefined(typeof(MeldKind), kind)) throw new ArgumentOutOfRangeException(nameof(kind));
+            if (tiles == null) throw new ArgumentNullException(nameof(tiles));
             var snapshot = tiles.ToArray();
+            if (snapshot.Length == 0 || snapshot.Any(tile => tile == null) ||
+                snapshot.Select(tile => tile.Stone.Id).Distinct().Count() != snapshot.Length)
+                throw new ArgumentException("A meld needs distinct physical tiles.", nameof(tiles));
+            Kind = kind;
             Tiles = Array.AsReadOnly(snapshot);
             Points = snapshot.Sum(tile => tile.Value);
         }

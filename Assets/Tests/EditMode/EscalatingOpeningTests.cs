@@ -18,7 +18,7 @@ namespace Okey.Tests.EditMode
             for (var i = 0; i < first.Length; i++) deck[i + 1] = Tile(i + 1, first[i], StoneColor.Red);
             for (var i = 0; i < second.Length; i++) deck[i + 12] = Tile(i + 12, second[i], StoneColor.Black);
             return new TableSession(new OkeyRules(4,10,1,13,1,2,101,202,101,-101,101,2,2), deck,14,
-                options: new TableOptions(escalatingOpenings: escalating));
+                options: new TableOptions(escalatingOpenings: escalating), game: new Okey.Core.Games.Okey101Game());
         }
         private static StoneInstance Tile(int id, int value, StoneColor color) =>
             new StoneInstance(id, new StoneData(StoneType.Regular, color, value));

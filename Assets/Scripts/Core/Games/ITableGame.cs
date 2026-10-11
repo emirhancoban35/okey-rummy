@@ -7,6 +7,8 @@ namespace Okey.Core.Games
 {
     public interface ITableGame
     {
+        IOpeningPolicy OpeningPolicy { get; }
+        RackActionState PlanRackActions(RackActionRequest request);
         bool AllowsPublicMelds { get; }
         bool RequiresOpenDiscardPickup { get; }
         bool AllowsEmptyStockPlay { get; }

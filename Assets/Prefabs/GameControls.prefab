@@ -2582,8 +2582,9 @@ MonoBehaviour:
   _texts: {fileID: 11400000, guid: 4044bd6d37bf4400ad856ea61c946730, type: 2}
   _surface: {fileID: 4185703523252661764}
   _hud: {fileID: 4008641180569798257}
-  _seriesAction: {fileID: 5146025585849812447}
-  _pairAction: {fileID: 8137104383654614127}
+  _actions:
+  - {fileID: 5146025585849812447}
+  - {fileID: 8137104383654614127}
   _clock: {fileID: 5761227165309810687}
   _players: {fileID: 4074406422211470202}
   _panels: {fileID: 6916746851686287624}
