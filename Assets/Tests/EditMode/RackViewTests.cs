@@ -34,9 +34,9 @@ namespace Okey.Tests.EditMode
         public void PrefabProvidesConfiguredOpeningCapacity()
         {
             Assert.That(_rack, Is.Not.Null);
-            Assert.That(_rack.Capacity, Is.EqualTo(24));
+            Assert.That(_rack.Capacity, Is.EqualTo(28));
             Assert.DoesNotThrow(() => _rack.ValidateCapacity(21));
-            Assert.Throws<InvalidOperationException>(() => _rack.ValidateCapacity(25));
+            Assert.Throws<InvalidOperationException>(() => _rack.ValidateCapacity(29));
         }
 
         [Test]

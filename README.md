@@ -32,7 +32,7 @@ Deck generation does not shuffle, distribute, instantiate visuals or decide the 
 
 `Assets/Settings/Dealing/StandardOpeningDeal.asset` controls the initial hand size and fixed/random seed selection. The standard configuration deals 21 stones and leaves 85 in the draw pile. These counts are asset data. GameInstaller provides one OpeningDeal per scene through Zenject.
 
-`Assets/Prefabs/Istaka.prefab` contains RackView with 24 slot transforms in two rows. Edit the slots, stone scale, deal origin and interval in the Inspector. RackView converts slot positions into the stone root's local space and delegates movement to StoneMotion. The slot order determines the initial visual arrangement; it does not define a live hand model or game rules.
+`Assets/Prefabs/Istaka.prefab` contains RackView with 28 slot transforms in two rows. Adjacent slots align the stone edges so stones can sit together. Players can leave empty slots between groups to create gaps. Edit the slots, stone scale, deal origin and interval in the Inspector. RackView converts slot positions into the stone root's local space and delegates movement to StoneMotion. The slot order determines the initial visual arrangement; it does not define a live hand model or game rules.
 
 OpeningHandPresenter uses Zenject's initialization lifecycle to create and animate the initial hand once. It validates rack capacity before creating views and owns their cleanup when the scene is disposed. Each view retains the physical identity from OpeningDeal. The scene no longer contains a separate prototype stone.
 
