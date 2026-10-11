@@ -1,0 +1,10 @@
+{
+    "name": "Okey.Composition",
+    "rootNamespace": "Okey.Composition",
+    "references": [
+        "Okey.Core",
+        "Okey.Configuration",
+        "Okey.Presentation",
+        "Zenject"
+    ]
+}

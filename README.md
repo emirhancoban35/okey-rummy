@@ -26,6 +26,18 @@ Generation does not shuffle, distribute, instantiate visuals or decide the joker
 
 `Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
 
+## Dependency injection and animation
+
+Zenject 9.2.0 and DOTween 1.3.030 are vendored from their official distributions under `Assets/Plugins`. Zenject's sample and test folders are excluded. Their license files are included. No additional download is needed after cloning this repository.
+
+Sources: [Zenject release](https://github.com/modesttree/Zenject/releases/tag/9.2.0), [DOTween release](https://dotween.demigiant.com/download.php).
+
+`Okey.Composition` is the Unity composition assembly. The GameContext object in SampleScene contains a Zenject SceneContext and GameInstaller. Assign the deck asset and stone prefab on the installer in the Inspector. It binds the deck definition, DeckFactory and StoneViewFactory. StoneViewFactory instantiates and injects the assigned prefab, then binds its physical stone identity. Core has no dependency on Zenject or DOTween.
+
+The stone prefab contains StoneMotion, which uses DOTween for local movement. `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` configures duration, easing and time scaling. MoveTo replaces the previous move; SnapTo cancels movement and places the stone immediately. Disabling a stone cancels its movement so a later reuse cannot resume an old tween.
+
+PlayMode tests load the real scene and verify dependency resolution, prefab creation and movement lifecycle. EditMode tests cover definitions, generation and presentation configuration.
+
 ## Development conventions
 
 - Keep game state and rules independent of Unity, UI and future transport code.
