@@ -679,6 +679,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ad35b1f918a5de4dbf612fda2e635b6, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _motion: {fileID: 7100000000000000003}
   _visual: {fileID: 7100000000000000002}
   _isFaceUp: 1
 --- !u!114 &7100000000000000002

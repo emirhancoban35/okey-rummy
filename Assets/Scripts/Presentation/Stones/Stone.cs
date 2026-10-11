@@ -8,11 +8,13 @@ namespace Okey.Presentation.Stones
     public sealed class Stone : MonoBehaviour
     {
         [SerializeField] private StoneVisual _visual;
+        [SerializeField] private StoneMotion _motion;
         [SerializeField] private bool _isFaceUp = true;
 
         public StoneInstance Instance { get; private set; }
         public StoneData Data => Instance?.Data;
         public bool IsFaceUp => _isFaceUp;
+        public StoneMotion Motion => _motion;
 
         public void Initialize(StoneInstance stone)
         {

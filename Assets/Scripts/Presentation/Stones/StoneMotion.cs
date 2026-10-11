@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using UnityEngine;
 
@@ -10,11 +11,15 @@ namespace Okey.Presentation.Stones
 
         private Tween _moveTween;
 
-        public void MoveTo(Vector3 localPosition)
+        public void MoveTo(Vector3 localPosition, float delay = 0)
         {
+            if (delay < 0)
+                throw new ArgumentOutOfRangeException(nameof(delay));
+
             StopMovement();
             _moveTween = transform.DOLocalMove(localPosition, _settings.MoveDuration)
                 .SetEase(_settings.MoveEase)
+                .SetDelay(delay)
                 .SetUpdate(_settings.UseUnscaledTime)
                 .SetLink(gameObject, LinkBehaviour.KillOnDisable);
         }
