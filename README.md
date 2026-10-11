@@ -102,7 +102,7 @@ flowchart TD
 | `Okey.Presentation` | Passive table views, tile faces, pointer input, rack anchors, progress bars, menus and animations. |
 | `Okey.Composition` | Creates dependencies, coordinates views with the table and routes local, bot and timeout actions. |
 
-`TableSession` owns hands, turn phase, public melds and discard histories. `ITableGame` supplies public-meld permissions, discard behavior, finish validation and scoring through `Okey101Game` or `ClassicOkeyGame`. The table has no game-name or mode-enum branches. Presentation does not decide move legality. `RackArrangement` manages physical tile placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
+`TableSession` owns hands, turn phase, public melds and discard histories. `ITableGame` supplies public-meld permissions, discard behavior, finish validation, rack action plans and scoring through `Okey101Game` or `ClassicOkeyGame`. Its `IOpeningPolicy` owns opening acceptance, penalties, rising thresholds and layoff eligibility. The table has no game-name or mode-enum branches. Presentation does not decide move legality. The table retains ownership mutation internally; published hands expose `IReadOnlyRack` and a separate `IRackLayout` for local reordering. `RackArrangement` manages physical tile placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
 
 `StoneInstance` gives each physical tile an ID; duplicate printed tiles remain separate objects. Deck generation, shuffling, distribution and view creation are separate responsibilities. `IStoneShuffler` supports replaceable ordering, and seeded implementations support deterministic tests.
 
@@ -111,17 +111,18 @@ flowchart TD
 | Change | Boundary |
 | --- | --- |
 | Deck composition, tile range or copy count | `DeckSettings` / `DeckDefinition` |
-| A new game mode | Derive a `TableRuleProfile`, supply an `ITableGame` and `IPlayerStrategy`, then add the asset to `TableSettings` |
+| A new game mode | Derive a `TableRuleProfile`, supply an `ITableGame` with an opening policy and rack action plans, then add the asset to `TableSettings` |
 | Run, set, pair or joker validation | `IMeldRules` / `OkeyRules.AllowsHighOne` |
 | End-of-round scoring | `IRoundScoring` |
-| Opponent decisions | `IPlayerStrategy` |
+| Opponent decisions | `IBotDecisionPolicy`; `IPlayerStrategy` provides meld planning and discard ranking |
 | Behavioral randomness | `IRandomSource` |
+| Local player and seat-relative presentation | `LocalPlayerContext`, assigned by the game installer |
 | Menu and table navigation | `ITableNavigation` |
 | Tile art, text, colors and animation | Prefabs and visual settings assets |
 
-Fast opponents play at a fixed pace. Humanlike opponents use configurable thinking delays, opening patience and a default 1% mistake chance per discard decision. Their strategies receive snapshots of their own hand and public information; they cannot inspect opponents' hands or the stock. Bot decisions use current rising thresholds and the same table actions as local input.
+Fast opponents play at a fixed pace. Humanlike opponents use configurable thinking delays, opening patience and a default 1% mistake chance per discard decision. Their strategies receive snapshots of their own hand and public information; they cannot inspect opponents' hands or the stock. `BotDecisionPolicy` chooses draw/pickup/open/layoff/discard actions from a `PlayerTurnObservation`. `BotTurnController` only schedules and submits those decisions. A rule profile can replace the whole decision policy through `CreateBotDecisions`. Bot decisions use current rising thresholds; `TableSession.TryApply` validates submitted `PlayerAction` values.
 
-Multiplayer is not implemented. A future transport adapter can submit actions to the table boundary and distribute public and seat-private state. It must add session identity, authoritative validation, synchronization and visibility handling. Supporting another Okey or Rummy variant also requires adapting the table flow where its turn or opening rules differ; changing configuration alone does not implement every variant.
+Multiplayer is not implemented. A future transport adapter can submit `PlayerAction` values to the table boundary and distribute public and seat-private state. It must add session identity, authoritative validation, synchronization and visibility handling. Variants that keep the draw/open/layoff/discard turn flow can replace opening policies, finish logic, scoring, bot decisions and rack action plans. A different turn lifecycle requires extending the turn flow; numeric configuration alone does not implement every variant.
 
 ## Configuration and presentation
 
@@ -167,20 +168,21 @@ The project uses a model, controller and presenter/view separation with Zenject.
 - **Composition/Controllers/**: input actions, bot turns, timeouts, options and navigation requests.
 - **Composition/Presenters/**: hand/public-tile synchronization and HUD state formatting.
 - **Composition/Installers/**: Zenject bindings and startup order.
+- **Composition/State/**: application flow state and local-seat mapping.
 - **Composition/Factories/** and **Navigation/**: prefab creation and scene transitions.
 - **Presentation/Tables/**, **Racks/**, **Stones/** and **Menus/**: feature views.
 - **Presentation/Text/**: the text-catalog type; **Settings/Presentation/** contains its editable assets.
 - **Scripts/Editor/**: authoring helpers, compiled only for the Unity Editor.
 
-**TableView** is a reference container. **TableHudPresenter** computes action availability and formatted progress/status. **TurnController** submits player actions. **TablePresenter** synchronizes public physical tiles. Layout values live in prefabs, wording lives in serialized text assets, and game values live in rule profiles. Constants that describe structural rules, such as two tiles per pair, still belong in code.
+**TableView** is a reference container. **TableHudPresenter** formats the action plans supplied by the game and combines them with local input availability. The prefab holds an ordered array of action cards; add enough cards for the selected game. **TurnController** submits player actions. **TablePresenter** synchronizes public physical tiles. Layout values live in prefabs, wording lives in serialized text assets, and game values live in rule profiles. Constants that describe structural rules, such as two tiles per pair, still belong in code.
 
-Scene installers hold serialized asset and prefab references. Runtime controllers do not construct UI layouts or assign font sizes and RectTransform dimensions. DOTween handles movement and short transitions; views cancel their owned tweens when disabled. Menu choices share table settings with the next scene, while an existing table keeps its rules and options snapshot.
+Scene installers hold serialized asset and prefab references. Runtime controllers do not construct UI layouts or assign font sizes and RectTransform dimensions. DOTween handles movement and short transitions; views cancel their owned tweens when disabled. `TableSettings` contains authored defaults. `GameFlowState` owns the application’s menu choices in a `GameSetup` and its `StartingSeatSequence` across menu/table navigation. Each table receives its own rules/options snapshot and `BotPreferences`; live changes never mutate the authored asset. Bot-mode changes apply to the current table and become the next menu default. Partnership and rising-opening choices apply to the next table.
 
 ## Verification
 
 Open **Window > General > Test Runner** and run both **EditMode** and **PlayMode** suites.
 
-EditMode tests cover definitions, deck generation, rack insertion, adjacent grouping, meld rules, penalties, rising thresholds, AI decisions and timers. PlayMode tests load actual scenes and verify Zenject bindings, prefab wiring, pointer interactions, drawing, discarding, layoffs, visibility, menu navigation and UI progress.
+EditMode tests cover definitions, deck generation, rack insertion, adjacent grouping, meld rules, penalties, rising thresholds, AI decisions, timers, ownership boundaries, replaceable opening policies and independent setup snapshots. PlayMode tests load actual scenes and verify Zenject bindings, prefab wiring, pointer interactions, drawing, discarding, layoffs, visibility, menu navigation, UI progress and local players in every supported seat.
 
 Table and menu layouts are also checked at **1920 × 1080** and **1106 × 614**. Preview images live in `Docs/Images`.
 
