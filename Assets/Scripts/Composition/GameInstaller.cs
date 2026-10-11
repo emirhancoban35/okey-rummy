@@ -2,6 +2,7 @@ using System;
 using Okey.Configuration;
 using Okey.Core.Decks;
 using Okey.Core.Dealing;
+using Okey.Core.Stones;
 using Okey.Presentation.Stones;
 using Okey.Presentation.Racks;
 using UnityEngine;
@@ -29,6 +30,9 @@ namespace Okey.Composition
             Container.Bind<Stone>().FromInstance(_stonePrefab).WhenInjectedInto<StoneViewFactory>();
             Container.Bind<StoneViewFactory>().AsSingle();
             Container.BindInstance(_rackView);
+            Container.Bind<RackArrangement>().FromMethod(context =>
+                new RackArrangement(context.Container.Resolve<OpeningDeal>().InitialHand, _rackView.Capacity)).AsSingle();
+            Container.Bind<RackInteractionController>().AsSingle();
             Container.BindInterfacesAndSelfTo<OpeningHandPresenter>().AsSingle();
         }
 

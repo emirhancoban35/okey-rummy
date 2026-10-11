@@ -6,10 +6,14 @@ using NUnit.Framework;
 using Okey.Composition;
 using Okey.Core.Decks;
 using Okey.Core.Dealing;
+using Okey.Core.Stones;
 using Okey.Presentation.Stones;
 using Okey.Presentation.Racks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
+using System.Collections.Generic;
 using UnityEngine.TestTools;
 using Zenject;
 
@@ -39,6 +43,133 @@ namespace Okey.Tests.PlayMode
         {
             if (_scene.IsValid() && _scene.isLoaded)
                 yield return SceneManager.UnloadSceneAsync(_scene);
+        }
+
+        private Stone[] HandViews => _context.Container.Resolve<OpeningHandPresenter>().Views.ToArray();
+        private RackView Rack => _context.Container.Resolve<RackView>();
+        private RackArrangement Arrangement => _context.Container.Resolve<RackArrangement>();
+        private RackInteractionController Interaction => _context.Container.Resolve<RackInteractionController>();
+
+        private Vector3 SlotWorldPosition(int index)
+        {
+            return Rack.StoneRoot.TransformPoint(Rack.GetSlotLocalPosition(index));
+        }
+
+        private void CompleteHandMovement()
+        {
+            foreach (var view in HandViews)
+                DOTween.Complete(view.transform);
+        }
+
+        [Test]
+        public void DroppingOnOccupiedSlotSwapsModelAndBothAnimatedViews()
+        {
+            var views = HandViews;
+            Assert.That(Interaction.TryBeginDrag(views[0]), Is.True);
+            Assert.That(Interaction.TryBeginDrag(views[1]), Is.False);
+            Interaction.DragTo(views[0], SlotWorldPosition(1));
+            Interaction.EndDrag(views[0], SlotWorldPosition(1));
+            CompleteHandMovement();
+
+            Assert.That(Arrangement.FindSlot(views[0].Instance.Id), Is.EqualTo(1));
+            Assert.That(Arrangement.FindSlot(views[1].Instance.Id), Is.Zero);
+            Assert.That(Vector3.Distance(views[0].transform.position, SlotWorldPosition(1)), Is.LessThan(0.001f));
+            Assert.That(Vector3.Distance(views[1].transform.position, SlotWorldPosition(0)), Is.LessThan(0.001f));
+        }
+
+        [Test]
+        public void EmptySlotAcceptsStoneAndOutsideDropReturnsToCurrentSlot()
+        {
+            var stone = HandViews[0];
+            var lastSlot = Arrangement.Capacity - 1;
+            Interaction.TryBeginDrag(stone);
+            Interaction.EndDrag(stone, SlotWorldPosition(lastSlot));
+            CompleteHandMovement();
+            Assert.That(Arrangement.Slots[0], Is.Null);
+            Assert.That(Arrangement.FindSlot(stone.Instance.Id), Is.EqualTo(lastSlot));
+
+            var outside = SlotWorldPosition(lastSlot) + Vector3.up * 5;
+            Interaction.TryBeginDrag(stone);
+            Interaction.DragTo(stone, outside);
+            Interaction.EndDrag(stone, outside);
+            CompleteHandMovement();
+            Assert.That(Arrangement.FindSlot(stone.Instance.Id), Is.EqualTo(lastSlot));
+            Assert.That(Vector3.Distance(stone.transform.position, SlotWorldPosition(lastSlot)), Is.LessThan(0.001f));
+        }
+
+        [Test]
+        public void CancellationRestoresPositionAndUnregisteredViewsCannotMoveHand()
+        {
+            var stone = HandViews[0];
+            Assert.That(Interaction.TryBeginDrag(_stone), Is.False);
+            Interaction.TryBeginDrag(stone);
+            Interaction.DragTo(stone, SlotWorldPosition(1));
+            Interaction.CancelDrag(stone);
+            Interaction.EndDrag(stone, SlotWorldPosition(1));
+            Assert.That(Arrangement.FindSlot(stone.Instance.Id), Is.Zero);
+            Assert.That(Vector3.Distance(stone.transform.position, SlotWorldPosition(0)), Is.LessThan(0.001f));
+            Assert.That(DOTween.IsTweening(stone.transform), Is.False);
+        }
+
+        [Test]
+        public void SceneRaycastAndPointerEventsMoveStoneWithoutLosingClickOffset()
+        {
+            CompleteHandMovement();
+            Physics2D.SyncTransforms();
+            var stone = HandViews[0];
+            var camera = _scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Single(value => value != null);
+            var raycaster = camera.GetComponent<Physics2DRaycaster>();
+            Assert.That(raycaster, Is.Not.Null);
+            var offset = new Vector3(0.05f, 0.05f, 0);
+            var data = new PointerEventData(EventSystem.current)
+            {
+                pointerId = 7,
+                button = PointerEventData.InputButton.Left,
+                position = camera.WorldToScreenPoint(stone.transform.position + offset)
+            };
+            var results = new List<RaycastResult>();
+            raycaster.Raycast(data, results);
+            var hit = results.Single(result => result.gameObject == stone.gameObject);
+            data.pointerPressRaycast = hit;
+            var group = stone.GetComponent<SortingGroup>();
+            var originalOrder = group.sortingOrder;
+            ExecuteEvents.Execute(stone.gameObject, data, ExecuteEvents.beginDragHandler);
+            Assert.That(group.sortingOrder, Is.GreaterThan(originalOrder));
+            data.position = camera.WorldToScreenPoint(SlotWorldPosition(23) + offset);
+            ExecuteEvents.Execute(stone.gameObject, data, ExecuteEvents.dragHandler);
+            Assert.That(Vector3.Distance(stone.transform.position, SlotWorldPosition(23)), Is.LessThan(0.001f));
+            data.pointerId = 8;
+            ExecuteEvents.Execute(stone.gameObject, data, ExecuteEvents.endDragHandler);
+            Assert.That(Arrangement.FindSlot(stone.Instance.Id), Is.Zero);
+            data.pointerId = 7;
+            ExecuteEvents.Execute(stone.gameObject, data, ExecuteEvents.endDragHandler);
+            CompleteHandMovement();
+            Assert.That(Arrangement.FindSlot(stone.Instance.Id), Is.EqualTo(23));
+            Assert.That(group.sortingOrder, Is.EqualTo(originalOrder));
+        }
+
+        [Test]
+        public void DisabledDragHandlerCancelsDragAndRestoresSorting()
+        {
+            CompleteHandMovement();
+            var stone = HandViews[0];
+            var camera = _scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Single(value => value != null);
+            var data = new PointerEventData(EventSystem.current)
+            {
+                pointerId = 1,
+                position = camera.WorldToScreenPoint(stone.transform.position),
+                pointerPressRaycast = new RaycastResult { module = camera.GetComponent<Physics2DRaycaster>() }
+            };
+            var group = stone.GetComponent<SortingGroup>();
+            var originalOrder = group.sortingOrder;
+            stone.DragHandler.OnBeginDrag(data);
+            Interaction.DragTo(stone, SlotWorldPosition(1));
+            stone.DragHandler.enabled = false;
+            Assert.That(Arrangement.FindSlot(stone.Instance.Id), Is.Zero);
+            Assert.That(Vector3.Distance(stone.transform.position, SlotWorldPosition(0)), Is.LessThan(0.001f));
+            Assert.That(group.sortingOrder, Is.EqualTo(originalOrder));
+            Assert.That(Interaction.TryBeginDrag(HandViews[1]), Is.True);
+            Interaction.CancelDrag(HandViews[1]);
         }
 
         [Test]
@@ -96,7 +227,8 @@ namespace Okey.Tests.PlayMode
             var rack = _context.Container.Resolve<RackView>();
             var definition = _context.Container.Resolve<DeckDefinition>();
             var deal = _context.Container.Resolve<OpeningDealFactory>().Create(definition, rack.Capacity + 1, 42);
-            var presenter = new OpeningHandPresenter(deal, _context.Container.Resolve<StoneViewFactory>(), rack);
+            var interaction = new RackInteractionController(new RackArrangement(deal.InitialHand, rack.Capacity + 1), rack);
+            var presenter = new OpeningHandPresenter(deal, _context.Container.Resolve<StoneViewFactory>(), rack, interaction);
             var childCount = rack.StoneRoot.childCount;
 
             Assert.Throws<InvalidOperationException>(() => presenter.Initialize());

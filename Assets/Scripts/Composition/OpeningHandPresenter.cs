@@ -13,17 +13,20 @@ namespace Okey.Composition
         private readonly OpeningDeal _deal;
         private readonly StoneViewFactory _factory;
         private readonly RackView _rack;
+        private readonly RackInteractionController _interaction;
         private readonly List<Stone> _views;
         private bool _initialized;
         private bool _disposed;
 
         public IReadOnlyList<Stone> Views { get; }
 
-        public OpeningHandPresenter(OpeningDeal deal, StoneViewFactory factory, RackView rack)
+        public OpeningHandPresenter(OpeningDeal deal, StoneViewFactory factory, RackView rack,
+            RackInteractionController interaction)
         {
             _deal = deal ?? throw new ArgumentNullException(nameof(deal));
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _rack = rack != null ? rack : throw new ArgumentNullException(nameof(rack));
+            _interaction = interaction ?? throw new ArgumentNullException(nameof(interaction));
             _views = new List<Stone>(deal.InitialHand.Count);
             Views = _views.AsReadOnly();
         }
@@ -44,6 +47,7 @@ namespace Okey.Composition
                     var view = _factory.Create(_deal.InitialHand[index], _rack.StoneRoot);
                     _views.Add(view);
                     _rack.Place(view, index, true);
+                    _interaction.Register(view);
                 }
 
                 _initialized = true;
@@ -66,6 +70,7 @@ namespace Okey.Composition
 
         private void ClearViews()
         {
+            _interaction.Clear();
             foreach (var view in _views)
             {
                 if (view == null)

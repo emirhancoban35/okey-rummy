@@ -80,6 +80,24 @@ namespace Okey.Tests.EditMode
         }
 
         [Test]
+        public void DropSelectionUsesEditedSlotsAndLocalRadiusAfterRackTransformChanges()
+        {
+            _rackObject.transform.rotation = Quaternion.Euler(0, 0, 25);
+            _rackObject.transform.localScale = new Vector3(2, 3, 1);
+            var serialized = new SerializedObject(_rack);
+            var slot = (Transform)serialized.FindProperty("_slots").GetArrayElementAtIndex(23).objectReferenceValue;
+            slot.localPosition = new Vector3(2, -1, 0);
+            serialized.FindProperty("_dropRadius").floatValue = 0.1f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            var localPosition = _rack.GetSlotLocalPosition(23);
+
+            Assert.That(_rack.TryFindSlot(_rack.StoneRoot.TransformPoint(localPosition + Vector3.right * 0.05f), out var index), Is.True);
+            Assert.That(index, Is.EqualTo(23));
+            Assert.That(_rack.TryFindSlot(_rack.StoneRoot.TransformPoint(localPosition + Vector3.down * 0.2f), out index), Is.False);
+            Assert.That(index, Is.EqualTo(-1));
+        }
+
+        [Test]
         public void InvalidSlotDoesNotChangeStoneParentOrPosition()
         {
             var stone = _stoneObject.GetComponent<Stone>();

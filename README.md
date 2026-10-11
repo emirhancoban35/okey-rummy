@@ -36,6 +36,12 @@ Deck generation does not shuffle, distribute, instantiate visuals or decide the 
 
 OpeningHandPresenter uses Zenject's initialization lifecycle to create and animate the initial hand once. It validates rack capacity before creating views and owns their cleanup when the scene is disposed. Each view retains the physical identity from OpeningDeal. The scene no longer contains a separate prototype stone.
 
+`RackArrangement` owns a Unity-independent snapshot of physical stones in configurable slots. Moving to an empty slot leaves a gap; moving to an occupied slot swaps the two stones. Moves preserve membership and identity. Its read-only slot collection reflects the current arrangement. This is a local rack layout, not turn state or move legality.
+
+Drag a stone in SampleScene to rearrange the rack. StoneDragHandler receives EventSystem pointer events through the camera's Physics2DRaycaster and the stone's BoxCollider2D. It projects the pointer onto the rack plane, preserves the click offset and raises the whole stone through its SortingGroup. RackInteractionController coordinates the arrangement and view movement. An outside drop returns the stone to its current slot; disabling the handler or losing application focus cancels the drag. One pointer can rearrange the rack at a time.
+
+RackView's drop radius is measured in the stone root's local space and is editable in the Inspector. Slot positions, input collider size and drag sorting order are prefab data. Repositioning uses the same StoneMotion settings as the opening deal, without replaying its origin or staggered delay.
+
 `Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
 
 ## Dependency injection and animation
@@ -61,4 +67,4 @@ PlayMode tests load the real scene and verify dependency resolution, prefab crea
 
 ## Next steps
 
-Introduce hand and rack interactions, then game flow and interchangeable rules and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.
+Introduce live hand and turn state, drawing and discarding, then interchangeable rules and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.

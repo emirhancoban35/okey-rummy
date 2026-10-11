@@ -1025,3 +1025,4 @@ MonoBehaviour:
   - {fileID: 7200000000000000147}
   _stoneScale: {x: 0.46, y: 0.6, z: 1}
   _dealInterval: 0.035
+  _dropRadius: 0.34

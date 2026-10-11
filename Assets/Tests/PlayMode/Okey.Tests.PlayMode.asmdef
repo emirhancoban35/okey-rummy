@@ -4,7 +4,8 @@
         "Okey.Core",
         "Okey.Presentation",
         "Okey.Composition",
-        "Zenject"
+        "Zenject",
+        "Unity.ugui"
     ],
     "optionalUnityReferences": [
         "TestAssemblies"

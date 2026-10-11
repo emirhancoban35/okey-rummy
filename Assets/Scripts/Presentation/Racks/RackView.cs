@@ -13,6 +13,7 @@ namespace Okey.Presentation.Racks
         [SerializeField] private Transform[] _slots = Array.Empty<Transform>();
         [SerializeField] private Vector3 _stoneScale;
         [SerializeField, Min(0)] private float _dealInterval;
+        [SerializeField, Min(0)] private float _dropRadius;
 
         public Transform StoneRoot => _stoneRoot;
         public int Capacity => _slots.Length;
@@ -35,8 +36,38 @@ namespace Okey.Presentation.Racks
                     throw new InvalidOperationException("Rack slots must be assigned and unique.");
             }
 
-            if (_stoneScale.x <= 0 || _stoneScale.y <= 0 || _stoneScale.z <= 0 || _dealInterval < 0)
-                throw new InvalidOperationException("Stone scale must be positive and deal interval cannot be negative.");
+            if (_stoneScale.x <= 0 || _stoneScale.y <= 0 || _stoneScale.z <= 0 || _dealInterval < 0 || _dropRadius <= 0)
+                throw new InvalidOperationException("Stone scale and drop radius must be positive and deal interval cannot be negative.");
+        }
+
+        public bool TryFindSlot(Vector3 worldPosition, out int index)
+        {
+            var localPosition = _stoneRoot.InverseTransformPoint(worldPosition);
+            var nearestDistance = _dropRadius * _dropRadius;
+            index = -1;
+            for (var slot = 0; slot < Capacity; slot++)
+            {
+                var difference = (Vector2)(GetSlotLocalPosition(slot) - localPosition);
+                if (difference.sqrMagnitude > nearestDistance)
+                    continue;
+
+                nearestDistance = difference.sqrMagnitude;
+                index = slot;
+            }
+
+            return index >= 0;
+        }
+
+        public void MoveToSlot(Stone stone, int index, bool animated)
+        {
+            if (stone == null)
+                throw new ArgumentNullException(nameof(stone));
+
+            var destination = GetSlotLocalPosition(index);
+            if (animated)
+                stone.Motion.MoveTo(destination);
+            else
+                stone.Motion.SnapTo(destination);
         }
 
         public Vector3 GetSlotLocalPosition(int index)

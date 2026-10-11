@@ -9,12 +9,14 @@ namespace Okey.Presentation.Stones
     {
         [SerializeField] private StoneVisual _visual;
         [SerializeField] private StoneMotion _motion;
+        [SerializeField] private StoneDragHandler _dragHandler;
         [SerializeField] private bool _isFaceUp = true;
 
         public StoneInstance Instance { get; private set; }
         public StoneData Data => Instance?.Data;
         public bool IsFaceUp => _isFaceUp;
         public StoneMotion Motion => _motion;
+        public StoneDragHandler DragHandler => _dragHandler;
 
         public void Initialize(StoneInstance stone)
         {
