@@ -1,92 +1,133 @@
 # Okey Rummy
 
-An extensible Okey and Rummy portfolio project with single-player AI opponents, built with Unity 6000.3.15f1 and URP 2D.
+A Unity portfolio project for tile-based Okey and Rummy games, with a warm coffeehouse table, a configurable 101 Okey ruleset and three local AI opponents.
 
-The project is developed in small, working steps. Multiplayer is outside the scope of this project. The boundaries allow another developer to introduce networked input and synchronization later; networking is not implemented.
+Game rules and state live in a Unity-independent C# assembly. Zenject connects the application, while editable prefabs and ScriptableObjects control presentation and configuration. The current playable game is 101 Okey; the architecture provides extension points for other tile games.
 
 ![Coffeehouse table](Docs/Images/coffeehouse-table.png)
 
-## Current foundation
+## Run the project
 
-`Assets/Scripts/Core` contains the Unity-independent `Okey.Core` assembly. It cannot reference Unity engine APIs. Stone definitions are immutable and contain their type, color and number. Number ranges, scoring and move legality belong to the rule system rather than the stone constructor.
+1. Clone the repository and open it with **Unity 6000.3.15f1** through Unity Hub.
+2. Let Unity restore the packages and import the assets.
+3. Open **Assets/Scenes/MainMenu.unity** and press Play.
+4. Choose individual or partnership play, humanlike or fast opponents, and fixed or rising opening thresholds. Select **Play** to start a table.
 
-A real joker is a role determined by game rules, rather than a separate physical stone type. A fake joker is a physical stone type. `StoneColor.None` supports stones without a printed color.
+The main menu is the first scene in Build Settings. **SampleScene.unity** can also be opened directly for table development. Zenject and DOTween are included in the repository; no separate plugin installation is needed.
 
-`Assets/Scripts/Presentation` contains the `Okey.Presentation` assembly. It references Core and Unity, owns face visibility and displays stone definitions. Multiple views can display the same definition with different visibility.
+## Features
 
-`Assets/Settings/Stones/DefaultStoneVisualSettings.asset` provides the palette and fake joker text. Edit these in the Inspector or create another asset through Create > Okey > Stone Visual Settings.
+- One human player and three AI opponents, with individual and opposite-seat partnership modes.
+- Runs, sets and pairs, indicator-based real jokers and physical fake jokers.
+- Series and pair opening thresholds, configurable penalties, round scoring and rising openings (*katlamalı*).
+- Two rack rows with adjacent placement, optional gaps and insertion that shifts neighboring tiles.
+- Opening totals calculated from the player's actual adjacent rack groups.
+- Drawing from the closed pile, corner discard trays, double-tap discarding and drag-and-drop layoffs.
+- Public melds on separate series and pair boards, with compatible drop-target highlights.
+- Plain tile backs, manual tile flipping, distinct color settings and editable typography.
+- Remaining seconds and progress bars for the active seat, with automatic legal play on timeout.
+- A small new-game menu, contextual help and table settings.
 
-`Assets/Prefabs/Stone.prefab` contains the wired Stone and StoneVisual components. Its text, symbol, visible face objects and visual settings are serialized references. The text reference accepts both world-space TextMeshPro and Canvas text. Initializing a stone preserves the view's selected face visibility.
+![New game menu](Docs/Images/new-game-menu.png)
 
-`Assets/Scripts/Configuration` contains Unity configuration adapters in `Okey.Configuration`, which references Core. `DeckSettings` converts Inspector data into an immutable `DeckDefinition`; later edits to an asset do not change an existing definition.
+## Controls
 
-`Assets/Settings/Decks/StandardOkeyDeck.asset` defines the standard 106 stones as configurable sets: type, color, inclusive number range and copies per number. Create other deck assets through Create > Okey > Deck Settings. DeckFactory has no standard Okey counts or number ranges built into it.
+| Action | Input |
+| --- | --- |
+| Draw | Click the closed pile, or drag its top tile to the rack during your turn. |
+| Arrange | Drag a tile to a rack slot. Occupied slots shift toward the nearest gap. |
+| Separate groups | Leave an empty slot between groups. Groups do not cross rack rows. |
+| Open series or pairs | Use the opening card showing the matching tile example and current total. |
+| Lay off a tile | Drag it onto a compatible public meld or its adjacent endpoint. The target highlights. |
+| Discard | Drop a tile into the bottom-right tray, or double-tap it during your discard phase. |
+| Flip a tile | Hold it for half a second. Hold again to turn it face up. |
+| Take the previous discard | Once opened, click the previous player's tray to immediately extend a compatible meld. |
+| Start another game | Open table settings and select **New Game** to return to the menu. |
 
-`DeckFactory.Create` generates an ordered, read-only collection of `StoneInstance` objects. Each physical stone has an ID unique within that deck. Recreating the same definition in the same order produces the same IDs; a new game needs its own session identity if IDs are persisted or sent over a network. Copies share immutable StoneData, while their physical identities remain distinct. Stone views bind a StoneInstance so later interactions can identify the selected physical stone.
+Rack rearrangement is available during other players' turns. Draws, openings, layoffs and discards always pass through the table's legality checks.
 
-Deck generation does not shuffle, distribute, instantiate visuals or decide the joker. These remain separate responsibilities.
+## Rules in this build
 
-`IStoneShuffler` is the replaceable ordering strategy. SeededStoneShuffler applies Fisher-Yates using a private System.Random per shuffle, preserving the source collection and physical stone identities. Replaying a seed assumes the same deck definition, shuffle implementation and runtime; persist the ordered IDs for replay across different runtime versions.
+The default table uses a 106-tile deck. A random starting seat receives 22 tiles; the other seats receive 21. An indicator is set aside and 20 tiles remain in the stock. Subsequent tables rotate the starting seat. The indicator determines the real joker; fake jokers represent that fixed color and value.
 
-`DrawPile` owns a snapshot of ordered stones and consumes them with a cursor. TryDraw returns false when exhausted. Batch Draw validates availability before consuming any stones. Duplicate physical IDs and null entries are rejected.
+An initial series opening needs **101 points**, or a pair opening needs **five pairs**. The local opening evaluator uses adjacent tiles on the same rack row and reserves a tile for the final discard. Invalid opening attempts apply a configurable penalty and preserve the hand. Additional melds use the player's existing opening mode. Joker assignments in public melds remain fixed.
 
-`OpeningDealFactory` combines generation, ordering and initial distribution. OpeningDeal contains the seed, an immutable snapshot of the initial hand and the remaining draw pile; it is not the live hand or turn state.
+Rising openings increase the series and pair thresholds independently. Each successful initial opening sets its corresponding next threshold to the opened total plus a configurable increment, which defaults to one. Additional melds and invalid attempts do not raise thresholds.
 
-`Assets/Settings/Dealing/StandardOpeningDeal.asset` controls the initial hand size and fixed/random seed selection. The standard configuration deals 21 stones and leaves 85 in the draw pile. These counts are asset data. GameInstaller provides one OpeningDeal per scene through Zenject.
+This build forbids taking a discard while closed. An opened player may take only the previous seat's latest discard, and only to immediately extend a public meld. Failed pickups change neither the discard nor the stock.
 
-`Assets/Prefabs/Istaka.prefab` contains RackView with 28 slot transforms in two rows. Adjacent slots align the stone edges so stones can sit together. Players can leave empty slots between groups to create gaps. Edit the slots, stone scale, deal origin and interval in the Inspector. RackView converts slot positions into the stone root's local space and delegates movement to StoneMotion. The slot order determines the initial visual arrangement; it does not define a live hand model or game rules.
+Successful openings refresh the turn timer. When time expires, the game cancels any drag, draws if required and discards legally. Discarding the final tile finishes the round. Partnership scoring groups opposite seats and excludes the winning partner's remaining hand.
 
-HandPresenter uses Zenject's initialization lifecycle to create and animate the initial hand once. Refresh adds or removes views as membership changes, retaining existing views and their arrangement. It validates rack capacity before creating views and owns their cleanup when the scene is disposed. Each view retains its physical identity.
+These are the project's explicit rule choices. Regional variations, special immediate-finish cases and cumulative multi-round matches are not implemented.
 
-`RackArrangement` owns a Unity-independent snapshot of physical stones in configurable slots. Moving to an empty slot leaves a gap. Inserting into an occupied slot shifts its contiguous neighbors toward the nearest empty slot after lifting the dragged stone; equal distances prefer the right side. Other groups and gaps remain in place. Moves preserve membership and identity and return the affected stones so presentation only animates changed positions. Its read-only slot collection reflects the current arrangement. This is a local rack layout, not turn state or move legality.
+## Architecture
 
-Drag a stone in SampleScene to rearrange the rack. StoneDragHandler receives EventSystem pointer events through the camera's Physics2DRaycaster and the stone's BoxCollider2D. It projects the pointer onto the rack plane, preserves the click offset and raises the whole stone through its SortingGroup. RackInteractionController coordinates the arrangement and view movement. A drop outside the rack returns the stone to its current slot unless a legal discard or layoff target accepts it; disabling the handler or losing application focus cancels the drag. One pointer can rearrange the rack at a time.
+```mermaid
+flowchart TD
+    Composition[Composition: Zenject installers and controllers] --> Core[Core: state, rules and strategies]
+    Composition --> Configuration[Configuration: ScriptableObject adapters]
+    Composition --> Presentation[Presentation: prefab views and input events]
+    Configuration --> Core
+    Presentation --> Core
+```
 
-RackView's drop radius is measured in the stone root's local space and is editable in the Inspector. Slot positions, input collider size and drag sorting order are prefab data. Repositioning uses the same StoneMotion settings as the opening deal, without replaying its origin or staggered delay.
+| Assembly | Responsibility |
+| --- | --- |
+| `Okey.Core` | Immutable tile definitions, physical identities, decks, rack arrangement, meld validation, table state, scoring and AI observations. It has no Unity engine references. |
+| `Okey.Configuration` | Converts editable assets into rule, deck, table and navigation settings. |
+| `Okey.Presentation` | Tile faces, pointer input, rack anchors, progress bars, menus and animations. |
+| `Okey.Composition` | Creates dependencies, coordinates views with the table and routes local, bot and timeout actions. |
 
-## Playing the 101 table
+`TableSession` owns hands, turn phase, public melds and discard histories. Presentation does not decide move legality. `RackArrangement` manages physical tile placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
 
-SampleScene starts a local 101 table with you and three bots. A random seat receives 22 stones and starts by discarding; the other seats receive 21. New tables rotate the starting seat. A regular indicator is set aside and the remaining 20 stones form the closed pile. The indicator determines the real joker; fake jokers represent that fixed color and value.
+`StoneInstance` gives each physical tile an ID; duplicate printed tiles remain separate objects. Deck generation, shuffling, distribution and view creation are separate responsibilities. `IStoneShuffler` supports replaceable ordering, and seeded implementations support deterministic tests.
 
-Click the face-down pile near the center to draw during your turn. Drop a stone into the bottom-right outlined area to discard. The four corner areas display each seat's latest discard. Opponent hands are represented by face-down covers and counts; their physical stones never receive face-up scene views. Rearranging your rack remains available during other seats' turns.
+### Extension points
 
-The two opening cards show miniature run/set and pair examples, current group totals and the configured opening thresholds. Only contiguous tiles on the same rack row count. A gap breaks a group; neighboring valid groups can be partitioned without sharing tiles. Moving a tile recalculates the totals. Opening places those same groups on the public board, reserving a tile for the required final discard. Bots continue to use their own meld planner. An initial series opening needs 101 points; a pair opening needs five pairs. Invalid attempts apply the configured penalty without changing the hand. Once opened, additional melds must use the same opening mode. Drag a stone onto an open meld to extend it. Joker assignments remain fixed after opening. Discarding the final tile finishes the hand and calculates scores.
+| Change | Boundary |
+| --- | --- |
+| Deck composition, tile range or copy count | `DeckSettings` / `DeckDefinition` |
+| Run, set, pair or joker validation | `IMeldRules` |
+| End-of-round scoring | `IRoundScoring` |
+| Opponent decisions | `IPlayerStrategy` |
+| Behavioral randomness | `IRandomSource` |
+| Menu and table navigation | `ITableNavigation` |
+| Tile art, text, colors and animation | Prefabs and visual settings assets |
 
-`Assets/Settings/Dealing/Standard101Table.asset` controls player count, hand size, number range, opening thresholds, penalties, scoring, partnerships, discard pickup, starting-seat selection, turn time, bot behavior, thinking interval, opening patience and error chance. `StandardOpeningDeal.asset` supplies the shuffle seed; its practice-hand size and phase fields are not used by the table. `SinglePlayerSession` remains an isolated draw/discard practice model.
+Fast opponents play at a fixed pace. Humanlike opponents use configurable thinking delays, opening patience and a default 1% mistake chance per discard decision. Their strategies receive snapshots of their own hand and public information; they cannot inspect opponents' hands or the stock. Bot decisions use current rising thresholds and the same table actions as local input.
 
-Hold an owned tile for half a second to flip it; hold again to turn it face up. All owned tiles support inspection. Tile backs are plain ivory, including the stock and opponents’ tiles. The game does not automatically mark real jokers. Short clicks select a tile; double tapping an owned tile discards it during the local discard phase. Dragging, leaving the tile or losing focus cancels a pending hold. Hold and flip durations are editable on `StoneSelectionView`.
+Multiplayer is not implemented. A future transport adapter can submit actions to the table boundary and distribute public and seat-private state. It must add session identity, authoritative validation, synchronization and visibility handling. Supporting another Okey or Rummy variant also requires adapting the table flow where its turn or opening rules differ; changing configuration alone does not implement every variant.
 
-The hand tile icon shows your remaining tile count; the pile has its own stock count. Direction arrows mark drawing and discarding, and the active opponent card is highlighted. Opening actions use raised cards and progress strips. Help and table settings stay behind their top-right icon buttons and block clicks on the table while open.
+## Configuration and presentation
 
-`RackMeldEvaluator` evaluates the local rack layout independently of Unity; `RackView.RowCapacity` supplies the editable row boundary. `TableSession` owns hands, turn legality, public melds and discard histories. `IRoundScoring` supplies replaceable scoring, with `Okey101Scoring` as the default. `IMeldRules` supplies replaceable meld validation; the baseline `MeldRules` validates runs, sets and pairs; `MeldPlanner` searches compatible candidates for disjoint melds. `IPlayerStrategy` receives an immutable snapshot of its own hand, public melds and the next seat’s public discard history, without opponents' hands or the draw pile. The strategy protects completed melds and useful connections, avoids penalty discards, uses the next player’s public discard history as a weak defensive signal, and prefers low-value isolated tiles. It never reads another hand or the stock. Fast bots act mathematically at a fixed pace. Humanlike bots use configurable thinking delays, sometimes postpone opening, and have a configurable 1% mistake chance per discard decision. Drawing, opening, laying off and discarding are separate actions. Bot actions pass through the same table methods as local input. IRandomSource makes behavioral randomness replaceable and reproducible in tests.
+| Asset | Editable values |
+| --- | --- |
+| `Assets/Settings/Dealing/Standard101Table.asset` | Player count, hand size, opening thresholds, rising increment, penalties, scoring, partnerships, pickup rules, starter selection, timers and bot behavior. |
+| `Assets/Settings/Decks/StandardOkeyDeck.asset` | Tile types, colors, number ranges and copies. |
+| `Assets/Settings/Dealing/StandardOpeningDeal.asset` | Fixed or random shuffle seed. Its practice-hand fields are separate from table settings. |
+| `Assets/Settings/Dealing/SceneNavigation.asset` | Menu and table scene names. |
+| `Assets/Settings/Stones/DefaultStoneVisualSettings.asset` | Printed tile colors and fake-joker text. |
+| `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` | Movement duration, easing and time scaling. |
+| `Assets/Prefabs/NewGameMenu.prefab` | Menu layout, labels, buttons and transition. |
+| `Assets/Prefabs/GameControls.prefab` | Draw surface, discard trays, opening cards, boards, opponent cards, timers, help and settings. |
+| `Assets/Prefabs/Istaka.prefab` | Rack geometry, row capacity, slot anchors and tile scale. |
+| `Assets/Prefabs/Stone.prefab` | Tile body, font, symbol, face visibility, selection and hold behavior. |
 
-`Assets/Prefabs/GameControls.prefab` owns the draw surface, four discard areas, opening buttons, public meld root, opponent covers, labels, text formats, scales and spacing. These are editable prefab references. Zenject binds the table, strategy and controllers; DOTween animates rack movement, discard placement and public meld positioning.
+Scene installers hold serialized asset and prefab references. Runtime controllers do not construct UI layouts. DOTween handles movement and short transitions; views cancel their owned tweens when disabled. Menu choices share table settings with the next scene, while an existing table keeps its rules and options snapshot.
 
-An opened player may click the previous seat’s discard to immediately extend a compatible public meld. Pickup is atomic: invalid targets leave the discard and stock untouched. This configured variation forbids pickup while closed; the tile cannot be kept for later. Every turn has a configurable timer, renewed by successful opening. Each seat has a read-only progress slider; the active player also sees remaining seconds. Drag a tile onto a compatible public meld or its adjacent endpoint to lay it off. The target meld highlights while dragging. On expiry the controller draws if necessary and discards legally. Partnership mode uses opposite seats; a winning teammate’s remaining hand is ignored and team scores combine both seats. Select the next table’s mode and use NEW TABLE to start it. Bot mode changes immediately. Rising openings (katlamalı) can be selected for the next table. A successful initial series opening raises the next series threshold to its total plus the configured increment; pair openings independently raise the pair threshold. Additional melds and failed openings do not raise either threshold. Bot observations include the current thresholds. Special immediate-finish exceptions, cumulative match scoring and network transport remain outside this step. The rule reference is [Pagat's 101 Okey rules](https://www.pagat.com/rummy/okey101.html); this implementation uses the configurable baseline described above rather than every published variation.
+## Verification
 
-`Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
+Open **Window > General > Test Runner** and run both **EditMode** and **PlayMode** suites.
 
-## Dependency injection and animation
+EditMode tests cover definitions, deck generation, rack insertion, adjacent grouping, meld rules, penalties, rising thresholds, AI decisions and timers. PlayMode tests load actual scenes and verify Zenject bindings, prefab wiring, pointer interactions, drawing, discarding, layoffs, visibility, menu navigation and UI progress.
 
-Zenject 9.2.0 and DOTween 1.3.030 are vendored from their official distributions under `Assets/Plugins`. Zenject's sample and test folders are excluded. Their license files are included. No additional download is needed after cloning this repository.
+Table and menu layouts are also checked at **1920 × 1080** and **1106 × 614**. Preview images live in `Docs/Images`.
 
-Sources: [Zenject release](https://github.com/modesttree/Zenject/releases/tag/9.2.0), [DOTween release](https://dotween.demigiant.com/download.php).
+## Dependencies and art
 
-`Okey.Composition` is the Unity composition assembly. The GameContext object in SampleScene contains a Zenject SceneContext and GameInstaller. Assign the deck and opening deal assets, stone prefab and scene rack on the installer in the Inspector. It connects generation, dealing and presentation. StoneViewFactory instantiates and injects the assigned prefab, then binds its physical stone identity. Core has no dependency on Zenject or DOTween.
+- **Unity 6000.3.15f1**, Universal Render Pipeline 2D, Input System and TextMesh Pro.
+- **Zenject 9.2.0** and **DOTween 1.3.030**, vendored under `Assets/Plugins` with their license files.
+- **Nunito SemiBold and Bold**, distributed under the SIL Open Font License in `Assets/Art/Fonts/OFL.txt`.
+- AI-generated coffeehouse backdrop and oak rack. Their creation notes are in [Assets/Art/Table/README.md](Assets/Art/Table/README.md).
 
-The stone prefab contains StoneMotion, which uses DOTween for local movement. `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` configures duration, easing and time scaling. MoveTo accepts an optional delay and replaces the previous move; SnapTo cancels movement and places the stone immediately. Disabling a stone cancels its movement so a later reuse cannot resume an old tween.
-
-PlayMode tests load the real scene and verify dependency resolution, prefab creation and movement lifecycle. EditMode tests cover definitions, generation and presentation configuration.
-
-## Development conventions
-
-- Keep game state and rules independent of Unity, UI and future transport code.
-- Keep visuals and prefab references editable through the Inspector.
-- Put adjustable gameplay values in configuration when their system is introduced.
-- Introduce abstractions and dependency injection at actual dependency boundaries.
-- Use descriptive names and focused methods without code comments.
-- Commit each verified step with a plain English message, without type prefixes.
-
-## Next steps
-
-Add special finish variations and cumulative multi-hand matches. Further opponent modeling can replace IPlayerStrategy. Persistence and network synchronization can build on the existing table boundary.
+Game code uses focused responsibilities, dependency injection at replaceable boundaries and editable configuration. Development commits use plain English descriptions.
