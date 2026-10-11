@@ -10,6 +10,7 @@ namespace Okey.Presentation.Stones
         [SerializeField] private StoneVisual _visual;
         [SerializeField] private StoneMotion _motion;
         [SerializeField] private StoneDragHandler _dragHandler;
+        [SerializeField] private StoneSelectionView _selection;
         [SerializeField] private bool _isFaceUp = true;
 
         public StoneInstance Instance { get; private set; }
@@ -17,6 +18,7 @@ namespace Okey.Presentation.Stones
         public bool IsFaceUp => _isFaceUp;
         public StoneMotion Motion => _motion;
         public StoneDragHandler DragHandler => _dragHandler;
+        public StoneSelectionView Selection => _selection;
 
         public void Initialize(StoneInstance stone)
         {

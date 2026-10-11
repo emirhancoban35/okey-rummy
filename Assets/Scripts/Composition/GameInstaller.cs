@@ -16,11 +16,12 @@ namespace Okey.Composition
         [SerializeField] private Stone _stonePrefab;
         [SerializeField] private OpeningDealSettings _openingDealSettings;
         [SerializeField] private RackView _rackView;
+        [SerializeField] private TurnControlsView _controlsView;
 
         public override void InstallBindings()
         {
-            if (_deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null)
-                throw new InvalidOperationException("Deck settings, opening deal settings a stone prefab and a rack view must be assigned to the game installer.");
+            if (_deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null || _controlsView == null)
+                throw new InvalidOperationException("Deck settings, opening deal settings, stone prefab, rack view and turn controls must be assigned to the game installer.");
 
             Container.BindInstance(_deckSettings.CreateDefinition());
             Container.Bind<DeckFactory>().AsSingle();
@@ -33,7 +34,13 @@ namespace Okey.Composition
             Container.Bind<RackArrangement>().FromMethod(context =>
                 new RackArrangement(context.Container.Resolve<OpeningDeal>().InitialHand, _rackView.Capacity)).AsSingle();
             Container.Bind<RackInteractionController>().AsSingle();
-            Container.BindInterfacesAndSelfTo<OpeningHandPresenter>().AsSingle();
+            Container.BindInstance(_controlsView);
+            Container.Bind<SinglePlayerSession>().FromMethod(context => new SinglePlayerSession(
+                context.Container.Resolve<RackArrangement>(), context.Container.Resolve<OpeningDeal>().DrawPile,
+                _openingDealSettings.InitialPhase)).AsSingle();
+            Container.BindInterfacesAndSelfTo<HandPresenter>().AsSingle();
+            Container.BindInterfacesAndSelfTo<TurnController>().AsSingle();
+            Container.BindExecutionOrder<HandPresenter>(-10);
         }
 
         private OpeningDeal CreateOpeningDeal(InjectContext context)

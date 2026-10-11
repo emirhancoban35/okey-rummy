@@ -78,7 +78,7 @@ namespace Okey.Presentation.Racks
             return _stoneRoot.InverseTransformPoint(_slots[index].position);
         }
 
-        public void Place(Stone stone, int index, bool animated)
+        public void Place(Stone stone, int index, bool animated, bool staggered = true)
         {
             if (stone == null)
                 throw new ArgumentNullException(nameof(stone));
@@ -92,7 +92,7 @@ namespace Okey.Presentation.Racks
             if (animated)
             {
                 stone.Motion.SnapTo(_stoneRoot.InverseTransformPoint(_dealOrigin.position));
-                stone.Motion.MoveTo(destination, index * _dealInterval);
+                stone.Motion.MoveTo(destination, staggered ? index * _dealInterval : 0);
             }
             else
             {

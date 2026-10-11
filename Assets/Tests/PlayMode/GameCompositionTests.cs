@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 using System.Collections.Generic;
 using UnityEngine.TestTools;
 using Zenject;
@@ -45,7 +46,7 @@ namespace Okey.Tests.PlayMode
                 yield return SceneManager.UnloadSceneAsync(_scene);
         }
 
-        private Stone[] HandViews => _context.Container.Resolve<OpeningHandPresenter>().Views.ToArray();
+        private Stone[] HandViews => _context.Container.Resolve<HandPresenter>().Views.ToArray();
         private RackView Rack => _context.Container.Resolve<RackView>();
         private RackArrangement Arrangement => _context.Container.Resolve<RackArrangement>();
         private RackInteractionController Interaction => _context.Container.Resolve<RackInteractionController>();
@@ -59,6 +60,90 @@ namespace Okey.Tests.PlayMode
         {
             foreach (var view in HandViews)
                 DOTween.Complete(view.transform);
+        }
+
+        private TurnControlsView Controls => _context.Container.Resolve<TurnControlsView>();
+        private Button DrawButton => Controls.GetComponentsInChildren<Button>().Single(button => button.name == "DrawButton");
+        private Button DiscardButton => Controls.GetComponentsInChildren<Button>().Single(button => button.name == "DiscardButton");
+
+        [UnityTest]
+        public IEnumerator ButtonsDrawSelectDiscardAndUpdateLiveViews()
+        {
+            var session = _context.Container.Resolve<SinglePlayerSession>();
+            Assert.That(DrawButton.interactable, Is.True);
+            Assert.That(DiscardButton.interactable, Is.False);
+            DrawButton.onClick.Invoke();
+            DrawButton.onClick.Invoke();
+            Assert.That(session.Hand.Count, Is.EqualTo(22));
+            Assert.That(session.RemainingCount, Is.EqualTo(84));
+            Assert.That(HandViews.Length, Is.EqualTo(22));
+            Assert.That(DrawButton.interactable, Is.False);
+            var stone = HandViews[0];
+            ExecuteEvents.Execute(stone.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
+            Assert.That(Interaction.Selected, Is.SameAs(stone));
+            Assert.That(stone.transform.Find("SelectionHighlight").gameObject.activeSelf, Is.True);
+            Assert.That(DiscardButton.interactable, Is.True);
+            var discardedId = stone.Instance.Id;
+            DiscardButton.onClick.Invoke();
+            DiscardButton.onClick.Invoke();
+            Assert.That(session.Hand.Count, Is.EqualTo(21));
+            Assert.That(HandViews.Length, Is.EqualTo(21));
+            Assert.That(HandViews.Any(view => view.Instance.Id == discardedId), Is.False);
+            Assert.That(Interaction.Selected, Is.Null);
+            Assert.That(DrawButton.interactable, Is.True);
+            Assert.That(DiscardButton.interactable, Is.False);
+            var discard = Controls.DiscardRoot.GetComponentInChildren<Stone>();
+            Assert.That(discard.Instance.Id, Is.EqualTo(discardedId));
+            Assert.That(discard.DragHandler.enabled, Is.False);
+            DOTween.Complete(discard.transform);
+            Assert.That(discard.transform.localPosition, Is.EqualTo(Vector3.zero));
+            Assert.That(Controls.GetComponentsInChildren<TMPro.TMP_Text>().Single(text => text.name == "HandCount").text, Is.EqualTo("Hand: 21"));
+            Assert.That(Controls.GetComponentsInChildren<TMPro.TMP_Text>().Single(text => text.name == "PileCount").text, Is.EqualTo("Pile: 84"));
+            yield return null;
+            Assert.That(stone == null, Is.True);
+        }
+
+        [Test]
+        public void DraggingBlocksTurnActionsAndSelectionCanBeToggled()
+        {
+            var session = _context.Container.Resolve<SinglePlayerSession>();
+            var controller = _context.Container.Resolve<TurnController>();
+            var stone = HandViews[0];
+            Interaction.Select(stone);
+            Interaction.Select(stone);
+            Assert.That(Interaction.Selected, Is.Null);
+            Interaction.TryBeginDrag(stone);
+            controller.Draw();
+            Assert.That(DrawButton.interactable, Is.False);
+            Assert.That(session.Hand.Count, Is.EqualTo(21));
+            Interaction.CancelDrag(stone);
+            controller.Draw();
+            Interaction.Select(stone);
+            Interaction.TryBeginDrag(stone);
+            controller.DiscardSelected();
+            Assert.That(DiscardButton.interactable, Is.False);
+            Assert.That(session.Hand.Count, Is.EqualTo(22));
+            Interaction.CancelDrag(stone);
+            Assert.That(DiscardButton.interactable, Is.True);
+        }
+
+        [Test]
+        public void RefreshKeepsExistingStoneViewsAndDrawReusesEmptySlot()
+        {
+            var original = HandViews;
+            var controller = _context.Container.Resolve<TurnController>();
+            controller.Draw();
+            Interaction.Select(original[3]);
+            controller.DiscardSelected();
+            controller.Draw();
+            var current = HandViews;
+            foreach (var view in original.Where(view => view != original[3]))
+                Assert.That(current, Does.Contain(view));
+            var newest = current.Last();
+            Assert.That(Arrangement.FindSlot(newest.Instance.Id), Is.EqualTo(3));
+            DOTween.Complete(newest.transform);
+            Assert.That(Vector3.Distance(newest.transform.position, SlotWorldPosition(3)), Is.LessThan(0.001f));
+            Assert.That(Controls.DiscardRoot.childCount, Is.EqualTo(1));
         }
 
         [Test]
@@ -225,7 +310,7 @@ namespace Okey.Tests.PlayMode
         [Test]
         public void OpeningHandDisplaysEachPhysicalStoneOnceAndInitializationIsIdempotent()
         {
-            var presenter = _context.Container.Resolve<OpeningHandPresenter>();
+            var presenter = _context.Container.Resolve<HandPresenter>();
             var deal = _context.Container.Resolve<OpeningDeal>();
             var rack = _context.Container.Resolve<RackView>();
             var views = presenter.Views.ToArray();
@@ -252,8 +337,9 @@ namespace Okey.Tests.PlayMode
             var rack = _context.Container.Resolve<RackView>();
             var definition = _context.Container.Resolve<DeckDefinition>();
             var deal = _context.Container.Resolve<OpeningDealFactory>().Create(definition, rack.Capacity + 1, 42);
-            var interaction = new RackInteractionController(new RackArrangement(deal.InitialHand, rack.Capacity + 1), rack);
-            var presenter = new OpeningHandPresenter(deal, _context.Container.Resolve<StoneViewFactory>(), rack, interaction);
+            var hand = new RackArrangement(deal.InitialHand, rack.Capacity + 1);
+            var interaction = new RackInteractionController(hand, rack);
+            var presenter = new HandPresenter(hand, _context.Container.Resolve<StoneViewFactory>(), rack, interaction);
             var childCount = rack.StoneRoot.childCount;
 
             Assert.Throws<InvalidOperationException>(() => presenter.Initialize());
@@ -265,7 +351,7 @@ namespace Okey.Tests.PlayMode
         [UnityTest]
         public IEnumerator PresenterDisposalStopsMovementAndDestroysOwnedViews()
         {
-            var presenter = _context.Container.Resolve<OpeningHandPresenter>();
+            var presenter = _context.Container.Resolve<HandPresenter>();
             var views = presenter.Views.ToArray();
 
             presenter.Dispose();

@@ -13,6 +13,9 @@ namespace Okey.Composition
         private readonly RackView _rack;
         private readonly Dictionary<int, Stone> _views = new Dictionary<int, Stone>();
         private Stone _dragged;
+        public Stone Selected { get; private set; }
+        public bool IsDragging => _dragged != null;
+        public event Action Changed;
 
         public RackInteractionController(RackArrangement arrangement, RackView rack)
         {
@@ -27,6 +30,32 @@ namespace Okey.Composition
 
             _views.Add(stone.Instance.Id, stone);
             stone.DragHandler.Bind(this);
+            stone.Selection.Clicked += Select;
+        }
+
+        public void Select(Stone stone)
+        {
+            if (IsDragging || stone == null || stone.Instance == null ||
+                !_views.TryGetValue(stone.Instance.Id, out var registered) || registered != stone)
+                return;
+
+            if (Selected != null)
+                Selected.Selection.SetSelected(false);
+            Selected = Selected == stone ? null : stone;
+            if (Selected != null)
+                Selected.Selection.SetSelected(true);
+            Changed?.Invoke();
+        }
+
+        public void Unregister(Stone stone)
+        {
+            stone.Selection.Clicked -= Select;
+            _views.Remove(stone.Instance.Id);
+            if (Selected == stone)
+            {
+                stone.Selection.SetSelected(false);
+                Selected = null;
+            }
         }
 
         public bool TryBeginDrag(Stone stone)
@@ -37,6 +66,7 @@ namespace Okey.Composition
 
             _dragged = stone;
             stone.Motion.SnapTo(stone.transform.localPosition);
+            Changed?.Invoke();
             return true;
         }
 
@@ -65,6 +95,7 @@ namespace Okey.Composition
             }
 
             _rack.MoveToSlot(stone, _arrangement.FindSlot(stone.Instance.Id), true);
+            Changed?.Invoke();
         }
 
         public void CancelDrag(Stone stone)
@@ -74,6 +105,7 @@ namespace Okey.Composition
 
             _dragged = null;
             _rack.MoveToSlot(stone, _arrangement.FindSlot(stone.Instance.Id), false);
+            Changed?.Invoke();
         }
 
         public void Clear()
@@ -81,6 +113,14 @@ namespace Okey.Composition
             if (_dragged != null)
                 CancelDrag(_dragged);
 
+            foreach (var view in _views.Values)
+            {
+                if (view == null)
+                    continue;
+                view.Selection.Clicked -= Select;
+                view.Selection.SetSelected(false);
+            }
+            Selected = null;
             _views.Clear();
         }
     }

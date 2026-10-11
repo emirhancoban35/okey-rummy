@@ -34,13 +34,19 @@ Deck generation does not shuffle, distribute, instantiate visuals or decide the 
 
 `Assets/Prefabs/Istaka.prefab` contains RackView with 28 slot transforms in two rows. Adjacent slots align the stone edges so stones can sit together. Players can leave empty slots between groups to create gaps. Edit the slots, stone scale, deal origin and interval in the Inspector. RackView converts slot positions into the stone root's local space and delegates movement to StoneMotion. The slot order determines the initial visual arrangement; it does not define a live hand model or game rules.
 
-OpeningHandPresenter uses Zenject's initialization lifecycle to create and animate the initial hand once. It validates rack capacity before creating views and owns their cleanup when the scene is disposed. Each view retains the physical identity from OpeningDeal. The scene no longer contains a separate prototype stone.
+HandPresenter uses Zenject's initialization lifecycle to create and animate the initial hand once. Refresh adds or removes views as membership changes, retaining existing views and their arrangement. It validates rack capacity before creating views and owns their cleanup when the scene is disposed. Each view retains its physical identity.
 
 `RackArrangement` owns a Unity-independent snapshot of physical stones in configurable slots. Moving to an empty slot leaves a gap. Inserting into an occupied slot shifts its contiguous neighbors toward the nearest empty slot after lifting the dragged stone; equal distances prefer the right side. Other groups and gaps remain in place. Moves preserve membership and identity and return the affected stones so presentation only animates changed positions. Its read-only slot collection reflects the current arrangement. This is a local rack layout, not turn state or move legality.
 
 Drag a stone in SampleScene to rearrange the rack. StoneDragHandler receives EventSystem pointer events through the camera's Physics2DRaycaster and the stone's BoxCollider2D. It projects the pointer onto the rack plane, preserves the click offset and raises the whole stone through its SortingGroup. RackInteractionController coordinates the arrangement and view movement. An outside drop returns the stone to its current slot; disabling the handler or losing application focus cancels the drag. One pointer can rearrange the rack at a time.
 
 RackView's drop radius is measured in the stone root's local space and is editable in the Inspector. Slot positions, input collider size and drag sorting order are prefab data. Repositioning uses the same StoneMotion settings as the opening deal, without replaying its origin or staggered delay.
+
+`SinglePlayerSession` owns the draw/discard sequence using a live rack and draw pile. One draw requires one discard before the next draw. Invalid actions and full-rack draws leave the state unchanged. Discarding leaves a rack gap; the next draw uses the first free slot. The final drawn stone can still be discarded before the session finishes. The immutable discard history and remaining pile count are exposed for presentation. This practice flow does not yet evaluate winning hands, melds, jokers or penalties.
+
+`StandardOpeningDeal.asset` also configures the initial phase. The default starts with drawing from a 21-stone hand. Set an appropriate hand size and AwaitingDiscard to start with a discard instead.
+
+`Assets/Prefabs/GameControls.prefab` contains the draw and discard buttons, phase and count labels, display text and discard anchor. Click a stone to toggle its selection highlight, then discard it with the button. Actions are disabled during dragging. TurnController coordinates the session, hand refresh and animated last-discard display through Zenject. Button labels, colors, layout, selection highlight and discard scale remain editable prefab data.
 
 `Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
 
@@ -67,4 +73,4 @@ PlayMode tests load the real scene and verify dependency resolution, prefab crea
 
 ## Next steps
 
-Introduce live hand and turn state, drawing and discarding, then interchangeable rules and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.
+Introduce interchangeable rules, meld validation, winning hands and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.
