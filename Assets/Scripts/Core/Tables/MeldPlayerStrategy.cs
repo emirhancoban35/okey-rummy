@@ -36,7 +36,11 @@ namespace Okey.Core.Tables
                     (observation.MeldRules.Resolve(other).Value == observation.MeldRules.Resolve(stone).Value ||
                     (observation.MeldRules.Resolve(other).Color == observation.MeldRules.Resolve(stone).Color &&
                     System.Math.Abs(observation.MeldRules.Resolve(other).Value - observation.MeldRules.Resolve(stone).Value) <= 2))))
-                .ThenByDescending(stone => observation.MeldRules.Resolve(stone).Value).First().Id;
+                .ThenBy(stone => observation.NextPlayerDiscards.Count == 0 ? 0 :
+                    observation.NextPlayerDiscards.Reverse().Take(3).Any(discard =>
+                        observation.MeldRules.Resolve(discard).Value == observation.MeldRules.Resolve(stone).Value ||
+                        observation.MeldRules.Resolve(discard).Color == observation.MeldRules.Resolve(stone).Color) ? 0 : 1)
+                .ThenBy(stone => observation.MeldRules.Resolve(stone).Value).First().Id;
         }
     }
 }

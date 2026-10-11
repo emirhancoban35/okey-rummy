@@ -26,3 +26,11 @@ MonoBehaviour:
   _pairMultiplier: 2
   _jokerFinishMultiplier: 2
   _botActionDelay: 0.8
+  _partnerships: 0
+  _randomStartingSeat: 1
+  _allowDiscardPickup: 1
+  _turnSeconds: 45
+  _humanlikeBots: 1
+  _botMistakeChance: 0.01
+  _openingPatience: 0.35
+  _thinkingSeconds: {x: 1.2, y: 3.8}

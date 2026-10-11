@@ -13,6 +13,12 @@ namespace Okey.Core.Tables
         private readonly DrawPile _pile;
         private readonly IRoundScoring _scoring;
         private readonly List<Meld> _melds = new List<Meld>();
+        public TableOptions Options { get; }
+        public int StartingSeat { get; }
+        public int TurnRevision { get; private set; }
+        public int OpeningRevision { get; private set; }
+        public int TeamOf(int seat) => Options.Partnerships ? seat % 2 : seat;
+        public int TeamScore(int seat) => Players.Where((player, index) => TeamOf(index) == TeamOf(seat)).Sum(player => player.Score);
         public OkeyRules Rules { get; }
         public IMeldRules MeldRules { get; }
         public StoneInstance Indicator { get; }
@@ -24,9 +30,13 @@ namespace Okey.Core.Tables
         public int RemainingCount => _pile.RemainingCount;
         public event Action Changed;
 
-        public TableSession(OkeyRules rules, IReadOnlyList<StoneInstance> deck, int capacity, IMeldRules meldRules = null, IRoundScoring scoring = null)
+        public TableSession(OkeyRules rules, IReadOnlyList<StoneInstance> deck, int capacity, IMeldRules meldRules = null, IRoundScoring scoring = null, int startingSeat = 0, TableOptions options = null)
         {
             Rules = rules ?? throw new ArgumentNullException(nameof(rules));
+            Options = options ?? new TableOptions();
+            if (startingSeat < 0 || startingSeat >= rules.PlayerCount) throw new ArgumentOutOfRangeException(nameof(startingSeat));
+            if (Options.Partnerships && rules.PlayerCount != 4) throw new ArgumentException("Partnerships require four seats.", nameof(options));
+            StartingSeat = ActiveSeat = startingSeat;
             if (deck == null || capacity <= rules.HandSize || deck.Count <= rules.PlayerCount * rules.HandSize + 1 ||
                 deck.Any(stone => stone == null) || deck.Select(stone => stone.Id).Distinct().Count() != deck.Count)
                 throw new ArgumentException("The table needs a unique deck, an indicator and space to draw.", nameof(deck));
@@ -36,17 +46,33 @@ namespace Okey.Core.Tables
             Indicator = remaining[indicatorIndex];
             remaining.RemoveAt(indicatorIndex);
             MeldRules = meldRules ?? new MeldRules(rules, Indicator);
-            _scoring = scoring ?? new Okey101Scoring(rules, MeldRules);
+            _scoring = scoring ?? (Options.Partnerships ? (IRoundScoring)new PartnershipScoring(new Okey101Scoring(rules, MeldRules)) : new Okey101Scoring(rules, MeldRules));
             _pile = new DrawPile(remaining);
             var players = new TablePlayer[rules.PlayerCount];
             for (var seat = 0; seat < players.Length; seat++)
-                players[seat] = new TablePlayer(new RackArrangement(_pile.Draw(rules.HandSize + (seat == 0 ? 1 : 0)), capacity));
+                players[seat] = new TablePlayer(new RackArrangement(_pile.Draw(rules.HandSize + (seat == startingSeat ? 1 : 0)), capacity));
             Players = Array.AsReadOnly(players);
             Melds = _melds.AsReadOnly();
         }
 
         public bool CanDraw(int seat) => seat == ActiveSeat && Phase == TurnPhase.AwaitingDraw &&
             RemainingCount > 0 && Players[seat].Hand.Count < Players[seat].Hand.Capacity;
+
+        public bool CanTakeDiscard(int seat) => Options.AllowDiscardPickup && CanDraw(seat) &&
+            Players[seat].Opening != OpeningMode.Closed && Players[(seat + Players.Count - 1) % Players.Count].Discards.Count > 0;
+
+        public bool TryTakeDiscard(int seat, int meldIndex)
+        {
+            if (!CanTakeDiscard(seat) || meldIndex < 0 || meldIndex >= _melds.Count) return false;
+            var previous = Players[(seat + Players.Count - 1) % Players.Count];
+            var stone = previous.Discards[previous.Discards.Count - 1];
+            if (!MeldRules.TryExtend(_melds[meldIndex], stone, out var extended)) return false;
+            previous.TakeDiscard();
+            _melds[meldIndex] = extended;
+            Phase = TurnPhase.AwaitingDiscard;
+            Changed?.Invoke();
+            return true;
+        }
 
         public bool TryDraw(int seat) => TryDraw(seat, out _);
 
@@ -96,6 +122,7 @@ namespace Okey.Core.Tables
             foreach (var tile in tiles) player.Hand.Remove(tile.Stone.Id);
             _melds.AddRange(validated);
             player.Opening = mode;
+            OpeningRevision++;
             Changed?.Invoke();
             return true;
         }
@@ -131,6 +158,7 @@ namespace Okey.Core.Tables
             else
             {
                 ActiveSeat = (ActiveSeat + 1) % Players.Count;
+                TurnRevision++;
                 Phase = RemainingCount > 0 ? TurnPhase.AwaitingDraw : TurnPhase.Finished;
             }
             if (Phase == TurnPhase.Finished)

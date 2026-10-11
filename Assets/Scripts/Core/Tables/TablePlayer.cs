@@ -17,6 +17,12 @@ namespace Okey.Core.Tables
             Hand = hand;
             Discards = _discards.AsReadOnly();
         }
+        internal StoneInstance TakeDiscard()
+        {
+            var stone = _discards[_discards.Count - 1];
+            _discards.RemoveAt(_discards.Count - 1);
+            return stone;
+        }
         internal void Discard(StoneInstance stone) => _discards.Add(stone);
     }
 }

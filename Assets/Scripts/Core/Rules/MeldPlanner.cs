@@ -99,8 +99,21 @@ namespace Okey.Core.Rules
             }
             var byTile = new List<Candidate>[hand.Length];
             for (var index = 0; index < hand.Length; index++)
-                byTile[index] = candidates.Values.Where(candidate => (candidate.Mask & (1UL << index)) != 0).ToList();
+                byTile[index] = candidates.Values.Where(candidate => (candidate.Mask & (1UL << index)) != 0).OrderByDescending(candidate => mode == OpeningMode.Pairs ? candidate.Meld.Tiles.Count : candidate.Meld.Points).ToList();
             var cache = new Dictionary<ulong, Choice>();
+            var values = hand.Select(stone => rules.IsWild(stone) ? settings.MaximumValue : rules.Resolve(stone).Value).ToArray();
+            int UpperBound(ulong mask)
+            {
+                if (mode == OpeningMode.Pairs)
+                {
+                    var count = 0;
+                    for (var index = 0; index < hand.Length; index++) if ((mask & (1UL << index)) != 0) count++;
+                    return count / 2;
+                }
+                var points = 0;
+                for (var index = 0; index < hand.Length; index++) if ((mask & (1UL << index)) != 0) points += values[index];
+                return points;
+            }
             Choice Solve(ulong mask)
             {
                 if (mask == 0) return new Choice();
@@ -108,14 +121,24 @@ namespace Okey.Core.Rules
                 var first = 0;
                 while ((mask & (1UL << first)) == 0) first++;
                 var next = mask & ~(1UL << first);
-                var best = new Choice { Score = Solve(next).Score, Next = next };
+                var best = new Choice { Next = next };
+                var upper = UpperBound(mask);
                 foreach (var candidate in byTile[first])
                 {
+                    if (best.Score >= upper) break;
                     if ((candidate.Mask & mask) != candidate.Mask) continue;
                     next = mask ^ candidate.Mask;
-                    var score = Solve(next).Score + (mode == OpeningMode.Pairs ? 1 : candidate.Meld.Points);
+                    var value = mode == OpeningMode.Pairs ? 1 : candidate.Meld.Points;
+                    if (value + UpperBound(next) <= best.Score) continue;
+                    var score = Solve(next).Score + value;
                     if (score > best.Score)
                         best = new Choice { Score = score, Candidate = candidate, Next = next };
+                }
+                next = mask & ~(1UL << first);
+                if (best.Score < upper && UpperBound(next) > best.Score)
+                {
+                    var score = Solve(next).Score;
+                    if (score > best.Score) best = new Choice { Score = score, Next = next };
                 }
                 cache[mask] = best;
                 return best;
@@ -123,8 +146,10 @@ namespace Okey.Core.Rules
             var all = (1UL << hand.Length) - 1;
             ulong selected = 0;
             var maximum = -1;
-            for (var index = 0; index < hand.Length; index++)
+            var globalUpper = mode == OpeningMode.Pairs ? (hand.Length - 1) / 2 : values.Sum() - values.Min();
+            foreach (var index in Enumerable.Range(0, hand.Length).OrderBy(index => values[index]))
             {
+                if (maximum >= globalUpper) break;
                 var mask = all ^ (1UL << index);
                 var score = Solve(mask).Score;
                 if (score > maximum) { maximum = score; selected = mask; }
