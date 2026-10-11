@@ -99,7 +99,7 @@ flowchart TD
 | --- | --- |
 | `Okey.Core` | Immutable tile definitions, physical identities, decks, rack arrangement, meld validation, table state, scoring and AI observations. It has no Unity engine references. |
 | `Okey.Configuration` | Converts editable assets into rule, deck, table and navigation settings. |
-| `Okey.Presentation` | Tile faces, pointer input, rack anchors, progress bars, menus and animations. |
+| `Okey.Presentation` | Passive table views, tile faces, pointer input, rack anchors, progress bars, menus and animations. |
 | `Okey.Composition` | Creates dependencies, coordinates views with the table and routes local, bot and timeout actions. |
 
 `TableSession` owns hands, turn phase, public melds and discard histories. `ITableGame` supplies public-meld permissions, discard behavior, finish validation and scoring through `Okey101Game` or `ClassicOkeyGame`. The table has no game-name or mode-enum branches. Presentation does not decide move legality. `RackArrangement` manages physical tile placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
@@ -140,7 +140,41 @@ Multiplayer is not implemented. A future transport adapter can submit actions to
 | `Assets/Prefabs/Istaka.prefab` | Rack geometry, row capacity, slot anchors and tile scale. |
 | `Assets/Prefabs/Stone.prefab` | Tile body, font, symbol, face visibility, selection and hold behavior. |
 
-Scene installers hold serialized asset and prefab references. Runtime controllers do not construct UI layouts. DOTween handles movement and short transitions; views cancel their owned tweens when disabled. Menu choices share table settings with the next scene, while an existing table keeps its rules and options snapshot.
+### Editing UI without changing code
+
+Open **Assets/Prefabs/GameControls.prefab** in Prefab Mode. Its root **TableView** contains references to the small views that own each part of the screen. The custom inspector includes an **Edit dynamic wording** button and a list of all text elements, including hidden panels. Selecting an element opens its own TextMeshPro and RectTransform settings.
+
+| Change | Edit here |
+| --- | --- |
+| Font asset, font size, alignment, wrapping, spacing or text color | The selected text object's TextMeshPro component inside the prefab |
+| Position, anchors, pivot, width or height | That object's RectTransform; moving the parent moves the whole card/panel |
+| Status messages, action labels, progress formats, seat names and menu options | **Assets/Settings/Presentation/EnglishTableText.asset**, referenced by both table and menu prefabs |
+| Fixed headings and instructions | Their own text objects inside the prefab; **ClassicTitle** and **ClassicDescription** have independent font sizes |
+| Opening-card behavior and progress fill | **MeldActionView** on each series/pair card |
+| Clock bars and clock text references | **TurnClockView** on the turn clock |
+| Modal buttons and help text reference | **OverlayPanelsView** on the canvas |
+| Table settings buttons and labels | **TableOptionsView** on the canvas |
+| Opponent text/highlight | **OpponentSeatView** on the corresponding opponent |
+| Draw, discard, board and winning-hand geometry | **TableSurfaceView** on the root; board cells use each **MeldBoardView** |
+
+Save changes in Prefab Mode outside Play Mode. Scene-instance overrides take precedence over prefab values; changes made to runtime instances during Play Mode disappear when Play Mode ends. Dynamic text content is formatted from the assigned catalog, so editing a live label's text is temporary; its typography and placement are not overwritten by rendering. To customize one table independently, duplicate the text catalog and assign that copy on its TableView.
+
+### Presentation boundaries and folders
+
+The project uses a model, controller and presenter/view separation with Zenject. It is not described as strict MVC: presenters translate model state into text and view values, while controllers route user/bot/timeout actions. Views hold serialized scene references and render supplied values; they do not inspect a TableSession or decide Okey rules.
+
+- **Core/**: Unity-independent game model, rules, scoring and AI strategies.
+- **Composition/Controllers/**: input actions, bot turns, timeouts, options and navigation requests.
+- **Composition/Presenters/**: hand/public-tile synchronization and HUD state formatting.
+- **Composition/Installers/**: Zenject bindings and startup order.
+- **Composition/Factories/** and **Navigation/**: prefab creation and scene transitions.
+- **Presentation/Tables/**, **Racks/**, **Stones/** and **Menus/**: feature views.
+- **Presentation/Text/**: the text-catalog type; **Settings/Presentation/** contains its editable assets.
+- **Scripts/Editor/**: authoring helpers, compiled only for the Unity Editor.
+
+**TableView** is a reference container. **TableHudPresenter** computes action availability and formatted progress/status. **TurnController** submits player actions. **TablePresenter** synchronizes public physical tiles. Layout values live in prefabs, wording lives in serialized text assets, and game values live in rule profiles. Constants that describe structural rules, such as two tiles per pair, still belong in code.
+
+Scene installers hold serialized asset and prefab references. Runtime controllers do not construct UI layouts or assign font sizes and RectTransform dimensions. DOTween handles movement and short transitions; views cancel their owned tweens when disabled. Menu choices share table settings with the next scene, while an existing table keeps its rules and options snapshot.
 
 ## Verification
 
