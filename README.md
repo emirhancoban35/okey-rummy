@@ -30,7 +30,11 @@ Deck generation does not shuffle, distribute, instantiate visuals or decide the 
 
 `OpeningDealFactory` combines generation, ordering and initial distribution. OpeningDeal contains the seed, an immutable snapshot of the initial hand and the remaining draw pile; it is not the live hand or turn state.
 
-`Assets/Settings/Dealing/StandardOpeningDeal.asset` controls the initial hand size and fixed/random seed selection. The standard configuration deals 21 stones and leaves 85 in the draw pile. These counts are asset data. GameInstaller provides one OpeningDeal per scene, created when first requested through Zenject. It does not render or animate the deal yet.
+`Assets/Settings/Dealing/StandardOpeningDeal.asset` controls the initial hand size and fixed/random seed selection. The standard configuration deals 21 stones and leaves 85 in the draw pile. These counts are asset data. GameInstaller provides one OpeningDeal per scene through Zenject.
+
+`Assets/Prefabs/Istaka.prefab` contains RackView with 24 slot transforms in two rows. Edit the slots, stone scale, deal origin and interval in the Inspector. RackView converts slot positions into the stone root's local space and delegates movement to StoneMotion. The slot order determines the initial visual arrangement; it does not define a live hand model or game rules.
+
+OpeningHandPresenter uses Zenject's initialization lifecycle to create and animate the initial hand once. It validates rack capacity before creating views and owns their cleanup when the scene is disposed. Each view retains the physical identity from OpeningDeal. The scene no longer contains a separate prototype stone.
 
 `Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
 
@@ -40,9 +44,9 @@ Zenject 9.2.0 and DOTween 1.3.030 are vendored from their official distributions
 
 Sources: [Zenject release](https://github.com/modesttree/Zenject/releases/tag/9.2.0), [DOTween release](https://dotween.demigiant.com/download.php).
 
-`Okey.Composition` is the Unity composition assembly. The GameContext object in SampleScene contains a Zenject SceneContext and GameInstaller. Assign the deck asset and stone prefab on the installer in the Inspector. It binds the deck definition, DeckFactory and StoneViewFactory. StoneViewFactory instantiates and injects the assigned prefab, then binds its physical stone identity. Core has no dependency on Zenject or DOTween.
+`Okey.Composition` is the Unity composition assembly. The GameContext object in SampleScene contains a Zenject SceneContext and GameInstaller. Assign the deck and opening deal assets, stone prefab and scene rack on the installer in the Inspector. It connects generation, dealing and presentation. StoneViewFactory instantiates and injects the assigned prefab, then binds its physical stone identity. Core has no dependency on Zenject or DOTween.
 
-The stone prefab contains StoneMotion, which uses DOTween for local movement. `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` configures duration, easing and time scaling. MoveTo replaces the previous move; SnapTo cancels movement and places the stone immediately. Disabling a stone cancels its movement so a later reuse cannot resume an old tween.
+The stone prefab contains StoneMotion, which uses DOTween for local movement. `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` configures duration, easing and time scaling. MoveTo accepts an optional delay and replaces the previous move; SnapTo cancels movement and places the stone immediately. Disabling a stone cancels its movement so a later reuse cannot resume an old tween.
 
 PlayMode tests load the real scene and verify dependency resolution, prefab creation and movement lifecycle. EditMode tests cover definitions, generation and presentation configuration.
 

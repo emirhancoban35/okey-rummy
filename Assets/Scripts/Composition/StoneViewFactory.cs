@@ -23,8 +23,17 @@ namespace Okey.Composition
                 throw new ArgumentNullException(nameof(stone));
 
             var view = _container.InstantiatePrefabForComponent<Stone>(_prefab, parent);
-            view.Initialize(stone);
-            return view;
+            try
+            {
+                view.Initialize(stone);
+                return view;
+            }
+            catch
+            {
+                view.gameObject.SetActive(false);
+                UnityEngine.Object.Destroy(view.gameObject);
+                throw;
+            }
         }
     }
 }
