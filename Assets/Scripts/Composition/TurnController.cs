@@ -21,6 +21,7 @@ namespace Okey.Composition
         private int[] _handIds;
         private MeldPlan _series;
         private MeldPlan _pairs;
+        private Stone _drawnDragView;
         private bool _initialized;
         private bool _disposed;
 
@@ -41,6 +42,11 @@ namespace Okey.Composition
             if (_initialized) return;
             _initialized = true;
             _controls.DrawRequested += Draw;
+            foreach (var area in _controls.DiscardAreas) area.Clicked += TakeDiscard;
+            _controls.DrawSource.DragStarted += BeginDrawDrag;
+            _controls.DrawSource.Dragged += DragDraw;
+            _controls.DrawSource.DragEnded += EndDrawDrag;
+            _controls.DrawSource.DragCancelled += CancelDrawDrag;
             _controls.SeriesRequested += OpenSeries;
             _controls.PairsRequested += OpenPairs;
             _interaction.DropRequested += Drop;
@@ -49,10 +55,45 @@ namespace Okey.Composition
             Render();
         }
 
+        private void TakeDiscard(DiscardAreaView area)
+        {
+            if (_disposed || _interaction.IsDragging || area != _controls.DiscardAreas[_session.Players.Count - 1]) return;
+            for (var meld = 0; meld < _session.Melds.Count; meld++)
+                if (_session.TryTakeDiscard(0, meld)) return;
+        }
+
         public void Draw()
         {
             if (!_disposed && !_interaction.IsDragging && _session.TryDraw(0, out var stone))
                 _hand.AnimateDraw(stone.Id, _controls.DrawSource.transform.position);
+        }
+
+        private bool BeginDrawDrag(Vector3 position)
+        {
+            if (_disposed || _interaction.IsDragging || !_session.TryDraw(0, out var stone)) return false;
+            _drawnDragView = _hand.Views.Single(view => view.Instance.Id == stone.Id);
+            _interaction.TryBeginDrag(_drawnDragView);
+            _interaction.DragTo(_drawnDragView, position);
+            return true;
+        }
+
+        private void DragDraw(Vector3 position)
+        {
+            if (_drawnDragView != null) _interaction.DragTo(_drawnDragView, position);
+        }
+
+        private void EndDrawDrag(Vector3 position)
+        {
+            var view = _drawnDragView;
+            _drawnDragView = null;
+            if (view != null) _interaction.EndDrag(view, position);
+        }
+
+        private void CancelDrawDrag()
+        {
+            var view = _drawnDragView;
+            _drawnDragView = null;
+            if (view != null) _interaction.CancelDrag(view);
         }
 
         public void OpenSeries() => Open(OpeningMode.Series);
@@ -62,7 +103,10 @@ namespace Okey.Composition
         {
             if (_disposed || _interaction.IsDragging) return;
             UpdatePlans();
-            _session.TryOpen(0, mode, (mode == OpeningMode.Pairs ? _pairs : _series).Melds);
+            var before = _session.Players[0].Penalty;
+            var opened = _session.TryOpen(0, mode, (mode == OpeningMode.Pairs ? _pairs : _series).Melds);
+            var penalty = _session.Players[0].Penalty - before;
+            if (opened || penalty > 0) _controls.ShowOpeningResult(opened, penalty);
         }
 
         private bool Drop(Stone stone, Vector3 position)
@@ -94,6 +138,7 @@ namespace Okey.Composition
             _hand.Refresh();
             UpdatePlans();
             var local = _session.Players[0];
+            _controls.DiscardAreas[_session.Players.Count - 1].SetAvailable(!_interaction.IsDragging && _session.CanTakeDiscard(0));
             _controls.Render(_session.Phase, _session.ActiveSeat, local.Hand.Count, _session.RemainingCount,
                 _series.Points, _pairs.Melds.Count, _session.Rules.SeriesThreshold, _session.Rules.PairThreshold,
                 _session.Phase == TurnPhase.Finished ? local.Score : local.Penalty,
@@ -105,7 +150,13 @@ namespace Okey.Composition
         {
             if (_disposed) return;
             _disposed = true;
+            CancelDrawDrag();
             _controls.DrawRequested -= Draw;
+            foreach (var area in _controls.DiscardAreas) area.Clicked -= TakeDiscard;
+            _controls.DrawSource.DragStarted -= BeginDrawDrag;
+            _controls.DrawSource.Dragged -= DragDraw;
+            _controls.DrawSource.DragEnded -= EndDrawDrag;
+            _controls.DrawSource.DragCancelled -= CancelDrawDrag;
             _controls.SeriesRequested -= OpenSeries;
             _controls.PairsRequested -= OpenPairs;
             _interaction.DropRequested -= Drop;

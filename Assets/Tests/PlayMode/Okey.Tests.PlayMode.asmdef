@@ -6,7 +6,9 @@
         "Okey.Composition",
         "Zenject",
         "Unity.ugui",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.InputSystem",
+        "Okey.Configuration"
     ],
     "optionalUnityReferences": [
         "TestAssemblies"

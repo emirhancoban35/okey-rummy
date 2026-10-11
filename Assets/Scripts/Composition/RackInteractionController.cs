@@ -104,6 +104,11 @@ namespace Okey.Composition
             Changed?.Invoke();
         }
 
+        public void CancelActiveDrag()
+        {
+            if (_dragged != null) CancelDrag(_dragged);
+        }
+
         public void CancelDrag(Stone stone)
         {
             if (_dragged == null || _dragged != stone)

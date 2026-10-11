@@ -4,6 +4,7 @@ using System.Linq;
 using Okey.Core.Dealing;
 using Okey.Core.Tables;
 using Okey.Core.Stones;
+using Okey.Core.Rules;
 using Okey.Presentation.Racks;
 using Okey.Presentation.Stones;
 using UnityEngine;
@@ -61,6 +62,8 @@ namespace Okey.Composition
         {
             var view = _factory.Create(stone, root);
             view.DragHandler.enabled = false;
+            var collider = view.GetComponent<Collider2D>();
+            if (collider != null) collider.enabled = false;
             view.Selection.enabled = false;
             view.SetFace(true);
             view.transform.localScale = scale;
@@ -72,12 +75,18 @@ namespace Okey.Composition
         private void Render()
         {
             if (_disposed) return;
+            _controls.SetMeldCount(_session.Melds.Count);
             for (var seat = 0; seat < _session.Players.Count; seat++)
             {
                 var player = _session.Players[seat];
                 if (seat > 0) _controls.RenderOpponent(seat, player.Hand.Count, player.Penalty, player.Score,
                     seat == _session.ActiveSeat && _session.Phase != TurnPhase.Finished);
-                if (player.Discards.Count == 0) continue;
+                if (player.Discards.Count == 0)
+                {
+                    if (_discards[seat] != null) _discards[seat].gameObject.SetActive(false);
+                    continue;
+                }
+                if (_discards[seat] != null) _discards[seat].gameObject.SetActive(true);
                 var last = player.Discards[player.Discards.Count - 1];
                 if (_discards[seat] == null)
                     _discards[seat] = CreatePublicStone(last, _controls.DiscardAreas[seat].StoneRoot, _controls.DiscardScale);
@@ -86,23 +95,27 @@ namespace Okey.Composition
             _meldGroups.Clear();
             var column = 0;
             var row = 0;
+            var pair = 0;
+            var pairCount = _session.Melds.Count(meld => meld.Kind == MeldKind.Pair);
             foreach (var meld in _session.Melds)
             {
-                if (column + meld.Tiles.Count > _controls.MeldColumns) { row++; column = 0; }
+                if (meld.Kind != MeldKind.Pair && column + meld.Tiles.Count > _controls.MeldColumns) { row++; column = 0; }
                 var group = new List<Stone>();
+                var tileIndex = 0;
                 foreach (var tile in meld.Tiles)
                 {
                     if (!_meldViews.TryGetValue(tile.Stone.Id, out var view))
                     {
-                        view = CreatePublicStone(tile.Stone, _controls.MeldRoot, _controls.MeldScale);
+                        view = CreatePublicStone(tile.Stone, meld.Kind == MeldKind.Pair ? _controls.PairsRoot : _controls.MeldRoot, _controls.MeldScale);
                         _meldViews.Add(tile.Stone.Id, view);
                     }
-                    var target = _controls.GetMeldPosition(column++, row);
+                    var target = meld.Kind == MeldKind.Pair ? _controls.GetPairPosition(pair, tileIndex++, pairCount) : _controls.GetMeldPosition(column++, row);
+                    view.transform.localScale = meld.Kind == MeldKind.Pair ? _controls.GetPairScale(pairCount) : _controls.MeldScale;
                     if (view.transform.localPosition != target) view.Motion.MoveTo(target);
                     group.Add(view);
                 }
                 _meldGroups.Add(group);
-                column++;
+                if (meld.Kind == MeldKind.Pair) pair++; else column++;
             }
         }
 

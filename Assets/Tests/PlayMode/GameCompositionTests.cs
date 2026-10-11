@@ -1,4 +1,6 @@
 using System;
+using UnityEditor;
+using Okey.Configuration;
 using System.Collections;
 using System.Linq;
 using DG.Tweening;
@@ -13,6 +15,8 @@ using Okey.Presentation.Stones;
 using Okey.Presentation.Racks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -27,15 +31,28 @@ namespace Okey.Tests.PlayMode
         private Scene _scene;
         private SceneContext _context;
         private Stone _stone;
+        private TableSettings _settings;
+        private bool _randomStart;
+        private bool _humanlike;
+        private void SetSetting(string field, bool value) => typeof(TableSettings).GetField(field, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(_settings, value);
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _settings = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
+            _randomStart = _settings.RandomStartingSeat;
+            _humanlike = _settings.HumanlikeBots;
+            SetSetting("_randomStartingSeat", false);
+            SetSetting("_humanlikeBots", false);
             yield return SceneManager.LoadSceneAsync("SampleScene", LoadSceneMode.Additive);
             yield return null;
             _scene = SceneManager.GetSceneByName("SampleScene");
             _context = _scene.GetRootGameObjects()
                 .Select(root => root.GetComponent<SceneContext>()).Single(context => context != null);
+            var table = _context.Container.Resolve<TableSession>();
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var count = 0; table.ActiveSeat != 0 && table.Phase != TurnPhase.Finished && count < 100; count++) bot.Act();
+            if (table.Phase == TurnPhase.AwaitingDraw) table.TryDraw(0);
             var definition = _context.Container.Resolve<DeckDefinition>();
             var deck = _context.Container.Resolve<DeckFactory>().Create(definition);
             _stone = _context.Container.Resolve<StoneViewFactory>().Create(deck[0], _context.transform);
@@ -44,6 +61,8 @@ namespace Okey.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            SetSetting("_randomStartingSeat", _randomStart);
+            SetSetting("_humanlikeBots", _humanlike);
             if (_scene.IsValid() && _scene.isLoaded)
                 yield return SceneManager.UnloadSceneAsync(_scene);
         }
@@ -78,7 +97,7 @@ namespace Okey.Tests.PlayMode
             Assert.That(session.Players[0].Hand.Count, Is.EqualTo(21));
             Assert.That(HandViews.Any(view => view.Instance.Id == id), Is.False);
             var bot = _context.Container.Resolve<BotTurnController>();
-            for (var action = 0; action < 6; action++) bot.Act();
+            for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             Assert.That(session.ActiveSeat, Is.Zero);
             Assert.That(Controls.DrawSource.CanDraw, Is.True);
             var data = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left };
@@ -102,7 +121,7 @@ namespace Okey.Tests.PlayMode
             Interaction.TryBeginDrag(stone);
             Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
             var bot = _context.Container.Resolve<BotTurnController>();
-            for (var action = 0; action < 6; action++) bot.Act();
+            for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             Interaction.TryBeginDrag(HandViews[0]);
             _context.Container.Resolve<TurnController>().Draw();
             Assert.That(Controls.DrawSource.CanDraw, Is.False);
@@ -123,7 +142,7 @@ namespace Okey.Tests.PlayMode
                 .Where(stone => stone != null).Select(stone => stone.Id).ToHashSet();
             var visible = Controls.GetComponentsInChildren<Stone>().Concat(HandViews);
             Assert.That(visible.Any(view => view.Instance != null && opponentIds.Contains(view.Instance.Id)), Is.False);
-            Assert.That(visible.Count(view => view.Instance == null && !view.IsFaceUp), Is.EqualTo(10));
+            Assert.That(visible.Count(view => view.Instance == null && !view.IsFaceUp), Is.EqualTo(12));
         }
 
         [UnityTest]
@@ -175,7 +194,7 @@ namespace Okey.Tests.PlayMode
             Interaction.TryBeginDrag(stone);
             Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
             var bot = _context.Container.Resolve<BotTurnController>();
-            for (var action = 0; action < 6; action++) bot.Act();
+            for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             Physics2D.SyncTransforms();
             var camera = _scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Single(value => value != null);
             var data = new PointerEventData(EventSystem.current)
@@ -190,6 +209,146 @@ namespace Okey.Tests.PlayMode
             Assert.That(_context.Container.Resolve<TableSession>().Players[0].Hand.Count, Is.EqualTo(22));
         }
 
+        private sealed class FixedRandom : IRandomSource
+        {
+            private readonly double _value;
+            public FixedRandom(double value) => _value = value;
+            public double NextDouble() => _value;
+            public int Next(int maximum) => 0;
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void BotModeControlsWhetherAnEligibleOpeningCanBePostponed(bool humanlike)
+        {
+            var deck = new SeededStoneShuffler().Shuffle(_context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>()),42);
+            var rules = new OkeyRules(4,21,1,13,1,5,101,202,101,-101,101,2,2);
+            var table = new TableSession(rules,deck,28,startingSeat:1);
+            var planner = new MeldPlanner();
+            var strategy = new MeldPlayerStrategy(planner);
+            var observation = new PlayerObservation(table.Players[1].Hand.Slots.Where(tile => tile != null),table.Melds,OpeningMode.Closed,rules,table.MeldRules);
+            var plan = strategy.PlanOpening(observation,out var mode);
+            Assert.That(plan.TileCount,Is.LessThan(20));
+            Assert.That(plan.Melds.Count,Is.GreaterThan(0));
+            var settings = ScriptableObject.CreateInstance<TableSettings>();
+            typeof(TableSettings).GetField("_humanlikeBots",System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(settings,humanlike);
+            try
+            {
+                new BotTurnController(table,strategy,settings,new FixedRandom(.1)).Act();
+                Assert.That(table.Players[1].Opening,Is.EqualTo(humanlike ? OpeningMode.Closed : mode));
+                Assert.That(table.Players[1].Discards.Count,Is.EqualTo(humanlike ? 1 : 0));
+                Assert.That(table.ActiveSeat,Is.EqualTo(humanlike ? 2 : 1));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(settings); }
+        }
+
+        [Test]
+        public void TimeoutCancelsDraggingAndEndsTheLocalTurn()
+        {
+            Interaction.TryBeginDrag(HandViews[0]);
+            _context.Container.Resolve<TurnClockController>().Advance(46);
+            var table = _context.Container.Resolve<TableSession>();
+            Assert.That(Interaction.IsDragging, Is.False);
+            Assert.That(table.ActiveSeat, Is.EqualTo(1));
+            Assert.That(table.Players[0].Hand.Count, Is.EqualTo(21));
+            Assert.That(table.Players[0].Discards.Count, Is.EqualTo(1));
+        }
+
+        [UnityTest]
+        public IEnumerator PairsUseTheirOwnBoardAndCleanUpTheirViews()
+        {
+            var deck = _context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>());
+            var table = new TableSession(new OkeyRules(4,21,1,13,101,1,101,202,101,-101,101,2,2),deck,28);
+            var pair = table.Players[0].Hand.Slots.Where(tile => tile != null && !table.MeldRules.IsWild(tile))
+                .GroupBy(tile => tile.Data.Value).First(group => group.Count() == 2).ToArray();
+            table.MeldRules.TryCreate(pair, MeldKind.Pair, out var meld);
+            var presenter = new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>());
+            presenter.Initialize();
+            Assert.That(table.TryOpen(0,OpeningMode.Pairs,new[] {meld}),Is.True);
+            Assert.That(Controls.PairsRoot.GetComponentsInChildren<Stone>().Length,Is.EqualTo(2));
+            Assert.That(Controls.MeldRoot.GetComponentsInChildren<Stone>().Length,Is.Zero);
+            presenter.Dispose();
+            yield return null;
+            Assert.That(Controls.PairsRoot.GetComponentsInChildren<Stone>().Length,Is.Zero);
+        }
+
+        [UnityTest]
+        public IEnumerator MousePressAndReleaseDrawFromTheWholePileSurface()
+        {
+            var stone = HandViews[0];
+            Interaction.TryBeginDrag(stone);
+            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
+            yield return null;
+            Physics2D.SyncTransforms();
+            var camera = _scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Single(value => value != null);
+            var position = camera.WorldToScreenPoint(Controls.DrawSource.transform.position + Vector3.down * .45f);
+            CompleteHandMovement();
+            var originalMouse = Mouse.current;
+            var originalBackgroundBehavior = InputSystem.settings.backgroundBehavior;
+            var originalEditorBehavior = InputSystem.settings.editorInputBehaviorInPlayMode;
+            InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+            var mouse = InputSystem.AddDevice<Mouse>();
+            try
+            {
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = position });
+                InputSystem.Update();
+                yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = position }.WithButton(MouseButton.Left));
+                InputSystem.Update();
+                yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = position });
+                InputSystem.Update();
+                yield return null;
+                Assert.That(_context.Container.Resolve<TableSession>().Players[0].Hand.Count, Is.EqualTo(22));
+                Assert.That(Controls.DrawSource.CanDraw, Is.False);
+            }
+            finally
+            {
+                InputSystem.RemoveDevice(mouse);
+                InputSystem.settings.backgroundBehavior = originalBackgroundBehavior;
+                InputSystem.settings.editorInputBehaviorInPlayMode = originalEditorBehavior;
+                if (originalMouse != null) originalMouse.MakeCurrent();
+            }
+        }
+
+        [Test]
+        public void DraggingFromPileDrawsOnceAndInsertsTheNewTileAtTheRequestedSlot()
+        {
+            var stone = HandViews[0];
+            Interaction.TryBeginDrag(stone);
+            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
+            var table = _context.Container.Resolve<TableSession>();
+            var camera = _scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Single(value => value != null);
+            var data = new PointerEventData(EventSystem.current)
+            {
+                pointerId = 29,
+                position = camera.WorldToScreenPoint(Controls.DrawSource.transform.position),
+                button = PointerEventData.InputButton.Left,
+                pointerPressRaycast = new RaycastResult { module = camera.GetComponent<Physics2DRaycaster>() }
+            };
+            var before = HandViews.Select(view => view.Instance.Id).ToHashSet();
+            Controls.DrawSource.OnPointerDown(data);
+            Controls.DrawSource.OnBeginDrag(data);
+            Controls.DrawSource.OnBeginDrag(data);
+            var drawn = HandViews.Single(view => !before.Contains(view.Instance.Id));
+            Assert.That(Interaction.IsDragging, Is.True);
+            Assert.That(table.Players[0].Hand.Count, Is.EqualTo(22));
+            data.position = camera.WorldToScreenPoint(SlotWorldPosition(26));
+            Controls.DrawSource.OnDrag(data);
+            Controls.DrawSource.OnEndDrag(data);
+            Controls.DrawSource.OnPointerClick(data);
+            Assert.That(Interaction.IsDragging, Is.False);
+            Assert.That(table.Players[0].Hand.FindSlot(drawn.Instance.Id), Is.EqualTo(26));
+            Assert.That(table.RemainingCount, Is.EqualTo(16));
+            DOTween.Complete(drawn.transform);
+            Assert.That(Vector3.Distance(drawn.transform.position, SlotWorldPosition(26)), Is.LessThan(.001f));
+        }
+
         [Test]
         public void RefreshPreservesExistingViewsAndReusesDiscardedSlot()
         {
@@ -197,7 +356,7 @@ namespace Okey.Tests.PlayMode
             Interaction.TryBeginDrag(original[3]);
             Interaction.EndDrag(original[3], Controls.DiscardAreas[0].StoneRoot.position);
             var bot = _context.Container.Resolve<BotTurnController>();
-            for (var action = 0; action < 6; action++) bot.Act();
+            for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             _context.Container.Resolve<TurnController>().Draw();
             var current = HandViews;
             foreach (var view in original.Where(view => view != original[3]))
@@ -389,6 +548,10 @@ namespace Okey.Tests.PlayMode
         public void TooLargeHandFailsBeforeCreatingAnyViews()
         {
             var rack = _context.Container.Resolve<RackView>();
+            var table = _context.Container.Resolve<TableSession>();
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var count = 0; table.ActiveSeat != 0 && table.Phase != TurnPhase.Finished && count < 100; count++) bot.Act();
+            if (table.Phase == TurnPhase.AwaitingDraw) table.TryDraw(0);
             var definition = _context.Container.Resolve<DeckDefinition>();
             var deal = _context.Container.Resolve<OpeningDealFactory>().Create(definition, rack.Capacity + 1, 42);
             var hand = new RackArrangement(deal.InitialHand, rack.Capacity + 1);

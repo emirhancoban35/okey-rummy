@@ -39,6 +39,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &606383455115856990
 SpriteRenderer:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -57,6 +58,8 @@ SpriteRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -78,20 +81,67 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: -152
-  m_Sprite: {fileID: -5726542415545918897, guid: f65422ca7aa444948a6306c62001debb, type: 3}
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: 4800141755242312931, guid: 717b3abb1a8154509a1bffecd292f259, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
-  m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_DrawMode: 1
+  m_Size: {x: 7.78, y: 1.95}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &7200000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3799312308690035797}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8d679e067fd4628b8bc06d24951ed5b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _stoneRoot: {fileID: 7200000000000000003}
+  _dealOrigin: {fileID: 7200000000000000005}
+  _slots:
+  - {fileID: 7200000000000000101}
+  - {fileID: 7200000000000000103}
+  - {fileID: 7200000000000000105}
+  - {fileID: 7200000000000000107}
+  - {fileID: 7200000000000000109}
+  - {fileID: 7200000000000000111}
+  - {fileID: 7200000000000000113}
+  - {fileID: 7200000000000000115}
+  - {fileID: 7200000000000000117}
+  - {fileID: 7200000000000000119}
+  - {fileID: 7200000000000000121}
+  - {fileID: 7200000000000000123}
+  - {fileID: 7200000000000000149}
+  - {fileID: 7200000000000000151}
+  - {fileID: 7200000000000000125}
+  - {fileID: 7200000000000000127}
+  - {fileID: 7200000000000000129}
+  - {fileID: 7200000000000000131}
+  - {fileID: 7200000000000000133}
+  - {fileID: 7200000000000000135}
+  - {fileID: 7200000000000000137}
+  - {fileID: 7200000000000000139}
+  - {fileID: 7200000000000000141}
+  - {fileID: 7200000000000000143}
+  - {fileID: 7200000000000000145}
+  - {fileID: 7200000000000000147}
+  - {fileID: 7200000000000000153}
+  - {fileID: 7200000000000000155}
+  _stoneScale: {x: 0.46, y: 0.6, z: 1}
+  _dealInterval: 0.035
+  _dropRadius: 0.34
 --- !u!1 &7200000000000000002
 GameObject:
   m_ObjectHideFlags: 0
@@ -616,68 +666,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7200000000000000007}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &7200000000000000148
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7200000000000000149}
-  m_Layer: 0
-  m_Name: Slot13
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7200000000000000149
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7200000000000000148}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.53, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7200000000000000007}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &7200000000000000150
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7200000000000000151}
-  m_Layer: 0
-  m_Name: Slot14
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7200000000000000151
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7200000000000000150}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.99, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7200000000000000007}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7200000000000000124
 GameObject:
   m_ObjectHideFlags: 0
@@ -1050,6 +1038,68 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7200000000000000009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7200000000000000148
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7200000000000000149}
+  m_Layer: 0
+  m_Name: Slot13
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7200000000000000149
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7200000000000000148}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.53, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7200000000000000007}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7200000000000000150
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7200000000000000151}
+  m_Layer: 0
+  m_Name: Slot14
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7200000000000000151
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7200000000000000150}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.99, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7200000000000000007}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7200000000000000152
 GameObject:
   m_ObjectHideFlags: 0
@@ -1112,49 +1162,3 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7200000000000000009}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7200000000000000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3799312308690035797}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8d679e067fd4628b8bc06d24951ed5b, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  _stoneRoot: {fileID: 7200000000000000003}
-  _dealOrigin: {fileID: 7200000000000000005}
-  _slots:
-  - {fileID: 7200000000000000101}
-  - {fileID: 7200000000000000103}
-  - {fileID: 7200000000000000105}
-  - {fileID: 7200000000000000107}
-  - {fileID: 7200000000000000109}
-  - {fileID: 7200000000000000111}
-  - {fileID: 7200000000000000113}
-  - {fileID: 7200000000000000115}
-  - {fileID: 7200000000000000117}
-  - {fileID: 7200000000000000119}
-  - {fileID: 7200000000000000121}
-  - {fileID: 7200000000000000123}
-  - {fileID: 7200000000000000149}
-  - {fileID: 7200000000000000151}
-  - {fileID: 7200000000000000125}
-  - {fileID: 7200000000000000127}
-  - {fileID: 7200000000000000129}
-  - {fileID: 7200000000000000131}
-  - {fileID: 7200000000000000133}
-  - {fileID: 7200000000000000135}
-  - {fileID: 7200000000000000137}
-  - {fileID: 7200000000000000139}
-  - {fileID: 7200000000000000141}
-  - {fileID: 7200000000000000143}
-  - {fileID: 7200000000000000145}
-  - {fileID: 7200000000000000147}
-  - {fileID: 7200000000000000153}
-  - {fileID: 7200000000000000155}
-  _stoneScale: {x: 0.46, y: 0.6, z: 1}
-  _dealInterval: 0.035
-  _dropRadius: 0.34

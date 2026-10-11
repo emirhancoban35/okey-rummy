@@ -1,8 +1,10 @@
-# 101okey-lite
+# Okey Rummy
 
-A single-player Okey portfolio project built with Unity 6000.3.15f1 and URP 2D.
+An extensible Okey and Rummy portfolio project with single-player AI opponents, built with Unity 6000.3.15f1 and URP 2D.
 
 The project is developed in small, working steps. Multiplayer is outside the scope of this project. The boundaries allow another developer to introduce networked input and synchronization later; networking is not implemented.
+
+![Coffeehouse table](Docs/Images/coffeehouse-table.png)
 
 ## Current foundation
 
@@ -44,19 +46,19 @@ RackView's drop radius is measured in the stone root's local space and is editab
 
 ## Playing the 101 table
 
-SampleScene starts a local 101 table with you and three bots. The first seat receives 22 stones and starts by discarding; the other seats receive 21. A regular indicator is set aside and the remaining 20 stones form the closed pile. The indicator determines the real joker; fake jokers represent that fixed color and value.
+SampleScene starts a local 101 table with you and three bots. A random seat receives 22 stones and starts by discarding; the other seats receive 21. New tables rotate the starting seat. A regular indicator is set aside and the remaining 20 stones form the closed pile. The indicator determines the real joker; fake jokers represent that fixed color and value.
 
 Click the face-down pile near the center to draw during your turn. Drop a stone into the bottom-right outlined area to discard. The four corner areas display each seat's latest discard. Opponent hands are represented by face-down covers and counts; their physical stones never receive face-up scene views. Rearranging your rack remains available during other seats' turns.
 
-The header shows the maximum opening series value, pair count, thresholds, remaining pile and your penalty or final score. `SERI AC` finds disjoint runs and sets; `CIFT AC` finds identical pairs. Both reserve a stone for the required final discard. An initial series opening needs 101 points; a pair opening needs five pairs. Invalid attempts apply the configured penalty without changing the hand. Once opened, additional melds must use the same opening mode. Drag a stone onto an open meld to extend it. Joker assignments remain fixed after opening. Discarding the final tile finishes the hand and calculates scores.
+The header shows the maximum opening series value, pair count, thresholds, remaining pile and your penalty or final score. `OPEN SERIES` finds disjoint runs and sets; `OPEN PAIRS` finds identical pairs. Both reserve a stone for the required final discard. An initial series opening needs 101 points; a pair opening needs five pairs. Invalid attempts apply the configured penalty without changing the hand. Once opened, additional melds must use the same opening mode. Drag a stone onto an open meld to extend it. Joker assignments remain fixed after opening. Discarding the final tile finishes the hand and calculates scores.
 
-`Assets/Settings/Dealing/Standard101Table.asset` controls player count, hand size, number range, opening thresholds, penalties, scoring and bot action delay. `StandardOpeningDeal.asset` supplies the shuffle seed; its practice-hand size and phase fields are not used by the table. `SinglePlayerSession` remains an isolated draw/discard practice model.
+`Assets/Settings/Dealing/Standard101Table.asset` controls player count, hand size, number range, opening thresholds, penalties, scoring, partnerships, discard pickup, starting-seat selection, turn time, bot behavior, thinking interval, opening patience and error chance. `StandardOpeningDeal.asset` supplies the shuffle seed; its practice-hand size and phase fields are not used by the table. `SinglePlayerSession` remains an isolated draw/discard practice model.
 
-`TableSession` owns hands, turn legality, public melds and discard histories. `IRoundScoring` supplies replaceable scoring, with `Okey101Scoring` as the default. `IMeldRules` supplies replaceable meld validation; the baseline `MeldRules` validates runs, sets and pairs; `MeldPlanner` searches compatible candidates for disjoint melds. `IPlayerStrategy` receives an immutable snapshot of its own hand and public melds, without opponents' hands or the draw pile. The initial strategy protects completed melds, opens when eligible, extends public melds and discards weak tiles. Bot actions pass through the same table methods as local input.
+`TableSession` owns hands, turn legality, public melds and discard histories. `IRoundScoring` supplies replaceable scoring, with `Okey101Scoring` as the default. `IMeldRules` supplies replaceable meld validation; the baseline `MeldRules` validates runs, sets and pairs; `MeldPlanner` searches compatible candidates for disjoint melds. `IPlayerStrategy` receives an immutable snapshot of its own hand, public melds and the next seat’s public discard history, without opponents' hands or the draw pile. The strategy protects completed melds and useful connections, avoids penalty discards, uses the next player’s public discard history as a weak defensive signal, and prefers low-value isolated tiles. It never reads another hand or the stock. Fast bots act mathematically at a fixed pace. Humanlike bots use configurable thinking delays, sometimes postpone opening, and have a configurable 1% mistake chance per discard decision. Drawing, opening, laying off and discarding are separate actions. Bot actions pass through the same table methods as local input. IRandomSource makes behavioral randomness replaceable and reproducible in tests.
 
 `Assets/Prefabs/GameControls.prefab` owns the draw surface, four discard areas, opening buttons, public meld root, opponent covers, labels, text formats, scales and spacing. These are editable prefab references. Zenject binds the table, strategy and controllers; DOTween animates rack movement, discard placement and public meld positioning.
 
-The baseline supports drawing from the closed pile. Taking the previous player's discard, special immediate-finish exceptions and multi-hand match progression are not implemented yet. The rule reference is [Pagat's 101 Okey rules](https://www.pagat.com/rummy/okey101.html); this implementation uses the configurable baseline described above rather than every published variation.
+An opened player may click the previous seat’s discard to immediately extend a compatible public meld. Pickup is atomic: invalid targets leave the discard and stock untouched. This configured variation forbids pickup while closed; the tile cannot be kept for later. Every turn has a configurable timer, renewed by successful opening. On expiry the controller draws if necessary and discards legally. Partnership mode uses opposite seats; a winning teammate’s remaining hand is ignored and team scores combine both seats. Select the next table’s mode and use NEW TABLE to start it. Bot mode changes immediately. Special immediate-finish exceptions, cumulative match scoring and network transport remain outside this step. The rule reference is [Pagat's 101 Okey rules](https://www.pagat.com/rummy/okey101.html); this implementation uses the configurable baseline described above rather than every published variation.
 
 `Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
 
@@ -83,4 +85,4 @@ PlayMode tests load the real scene and verify dependency resolution, prefab crea
 
 ## Next steps
 
-Add discard pickup with immediate melding, special finish variations and multi-hand match progression. Improve bot planning through IPlayerStrategy. Persistence and network synchronization can build on the existing table boundary.
+Add special finish variations and cumulative multi-hand matches. Further opponent modeling can replace IPlayerStrategy. Persistence and network synchronization can build on the existing table boundary.

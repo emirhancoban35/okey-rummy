@@ -33,11 +33,13 @@ namespace Okey.Composition
             Container.BindInstance(_tableSettings);
             Container.BindInstance(_tableSettings.CreateRules());
             Container.Bind<MeldPlanner>().AsSingle();
+            Container.Bind<IRandomSource>().To<SeededRandomSource>().AsSingle().WithArguments(_openingDealSettings.CreateSeed());
             Container.Bind<IPlayerStrategy>().To<MeldPlayerStrategy>().AsSingle();
             Container.Bind<TableSession>().FromMethod(context => new TableSession(
                 context.Container.Resolve<OkeyRules>(), context.Container.Resolve<IStoneShuffler>().Shuffle(
                     context.Container.Resolve<DeckFactory>().Create(context.Container.Resolve<DeckDefinition>()),
-                    _openingDealSettings.CreateSeed()), _rackView.Capacity)).AsSingle();
+                    _openingDealSettings.CreateSeed()), _rackView.Capacity, startingSeat: _tableSettings.NextStartingSeat(),
+                    options: _tableSettings.CreateOptions())).AsSingle();
             Container.Bind<Stone>().FromInstance(_stonePrefab).WhenInjectedInto<StoneViewFactory>();
             Container.Bind<StoneViewFactory>().AsSingle();
             Container.BindInstance(_rackView);
@@ -49,6 +51,8 @@ namespace Okey.Composition
             Container.BindInterfacesAndSelfTo<TablePresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<TurnController>().AsSingle();
             Container.BindInterfacesAndSelfTo<BotTurnController>().AsSingle();
+            Container.BindInterfacesAndSelfTo<TurnClockController>().AsSingle();
+            Container.BindInterfacesAndSelfTo<TableOptionsController>().AsSingle();
             Container.BindExecutionOrder<HandPresenter>(-10);
             Container.BindExecutionOrder<TablePresenter>(-5);
         }
