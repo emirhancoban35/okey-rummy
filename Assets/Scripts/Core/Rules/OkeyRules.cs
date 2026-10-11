@@ -4,6 +4,7 @@ namespace Okey.Core.Rules
 {
     public sealed class OkeyRules
     {
+        public bool AllowsHighOne { get; }
         public int PlayerCount { get; }
         public int HandSize { get; }
         public int MinimumValue { get; }
@@ -20,12 +21,13 @@ namespace Okey.Core.Rules
 
         public OkeyRules(int playerCount, int handSize, int minimumValue, int maximumValue,
             int seriesThreshold, int pairThreshold, int invalidOpeningPenalty, int unopenedScore,
-            int jokerScore, int winnerScore, int discardPenalty, int pairMultiplier, int jokerFinishMultiplier)
+            int jokerScore, int winnerScore, int discardPenalty, int pairMultiplier, int jokerFinishMultiplier, bool allowsHighOne = false)
         {
             if (playerCount < 2 || playerCount > 4 || handSize < 1 || minimumValue < 1 ||
                 maximumValue < minimumValue || seriesThreshold < 1 || pairThreshold < 1 ||
                 invalidOpeningPenalty < 0 || unopenedScore < 0 || jokerScore < 0 || discardPenalty < 0 || pairMultiplier < 1 || jokerFinishMultiplier < 1)
                 throw new ArgumentOutOfRangeException(nameof(playerCount), "Invalid table rules.");
+            AllowsHighOne = allowsHighOne;
             PlayerCount = playerCount;
             HandSize = handSize;
             MinimumValue = minimumValue;

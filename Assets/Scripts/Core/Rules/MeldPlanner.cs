@@ -34,7 +34,7 @@ namespace Okey.Core.Rules
             public ulong Next;
         }
 
-        public MeldPlan Find(IEnumerable<StoneInstance> stones, IMeldRules rules, OkeyRules settings, OpeningMode mode)
+        public MeldPlan Find(IEnumerable<StoneInstance> stones, IMeldRules rules, OkeyRules settings, OpeningMode mode, bool reserveDiscard = true, bool maximizeTiles = false)
         {
             var hand = stones.Where(stone => stone != null).ToArray();
             if (hand.Length > 63) throw new ArgumentException("The meld planner supports up to 63 stones.", nameof(stones));
@@ -97,6 +97,16 @@ namespace Okey.Core.Rules
                         }
                     }
             }
+            if (settings.AllowsHighOne && mode != OpeningMode.Pairs)
+                for (var color = 0; color < 4; color++)
+                    for (var start = settings.MinimumValue + 1; start < settings.MaximumValue; start++)
+                    {
+                        var buckets = Enumerable.Range(start, settings.MaximumValue - start + 1).Append(settings.MinimumValue)
+                            .Select(value => fixedIndices.Where(index => rules.Resolve(hand[index]).Value == value &&
+                                (int)rules.Resolve(hand[index]).Color == color).ToArray()).ToList();
+                        if (buckets.Count(bucket => bucket.Length == 0) <= wild.Length)
+                            Choose(buckets, 0, new List<int>(), MeldKind.Run);
+                    }
             var byTile = new List<Candidate>[hand.Length];
             for (var index = 0; index < hand.Length; index++)
                 byTile[index] = candidates.Values.Where(candidate => (candidate.Mask & (1UL << index)) != 0).OrderByDescending(candidate => mode == OpeningMode.Pairs ? candidate.Meld.Tiles.Count : candidate.Meld.Points).ToList();
@@ -104,11 +114,11 @@ namespace Okey.Core.Rules
             var values = hand.Select(stone => rules.IsWild(stone) ? settings.MaximumValue : rules.Resolve(stone).Value).ToArray();
             int UpperBound(ulong mask)
             {
-                if (mode == OpeningMode.Pairs)
+                if (mode == OpeningMode.Pairs || maximizeTiles)
                 {
                     var count = 0;
                     for (var index = 0; index < hand.Length; index++) if ((mask & (1UL << index)) != 0) count++;
-                    return count / 2;
+                    return mode == OpeningMode.Pairs ? count / 2 : count;
                 }
                 var points = 0;
                 for (var index = 0; index < hand.Length; index++) if ((mask & (1UL << index)) != 0) points += values[index];
@@ -128,7 +138,7 @@ namespace Okey.Core.Rules
                     if (best.Score >= upper) break;
                     if ((candidate.Mask & mask) != candidate.Mask) continue;
                     next = mask ^ candidate.Mask;
-                    var value = mode == OpeningMode.Pairs ? 1 : candidate.Meld.Points;
+                    var value = mode == OpeningMode.Pairs ? 1 : maximizeTiles ? candidate.Meld.Tiles.Count : candidate.Meld.Points;
                     if (value + UpperBound(next) <= best.Score) continue;
                     var score = Solve(next).Score + value;
                     if (score > best.Score)
@@ -146,11 +156,11 @@ namespace Okey.Core.Rules
             var all = (1UL << hand.Length) - 1;
             ulong selected = 0;
             var maximum = -1;
-            var globalUpper = mode == OpeningMode.Pairs ? (hand.Length - 1) / 2 : values.Sum() - values.Min();
-            foreach (var index in Enumerable.Range(0, hand.Length).OrderBy(index => values[index]))
+            var globalUpper = mode == OpeningMode.Pairs ? (hand.Length - (reserveDiscard ? 1 : 0)) / 2 : maximizeTiles ? hand.Length - (reserveDiscard ? 1 : 0) : values.Sum() - (reserveDiscard ? values.Min() : 0);
+            foreach (var index in reserveDiscard ? Enumerable.Range(0, hand.Length).OrderBy(index => values[index]) : Enumerable.Repeat(-1, 1))
             {
                 if (maximum >= globalUpper) break;
-                var mask = all ^ (1UL << index);
+                var mask = index < 0 ? all : all ^ (1UL << index);
                 var score = Solve(mask).Score;
                 if (score > maximum) { maximum = score; selected = mask; }
             }

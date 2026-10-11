@@ -65,13 +65,19 @@ namespace Okey.Core.Rules
                 var low = fixedTiles.Min(stone => Resolve(stone).Value);
                 var high = fixedTiles.Max(stone => Resolve(stone).Value);
                 var start = Math.Min(low, _rules.MaximumValue - hand.Length + 1);
-                if (start < _rules.MinimumValue || start + hand.Length - 1 < high)
-                    return false;
-                for (var value = start; value < start + hand.Length; value++)
+                var values = Enumerable.Range(Math.Max(_rules.MinimumValue, start), hand.Length).ToArray();
+                var fits = start >= _rules.MinimumValue && values.Last() <= _rules.MaximumValue && values.Last() >= high;
+                if (!fits && _rules.AllowsHighOne)
+                {
+                    start = _rules.MaximumValue - hand.Length + 2;
+                    values = Enumerable.Range(start, hand.Length - 1).Append(_rules.MinimumValue).ToArray();
+                    fits = start > _rules.MinimumValue && fixedTiles.All(stone => values.Contains(Resolve(stone).Value));
+                }
+                if (!fits) return false;
+                foreach (var value in values)
                 {
                     var stone = fixedTiles.FirstOrDefault(tile => Resolve(tile).Value == value);
-                    if (stone == null && wild.Count == 0)
-                        return false;
+                    if (stone == null && wild.Count == 0) return false;
                     placed.Add(new MeldTile(stone ?? wild.Dequeue(), first.Color, value));
                 }
             }
