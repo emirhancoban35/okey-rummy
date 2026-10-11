@@ -31,6 +31,7 @@ namespace Okey.Presentation.Stones
             if (_dragging || _target == null || eventData.button != PointerEventData.InputButton.Left)
                 return;
 
+            _stone.Selection.CancelPress();
             _camera = eventData.pressEventCamera;
             if (_camera == null)
                 return;

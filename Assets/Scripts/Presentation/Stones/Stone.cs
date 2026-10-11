@@ -25,10 +25,13 @@ namespace Okey.Presentation.Stones
             if (stone == null)
                 throw new ArgumentNullException(nameof(stone));
 
+            _visual.ConfigureInspection(false);
             _visual.SetVisual(stone.Data);
             _visual.SetFace(_isFaceUp);
             Instance = stone;
         }
+
+        public void ConfigureInspection(bool isWild) => _visual.ConfigureInspection(isWild);
 
         public void SetFace(bool isFaceUp)
         {

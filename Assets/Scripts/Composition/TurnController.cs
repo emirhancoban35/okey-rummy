@@ -17,7 +17,8 @@ namespace Okey.Composition
         private readonly RackInteractionController _interaction;
         private readonly TurnControlsView _controls;
         private readonly TablePresenter _table;
-        private readonly MeldPlanner _planner;
+        private readonly RackMeldEvaluator _evaluator;
+        private readonly RackView _rack;
         private int[] _handIds;
         private MeldPlan _series;
         private MeldPlan _pairs;
@@ -26,14 +27,15 @@ namespace Okey.Composition
         private bool _disposed;
 
         public TurnController(TableSession session, HandPresenter hand, RackInteractionController interaction,
-            TurnControlsView controls, TablePresenter table, MeldPlanner planner)
+            TurnControlsView controls, TablePresenter table, RackMeldEvaluator evaluator, RackView rack)
         {
             _session = session;
             _hand = hand;
             _interaction = interaction;
             _controls = controls;
             _table = table;
-            _planner = planner;
+            _evaluator = evaluator;
+            _rack = rack;
         }
 
         public void Initialize()
@@ -124,18 +126,20 @@ namespace Okey.Composition
 
         private void UpdatePlans()
         {
-            var hand = _session.Players[0].Hand.Slots.Where(stone => stone != null).OrderBy(stone => stone.Id).ToArray();
-            var ids = hand.Select(stone => stone.Id).ToArray();
+            var hand = _session.Players[0].Hand.Slots;
+            var ids = hand.Select(stone => stone?.Id ?? -1).ToArray();
             if (_handIds != null && _handIds.SequenceEqual(ids)) return;
             _handIds = ids;
-            _series = _planner.Find(hand, _session.MeldRules, _session.Rules, OpeningMode.Series);
-            _pairs = _planner.Find(hand, _session.MeldRules, _session.Rules, OpeningMode.Pairs);
+            _series = _evaluator.Find(hand, _rack.RowCapacity, _session.MeldRules, OpeningMode.Series);
+            _pairs = _evaluator.Find(hand, _rack.RowCapacity, _session.MeldRules, OpeningMode.Pairs);
         }
 
         private void Render()
         {
             if (_disposed) return;
             _hand.Refresh();
+            foreach (var view in _hand.Views)
+                view.ConfigureInspection(_session.MeldRules.IsWild(view.Instance));
             UpdatePlans();
             var local = _session.Players[0];
             _controls.DiscardAreas[_session.Players.Count - 1].SetAvailable(!_interaction.IsDragging && _session.CanTakeDiscard(0));
@@ -144,6 +148,11 @@ namespace Okey.Composition
                 _session.Phase == TurnPhase.Finished ? local.Score : local.Penalty,
                 !_interaction.IsDragging && _session.CanDraw(0),
                 !_interaction.IsDragging && _session.ActiveSeat == 0 && _session.Phase == TurnPhase.AwaitingDiscard);
+            _controls.RenderGroups(_series, _pairs, local.Opening);
+            var grouped = local.Opening == OpeningMode.Pairs || local.Opening == OpeningMode.Closed &&
+                _pairs.Melds.Count >= _session.Rules.PairThreshold && _series.Points < _session.Rules.SeriesThreshold ? _pairs : _series;
+            var ids = grouped.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();
+            foreach (var view in _hand.Views) view.Selection.SetGrouped(ids.Contains(view.Instance.Id));
         }
 
         public void Dispose()

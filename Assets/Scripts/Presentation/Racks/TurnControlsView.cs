@@ -1,6 +1,7 @@
 using System;
 using DG.Tweening;
 using Okey.Core.Dealing;
+using Okey.Core.Rules;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,6 +10,50 @@ namespace Okey.Presentation.Racks
 {
     public sealed class TurnControlsView : MonoBehaviour
     {
+        [SerializeField] private Button _settingsButton;
+        [SerializeField] private Button _helpButton;
+        [SerializeField] private Button _closeSettingsButton;
+        [SerializeField] private Button _closeHelpButton;
+        [SerializeField] private GameObject _settingsPanel;
+        [SerializeField] private GameObject _helpPanel;
+        [SerializeField] private TMP_Text _seriesPointsText;
+        [SerializeField] private TMP_Text _pairCountText;
+        [SerializeField] private string _progressFormat = "{0} / {1}";
+        [SerializeField] private string _additionalGroupFormat = "+ {0}";
+        [SerializeField] private Image _seriesProgress;
+        [SerializeField] private Image _pairProgress;
+        [SerializeField] private GameObject _drawCue;
+        [SerializeField] private GameObject _discardCue;
+        private int _seriesThreshold;
+        private int _pairThreshold;
+        public void RenderGroups(MeldPlan series, MeldPlan pairs, OpeningMode opening)
+        {
+            if (_seriesPointsText != null) _seriesPointsText.text = opening == OpeningMode.Closed
+                ? string.Format(_progressFormat, series.Points, _seriesThreshold) : string.Format(_additionalGroupFormat, series.TileCount);
+            if (_pairCountText != null) _pairCountText.text = opening == OpeningMode.Closed
+                ? string.Format(_progressFormat, pairs.Melds.Count, _pairThreshold) : string.Format(_additionalGroupFormat, pairs.Melds.Count);
+            if (_seriesProgress != null) _seriesProgress.fillAmount = opening == OpeningMode.Closed
+                ? Mathf.Clamp01((float)series.Points / _seriesThreshold) : series.TileCount > 0 ? 1 : 0;
+            if (_pairProgress != null) _pairProgress.fillAmount = opening == OpeningMode.Closed
+                ? Mathf.Clamp01((float)pairs.Melds.Count / _pairThreshold) : pairs.Melds.Count > 0 ? 1 : 0;
+            _seriesButton.interactable &= opening != OpeningMode.Pairs;
+            _pairsButton.interactable &= opening != OpeningMode.Series;
+        }
+        private void ToggleSettings()
+        {
+            _settingsPanel.SetActive(!_settingsPanel.activeSelf);
+            _helpPanel.SetActive(false);
+        }
+        private void ToggleHelp()
+        {
+            _helpPanel.SetActive(!_helpPanel.activeSelf);
+            _settingsPanel.SetActive(false);
+        }
+        private void ClosePanels()
+        {
+            _settingsPanel.SetActive(false);
+            _helpPanel.SetActive(false);
+        }
         [SerializeField] private Button _botModeButton;
         [SerializeField] private Button _partnershipButton;
         [SerializeField] private Button _newHandButton;
@@ -122,16 +167,22 @@ namespace Okey.Presentation.Racks
         public void Render(TurnPhase phase, int seat, int handCount, int pileCount, int points, int pairs,
             int threshold, int pairThreshold, int penalty, bool canDraw, bool canOpen)
         {
+            _seriesThreshold = threshold;
+            _pairThreshold = pairThreshold;
+            if (_drawCue != null) _drawCue.SetActive(canDraw);
+            var canDiscard = seat == 0 && phase == TurnPhase.AwaitingDiscard;
+            if (_discardCue != null) _discardCue.SetActive(canDiscard);
             _drawSource.CanDraw = canDraw;
             _seriesButton.interactable = canOpen;
             _pairsButton.interactable = canOpen;
-            _discardAreas[0].SetAvailable(canOpen);
+            _discardAreas[0].SetAvailable(canDiscard);
             _statusText.text = phase == TurnPhase.Finished ? _finishedStatus : seat != 0 ? string.Format(_waitingFormat, _seatNames[seat - 1]) :
                 phase == TurnPhase.AwaitingDraw ? _drawStatus : _discardStatus;
             _handText.text = string.Format(_handFormat, handCount);
             _pileText.text = string.Format(_pileFormat, pileCount);
             _pointsText.text = string.Format(_pointsFormat, points, threshold, pairs, pairThreshold);
             _penaltyText.text = string.Format(_penaltyFormat, penalty);
+            _penaltyText.gameObject.SetActive(penalty != 0);
         }
 
         public void RenderOpponent(int seat, int handCount, int penalty, int score, bool active)
@@ -166,6 +217,10 @@ namespace Okey.Presentation.Racks
         private void OnEnable()
         {
             _drawSource.DrawRequested += RequestDraw;
+            if (_settingsButton != null) _settingsButton.onClick.AddListener(ToggleSettings);
+            if (_helpButton != null) _helpButton.onClick.AddListener(ToggleHelp);
+            if (_closeSettingsButton != null) _closeSettingsButton.onClick.AddListener(ClosePanels);
+            if (_closeHelpButton != null) _closeHelpButton.onClick.AddListener(ClosePanels);
             if (_botModeButton != null) _botModeButton.onClick.AddListener(RequestBotMode);
             if (_partnershipButton != null) _partnershipButton.onClick.AddListener(RequestPartnership);
             if (_newHandButton != null) _newHandButton.onClick.AddListener(RequestNewHand);
@@ -177,6 +232,10 @@ namespace Okey.Presentation.Racks
         {
             _feedbackTween?.Kill();
             _drawSource.DrawRequested -= RequestDraw;
+            if (_settingsButton != null) _settingsButton.onClick.RemoveListener(ToggleSettings);
+            if (_helpButton != null) _helpButton.onClick.RemoveListener(ToggleHelp);
+            if (_closeSettingsButton != null) _closeSettingsButton.onClick.RemoveListener(ClosePanels);
+            if (_closeHelpButton != null) _closeHelpButton.onClick.RemoveListener(ClosePanels);
             if (_botModeButton != null) _botModeButton.onClick.RemoveListener(RequestBotMode);
             if (_partnershipButton != null) _partnershipButton.onClick.RemoveListener(RequestPartnership);
             if (_newHandButton != null) _newHandButton.onClick.RemoveListener(RequestNewHand);

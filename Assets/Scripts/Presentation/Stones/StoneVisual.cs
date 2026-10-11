@@ -12,6 +12,16 @@ namespace Okey.Presentation.Stones
         [SerializeField] private SpriteRenderer _symbolRenderer;
         [SerializeField] private GameObject[] _faceUpVisuals;
         [SerializeField] private StoneVisualSettings _settings;
+        [SerializeField] private GameObject[] _faceDownVisuals = Array.Empty<GameObject>();
+        [SerializeField] private GameObject _inspectedJokerVisual;
+        private bool _isWild;
+        private bool _faceUp = true;
+
+        public void ConfigureInspection(bool isWild)
+        {
+            _isWild = isWild;
+            SetFace(_faceUp);
+        }
 
         public void SetVisual(StoneData stone)
         {
@@ -28,6 +38,10 @@ namespace Okey.Presentation.Stones
 
         public void SetFace(bool isFaceUp)
         {
+            _faceUp = isFaceUp;
+            foreach (var visual in _faceDownVisuals)
+                visual.SetActive(!isFaceUp);
+            if (_inspectedJokerVisual != null) _inspectedJokerVisual.SetActive(!isFaceUp && _isWild);
             foreach (var visual in _faceUpVisuals)
                 visual.SetActive(isFaceUp);
         }

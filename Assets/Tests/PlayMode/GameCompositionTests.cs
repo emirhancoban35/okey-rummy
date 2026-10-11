@@ -109,12 +109,134 @@ namespace Okey.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator HoldingATileFlipsItWithoutAutomaticallyRevealingAJokerOrSelectingIt()
+        {
+            _stone.ConfigureInspection(true);
+            var visual = new SerializedObject(_stone.GetComponent<StoneVisual>());
+            var stamp = (GameObject)visual.FindProperty("_inspectedJokerVisual").objectReferenceValue;
+            Assert.That(stamp.activeSelf, Is.False);
+            var clicks = 0;
+            _stone.Selection.Clicked += _ => clicks++;
+            var pointer = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left, pointerId = 10 };
+            _stone.Selection.OnPointerDown(pointer);
+            var deadline = Time.realtimeSinceStartup + 3;
+            while (_stone.IsFaceUp && Time.realtimeSinceStartup < deadline) yield return null;
+            _stone.Selection.OnPointerUp(pointer);
+            _stone.Selection.OnPointerClick(pointer);
+            Assert.That(_stone.IsFaceUp, Is.False);
+            Assert.That(stamp.activeSelf, Is.True);
+            Assert.That(clicks, Is.Zero);
+            _stone.Selection.OnPointerDown(pointer);
+            deadline = Time.realtimeSinceStartup + 3;
+            while (!_stone.IsFaceUp && Time.realtimeSinceStartup < deadline) yield return null;
+            _stone.Selection.OnPointerUp(pointer);
+            Assert.That(_stone.IsFaceUp, Is.True);
+            Assert.That(stamp.activeSelf, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator AShortPressAndACancelledHoldNeverFlipATile()
+        {
+            var clicks = 0;
+            _stone.Selection.Clicked += _ => clicks++;
+            var pointer = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left, pointerId = 10 };
+            _stone.Selection.OnPointerDown(pointer);
+            _stone.Selection.OnPointerUp(pointer);
+            _stone.Selection.OnPointerClick(pointer);
+            Assert.That(clicks, Is.EqualTo(1));
+            _stone.Selection.OnPointerDown(pointer);
+            _stone.Selection.CancelPress();
+            yield return new WaitForSecondsRealtime(.8f);
+            Assert.That(_stone.IsFaceUp, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator AnOrdinaryTileCanBeFlippedButHasNoJokerStamp()
+        {
+            _stone.ConfigureInspection(false);
+            var pointer = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left };
+            _stone.Selection.OnPointerDown(pointer);
+            var deadline = Time.realtimeSinceStartup + 3;
+            while (_stone.IsFaceUp && Time.realtimeSinceStartup < deadline) yield return null;
+            _stone.Selection.OnPointerUp(pointer);
+            Assert.That(_stone.IsFaceUp, Is.False);
+            var visual = new SerializedObject(_stone.GetComponent<StoneVisual>());
+            Assert.That(((GameObject)visual.FindProperty("_inspectedJokerVisual").objectReferenceValue).activeSelf, Is.False);
+        }
+
+        [Test]
+        public void MovingGroupsUpdatesTheDisplayedPointsAndOpeningUsesThatSameArrangement()
+        {
+            _context.Container.Resolve<TurnController>().Dispose();
+            _context.Container.Resolve<HandPresenter>().Dispose();
+            _context.Container.Resolve<TablePresenter>().Dispose();
+            var deck = _context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>()).ToArray();
+            StoneInstance Tile(int id, int value, StoneColor color = StoneColor.Red) =>
+                new StoneInstance(id, new StoneData(StoneType.Regular, color, value));
+            deck[0] = Tile(0,13,StoneColor.Blue);
+            for (var index = 1; index <= 6; index++) deck[index] = Tile(index,10+(index-1)%3,index<=3?StoneColor.Red:StoneColor.Black);
+            deck[7] = Tile(7,2);
+            deck[8] = Tile(8,5,StoneColor.Blue);
+            var session = new TableSession(new OkeyRules(4,7,1,13,66,5,101,202,101,-101,101,2,2),deck,28);
+            var interaction = new RackInteractionController(session.Players[0].Hand,Rack);
+            var factory = _context.Container.Resolve<StoneViewFactory>();
+            var hand = new HandPresenter(session.Players[0].Hand,factory,Rack,interaction);
+            var table = new TablePresenter(session,Controls,factory);
+            var controller = new TurnController(session,hand,interaction,Controls,table,new RackMeldEvaluator(),Rack);
+            try
+            {
+                hand.Initialize();table.Initialize();controller.Initialize();
+                var serialized = new SerializedObject(Controls);
+                var points = (TMPro.TMP_Text)serialized.FindProperty("_seriesPointsText").objectReferenceValue;
+                Assert.That(points.text, Is.EqualTo("66 / 66"));
+                var moved = hand.Views.Single(view=>view.Instance.Id==2);
+                interaction.TryBeginDrag(moved);
+                interaction.EndDrag(moved,SlotWorldPosition(20));
+                Assert.That(points.text, Is.EqualTo("33 / 66"));
+                interaction.TryBeginDrag(moved);
+                interaction.EndDrag(moved,SlotWorldPosition(1));
+                Assert.That(points.text, Is.EqualTo("66 / 66"));
+                ((Button)serialized.FindProperty("_seriesButton").objectReferenceValue).onClick.Invoke();
+                Assert.That(session.Melds.Count, Is.EqualTo(2));
+                Assert.That(session.Players[0].Hand.Count, Is.EqualTo(2));
+                Assert.That(hand.Views.Count, Is.EqualTo(2));
+            }
+            finally {controller.Dispose();table.Dispose();hand.Dispose();}
+        }
+
+        [UnityTest]
+        public IEnumerator HelpAndSettingsStayHiddenUntilRequestedAndNeverOverlap()
+        {
+            var serialized = new SerializedObject(Controls);
+            var help = (GameObject)serialized.FindProperty("_helpPanel").objectReferenceValue;
+            var settings = (GameObject)serialized.FindProperty("_settingsPanel").objectReferenceValue;
+            Assert.That(help.activeSelf || settings.activeSelf, Is.False);
+            ((Button)serialized.FindProperty("_helpButton").objectReferenceValue).onClick.Invoke();
+            Assert.That(help.activeSelf, Is.True);
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+            var camera = _scene.GetRootGameObjects().Select(root=>root.GetComponent<Camera>()).Single(value=>value!=null);
+            var hits = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current)
+                {position=camera.WorldToScreenPoint(Controls.DrawSource.transform.position)},hits);
+            Assert.That(hits.Count, Is.GreaterThan(0));
+            Assert.That(hits[0].gameObject.transform.IsChildOf(help.transform), Is.True, string.Join(", ", hits.Select(hit=>hit.gameObject.name+":"+hit.depth+":"+hit.sortingOrder)));
+            ((Button)serialized.FindProperty("_settingsButton").objectReferenceValue).onClick.Invoke();
+            Assert.That(help.activeSelf, Is.False);
+            Assert.That(settings.activeSelf, Is.True);
+            ((Button)serialized.FindProperty("_closeSettingsButton").objectReferenceValue).onClick.Invoke();
+            Assert.That(settings.activeSelf, Is.False);
+        }
+
         [Test]
         public void DraggingBlocksDrawingAndOtherDiscardAreasRejectLocalStones()
         {
             var session = _context.Container.Resolve<TableSession>();
             var stone = HandViews[0];
             Interaction.TryBeginDrag(stone);
+            var controlsFields = new SerializedObject(Controls);
+            Assert.That(((GameObject)controlsFields.FindProperty("_discardCue").objectReferenceValue).activeSelf, Is.True);
             Interaction.EndDrag(stone, Controls.DiscardAreas[1].StoneRoot.position);
             Assert.That(session.Players[0].Hand.Count, Is.EqualTo(22));
             Assert.That(session.ActiveSeat, Is.Zero);

@@ -33,6 +33,7 @@ namespace Okey.Composition
             Container.BindInstance(_tableSettings);
             Container.BindInstance(_tableSettings.CreateRules());
             Container.Bind<MeldPlanner>().AsSingle();
+            Container.Bind<RackMeldEvaluator>().AsSingle();
             Container.Bind<IRandomSource>().To<SeededRandomSource>().AsSingle().WithArguments(_openingDealSettings.CreateSeed());
             Container.Bind<IPlayerStrategy>().To<MeldPlayerStrategy>().AsSingle();
             Container.Bind<TableSession>().FromMethod(context => new TableSession(
