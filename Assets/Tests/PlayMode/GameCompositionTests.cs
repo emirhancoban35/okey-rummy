@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEditor;
 using Okey.Configuration;
 using System.Collections;
@@ -109,13 +110,71 @@ namespace Okey.Tests.PlayMode
             yield return null;
         }
 
+        [Test]
+        public void DoubleTapDiscardsOnlyDuringTheLocalDiscardPhase()
+        {
+            var table = _context.Container.Resolve<TableSession>();
+            var pointer = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left, clickCount = 2 };
+            var view = HandViews[0];
+            var id = view.Instance.Id;
+            view.Selection.OnPointerClick(pointer);
+            Assert.That(table.Players[0].Discards.Last().Id, Is.EqualTo(id));
+            Assert.That(table.ActiveSeat, Is.EqualTo(1));
+            var count = table.Players[0].Hand.Count;
+            HandViews[0].Selection.OnPointerClick(pointer);
+            Assert.That(table.Players[0].Hand.Count, Is.EqualTo(count));
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var action = 0; action < 100 && table.ActiveSeat != 0; action++) bot.Act();
+            Assert.That(table.Phase, Is.EqualTo(TurnPhase.AwaitingDraw));
+            HandViews[0].Selection.OnPointerClick(pointer);
+            Assert.That(table.Players[0].Hand.Count, Is.EqualTo(count));
+        }
+
+        [Test]
+        public void TimerBarsAndNumbersFollowTheActiveSeat()
+        {
+            var serial = new SerializedObject(Controls);
+            var sliders = serial.FindProperty("_turnSliders");
+            var texts = serial.FindProperty("_opponentClockTexts");
+            Assert.That(sliders.arraySize, Is.EqualTo(4));
+            Controls.RenderClock(0, 22.5, false, 0, 45);
+            Assert.That(((Slider)sliders.GetArrayElementAtIndex(0).objectReferenceValue).value, Is.EqualTo(.5f));
+            Controls.RenderClock(2, 10, false, 0, 20);
+            for (var seat = 0; seat < 4; seat++)
+            {
+                var slider = (Slider)sliders.GetArrayElementAtIndex(seat).objectReferenceValue;
+                Assert.That(slider.value, Is.EqualTo(seat == 2 ? .5f : 0));
+                Assert.That(slider.interactable, Is.False);
+                Assert.That(slider.fillRect.sizeDelta.x, Is.Zero);
+            }
+            Assert.That(((TMP_Text)texts.GetArrayElementAtIndex(1).objectReferenceValue).text, Is.EqualTo("10s"));
+            Controls.RenderClock(2, 0, false, 0, 20, true);
+            Assert.That(((Slider)sliders.GetArrayElementAtIndex(2).objectReferenceValue).value, Is.Zero);
+            Assert.That(((TMP_Text)texts.GetArrayElementAtIndex(1).objectReferenceValue).text, Is.Empty);
+        }
+
+        [Test]
+        public void EscalatingToggleAppliesToTheNextTable()
+        {
+            var settings = _context.Container.Resolve<TableSettings>();
+            var table = _context.Container.Resolve<TableSession>();
+            var original = settings.EscalatingOpenings;
+            var button = (Button)new SerializedObject(Controls).FindProperty("_escalatingButton").objectReferenceValue;
+            try
+            {
+                button.onClick.Invoke();
+                Assert.That(settings.CreateOptions().EscalatingOpenings, Is.EqualTo(!original));
+                Assert.That(table.Options.EscalatingOpenings, Is.EqualTo(original));
+            }
+            finally { if (settings.EscalatingOpenings != original) settings.ToggleEscalatingOpenings(); }
+        }
+
         [UnityTest]
         public IEnumerator HoldingATileFlipsItWithoutAutomaticallyRevealingAJokerOrSelectingIt()
         {
-            _stone.ConfigureInspection(true);
             var visual = new SerializedObject(_stone.GetComponent<StoneVisual>());
-            var stamp = (GameObject)visual.FindProperty("_inspectedJokerVisual").objectReferenceValue;
-            Assert.That(stamp.activeSelf, Is.False);
+            var backs = visual.FindProperty("_faceDownVisuals");
+            Assert.That(backs.arraySize, Is.Zero);
             var clicks = 0;
             _stone.Selection.Clicked += _ => clicks++;
             var pointer = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left, pointerId = 10 };
@@ -125,14 +184,14 @@ namespace Okey.Tests.PlayMode
             _stone.Selection.OnPointerUp(pointer);
             _stone.Selection.OnPointerClick(pointer);
             Assert.That(_stone.IsFaceUp, Is.False);
-            Assert.That(stamp.activeSelf, Is.True);
+            Assert.That(_stone.GetComponentsInChildren<TMP_Text>().All(text => !text.gameObject.activeSelf), Is.True);
             Assert.That(clicks, Is.Zero);
             _stone.Selection.OnPointerDown(pointer);
             deadline = Time.realtimeSinceStartup + 3;
             while (!_stone.IsFaceUp && Time.realtimeSinceStartup < deadline) yield return null;
             _stone.Selection.OnPointerUp(pointer);
             Assert.That(_stone.IsFaceUp, Is.True);
-            Assert.That(stamp.activeSelf, Is.False);
+            Assert.That(backs.arraySize, Is.Zero);
         }
 
         [UnityTest]
@@ -154,7 +213,6 @@ namespace Okey.Tests.PlayMode
         [UnityTest]
         public IEnumerator AnOrdinaryTileCanBeFlippedButHasNoJokerStamp()
         {
-            _stone.ConfigureInspection(false);
             var pointer = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left };
             _stone.Selection.OnPointerDown(pointer);
             var deadline = Time.realtimeSinceStartup + 3;
@@ -162,7 +220,7 @@ namespace Okey.Tests.PlayMode
             _stone.Selection.OnPointerUp(pointer);
             Assert.That(_stone.IsFaceUp, Is.False);
             var visual = new SerializedObject(_stone.GetComponent<StoneVisual>());
-            Assert.That(((GameObject)visual.FindProperty("_inspectedJokerVisual").objectReferenceValue).activeSelf, Is.False);
+            Assert.That(visual.FindProperty("_faceDownVisuals").arraySize, Is.Zero);
         }
 
         [Test]
@@ -176,7 +234,7 @@ namespace Okey.Tests.PlayMode
                 new StoneInstance(id, new StoneData(StoneType.Regular, color, value));
             deck[0] = Tile(0,13,StoneColor.Blue);
             for (var index = 1; index <= 6; index++) deck[index] = Tile(index,10+(index-1)%3,index<=3?StoneColor.Red:StoneColor.Black);
-            deck[7] = Tile(7,2);
+            deck[7] = Tile(7,13);
             deck[8] = Tile(8,5,StoneColor.Blue);
             var session = new TableSession(new OkeyRules(4,7,1,13,66,5,101,202,101,-101,101,2,2),deck,28);
             var interaction = new RackInteractionController(session.Players[0].Hand,Rack);
@@ -201,6 +259,17 @@ namespace Okey.Tests.PlayMode
                 Assert.That(session.Melds.Count, Is.EqualTo(2));
                 Assert.That(session.Players[0].Hand.Count, Is.EqualTo(2));
                 Assert.That(hand.Views.Count, Is.EqualTo(2));
+                DOTween.CompleteAll();
+                var layOff = hand.Views.Single(view => view.Instance.Id == 7);
+                var endpoint = Controls.MeldRoot.GetComponentsInChildren<Stone>().Single(view => view.Instance.Id == 3).transform.position + Vector3.right * Controls.MeldScale.x;
+                interaction.TryBeginDrag(layOff);
+                interaction.DragTo(layOff, endpoint);
+                interaction.EndDrag(layOff, endpoint);
+                Assert.That(session.Melds[0].Tiles.Count, Is.EqualTo(4));
+                Assert.That(session.Players[0].Hand.Count, Is.EqualTo(1));
+                Assert.That(hand.Views.Count, Is.EqualTo(1));
+                var publicTile = Controls.MeldRoot.GetComponentsInChildren<Stone>().Single(view => view.Instance.Id == 7);
+                Assert.That(Vector3.Distance(publicTile.transform.position, endpoint), Is.LessThan(.001f));
             }
             finally {controller.Dispose();table.Dispose();hand.Dispose();}
         }
@@ -291,6 +360,16 @@ namespace Okey.Tests.PlayMode
             Assert.That(table.TryOpen(0, OpeningMode.Series, new[] {first, second}), Is.True);
             var original = Controls.MeldRoot.GetComponentsInChildren<Stone>();
             Assert.That(original.Length, Is.EqualTo(6));
+            DOTween.CompleteAll();
+            var endpoint = original.Single(view => view.Instance.Id == 3).transform.position + Vector3.right * Controls.MeldScale.x;
+            Assert.That(presenter.TryFindMeld(deck[7], endpoint, out var target), Is.True);
+            Assert.That(target, Is.Zero);
+            Assert.That(presenter.TryFindMeld(deck[8], endpoint, out _), Is.False);
+            presenter.PreviewLayOff(deck[7], endpoint);
+            var highlight = (GameObject)new SerializedObject(original[0].Selection).FindProperty("_highlight").objectReferenceValue;
+            Assert.That(highlight.activeSelf, Is.True);
+            presenter.ClearPreview();
+            Assert.That(highlight.activeSelf, Is.False);
             Assert.That(table.TryLayOff(0, 7, 0), Is.True);
             var extended = Controls.MeldRoot.GetComponentsInChildren<Stone>();
             Assert.That(extended.Length, Is.EqualTo(7));

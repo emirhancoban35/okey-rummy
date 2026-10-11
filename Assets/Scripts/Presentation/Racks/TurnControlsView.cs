@@ -57,6 +57,12 @@ namespace Okey.Presentation.Racks
         [SerializeField] private Button _botModeButton;
         [SerializeField] private Button _partnershipButton;
         [SerializeField] private Button _newHandButton;
+        [SerializeField] private Button _escalatingButton;
+        [SerializeField] private TMP_Text _escalatingLabel;
+        [SerializeField] private string _escalatingOnLabel = "NEXT: RISING OPENINGS";
+        [SerializeField] private string _escalatingOffLabel = "NEXT: FIXED OPENINGS";
+        public event Action EscalatingRequested;
+        private void RequestEscalating() => EscalatingRequested?.Invoke();
         [SerializeField] private string _humanlikeBotLabel = "BOTS: HUMANLIKE";
         [SerializeField] private string _fastBotLabel = "BOTS: FAST";
         [SerializeField] private string _nextPartnerLabel = "NEXT: PARTNERS";
@@ -68,8 +74,9 @@ namespace Okey.Presentation.Racks
         public event Action BotModeRequested;
         public event Action PartnershipRequested;
         public event Action NewHandRequested;
-        public void RenderOptions(bool humanlike, bool partners, bool finished)
+        public void RenderOptions(bool humanlike, bool partners, bool finished, bool escalating = false)
         {
+            if (_escalatingLabel != null) _escalatingLabel.text = escalating ? _escalatingOnLabel : _escalatingOffLabel;
             if (_botModeLabel != null) _botModeLabel.text = humanlike ? _humanlikeBotLabel : _fastBotLabel;
             if (_partnershipLabel != null) _partnershipLabel.text = partners ? _nextPartnerLabel : _nextIndividualLabel;
             if (_newHandButton != null) _newHandButton.interactable = true;
@@ -78,6 +85,9 @@ namespace Okey.Presentation.Racks
         private void RequestPartnership() => PartnershipRequested?.Invoke();
         private void RequestNewHand() => NewHandRequested?.Invoke();
         [SerializeField] private TMP_Text _clockText;
+        [SerializeField] private Slider[] _turnSliders = Array.Empty<Slider>();
+        [SerializeField] private TMP_Text[] _opponentClockTexts = Array.Empty<TMP_Text>();
+        [SerializeField] private string _secondsFormat = "{0:0}s";
         [SerializeField] private string _localSeatName = "You";
         [SerializeField] private string _clockFormat = "{0}  ·  {1:0}s";
         [SerializeField] private TMP_Text _modeText;
@@ -92,14 +102,23 @@ namespace Okey.Presentation.Racks
         private int _lastClockSecond = -1;
         private int _lastTeamScore = int.MinValue;
         private bool _lastPartnership;
-        public void RenderClock(int seat, double remaining, bool partners, int score)
+        private bool _lastClockFinished;
+        public void RenderClock(int seat, double remaining, bool partners, int score, double duration = 45, bool finished = false)
         {
+            for (var index = 0; index < _turnSliders.Length; index++)
+            {
+                if (_turnSliders[index] == null) continue;
+                _turnSliders[index].value = !finished && seat == index ? Mathf.Clamp01((float)(remaining / duration)) : 0;
+            }
             var seconds = Mathf.CeilToInt((float)remaining);
-            if (seat != _lastClockSeat || seconds != _lastClockSecond)
+            if (seat != _lastClockSeat || seconds != _lastClockSecond || finished != _lastClockFinished)
             {
                 _lastClockSeat = seat;
+                _lastClockFinished = finished;
                 _lastClockSecond = seconds;
-                if (_clockText != null) _clockText.text = string.Format(_clockFormat, seat == 0 ? _localSeatName : _seatNames[seat - 1], seconds);
+                if (_clockText != null) _clockText.text = seat == 0 && !finished ? string.Format(_clockFormat, _localSeatName, seconds) : "";
+                for (var index = 0; index < _opponentClockTexts.Length; index++)
+                    if (_opponentClockTexts[index] != null) _opponentClockTexts[index].text = !finished && seat == index + 1 ? string.Format(_secondsFormat, seconds) : "";
             }
             if (score != _lastTeamScore || partners != _lastPartnership)
             {
@@ -223,6 +242,7 @@ namespace Okey.Presentation.Racks
             if (_closeHelpButton != null) _closeHelpButton.onClick.AddListener(ClosePanels);
             if (_botModeButton != null) _botModeButton.onClick.AddListener(RequestBotMode);
             if (_partnershipButton != null) _partnershipButton.onClick.AddListener(RequestPartnership);
+            if (_escalatingButton != null) _escalatingButton.onClick.AddListener(RequestEscalating);
             if (_newHandButton != null) _newHandButton.onClick.AddListener(RequestNewHand);
             _seriesButton.onClick.AddListener(RequestSeries);
             _pairsButton.onClick.AddListener(RequestPairs);
@@ -238,6 +258,7 @@ namespace Okey.Presentation.Racks
             if (_closeHelpButton != null) _closeHelpButton.onClick.RemoveListener(ClosePanels);
             if (_botModeButton != null) _botModeButton.onClick.RemoveListener(RequestBotMode);
             if (_partnershipButton != null) _partnershipButton.onClick.RemoveListener(RequestPartnership);
+            if (_escalatingButton != null) _escalatingButton.onClick.RemoveListener(RequestEscalating);
             if (_newHandButton != null) _newHandButton.onClick.RemoveListener(RequestNewHand);
             _seriesButton.onClick.RemoveListener(RequestSeries);
             _pairsButton.onClick.RemoveListener(RequestPairs);

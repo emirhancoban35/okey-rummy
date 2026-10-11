@@ -16,6 +16,8 @@ namespace Okey.Composition
         public Stone Selected { get; private set; }
         public bool IsDragging => _dragged != null;
         public event Action Changed;
+        public event Action<Stone> DiscardRequested;
+        public event Action<Stone, Vector3> DragMoved;
         public event Func<Stone, Vector3, bool> DropRequested;
 
         public RackInteractionController(RackArrangement arrangement, RackView rack)
@@ -32,6 +34,14 @@ namespace Okey.Composition
             _views.Add(stone.Instance.Id, stone);
             stone.DragHandler.Bind(this);
             stone.Selection.Clicked += Select;
+            stone.Selection.DoubleClicked += RequestDiscard;
+        }
+
+        private void RequestDiscard(Stone stone)
+        {
+            if (!IsDragging && stone != null && stone.Instance != null &&
+                _views.TryGetValue(stone.Instance.Id, out var registered) && registered == stone)
+                DiscardRequested?.Invoke(stone);
         }
 
         public void Select(Stone stone)
@@ -51,6 +61,7 @@ namespace Okey.Composition
         public void Unregister(Stone stone)
         {
             stone.Selection.Clicked -= Select;
+            stone.Selection.DoubleClicked -= RequestDiscard;
             _views.Remove(stone.Instance.Id);
             if (Selected == stone)
             {
@@ -77,6 +88,7 @@ namespace Okey.Composition
                 return;
 
             stone.Motion.SnapTo(_rack.StoneRoot.InverseTransformPoint(worldPosition));
+            DragMoved?.Invoke(stone, worldPosition);
         }
 
         public void EndDrag(Stone stone, Vector3 worldPosition)
@@ -129,6 +141,7 @@ namespace Okey.Composition
                 if (view == null)
                     continue;
                 view.Selection.Clicked -= Select;
+                view.Selection.DoubleClicked -= RequestDiscard;
                 view.Selection.SetSelected(false);
             }
             Selected = null;

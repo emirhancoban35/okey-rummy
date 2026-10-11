@@ -23,6 +23,7 @@ namespace Okey.Presentation.Stones
         private Sequence _flip;
         private Vector3 _scale;
         public event Action<Stone> Clicked;
+        public event Action<Stone> DoubleClicked;
 
         public void SetSelected(bool selected) => _highlight.SetActive(selected);
 
@@ -48,7 +49,10 @@ namespace Okey.Presentation.Stones
         public void OnPointerClick(PointerEventData eventData)
         {
             if (!_consumed && eventData.button == PointerEventData.InputButton.Left && !eventData.dragging)
-                Clicked?.Invoke(_stone);
+                {
+                if (eventData.clickCount == 2) DoubleClicked?.Invoke(_stone);
+                else Clicked?.Invoke(_stone);
+            }
         }
 
         private void Update()

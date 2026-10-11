@@ -32,9 +32,10 @@ namespace Okey.Composition
                 if (_table.Phase == TurnPhase.AwaitingDiscard)
                     _table.TryDiscard(seat, _strategy.ChooseDiscard(new PlayerObservation(
                         _table.Players[seat].Hand.Slots.Where(stone => stone != null), _table.Melds,
-                        _table.Players[seat].Opening, _table.Rules, _table.MeldRules)));
+                        _table.Players[seat].Opening, _table.Rules, _table.MeldRules,
+                        seriesThreshold: _table.SeriesThreshold, pairThreshold: _table.PairThreshold)));
             }
-            _controls.RenderClock(_table.ActiveSeat, _clock.Remaining, _table.Options.Partnerships, _table.TeamScore(0));
+            _controls.RenderClock(_table.ActiveSeat, _clock.Remaining, _table.Options.Partnerships, _table.TeamScore(0), _table.Options.TurnSeconds, _table.Phase == TurnPhase.Finished);
         }
     }
 }

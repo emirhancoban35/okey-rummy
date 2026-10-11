@@ -52,6 +52,8 @@ namespace Okey.Composition
             _controls.SeriesRequested += OpenSeries;
             _controls.PairsRequested += OpenPairs;
             _interaction.DropRequested += Drop;
+            _interaction.DiscardRequested += Discard;
+            _interaction.DragMoved += PreviewLayOff;
             _interaction.Changed += Render;
             _session.Changed += Render;
             Render();
@@ -111,17 +113,34 @@ namespace Okey.Composition
             if (opened || penalty > 0) _controls.ShowOpeningResult(opened, penalty);
         }
 
+        private void Discard(Stone stone)
+        {
+            if (!_interaction.IsDragging) TryDiscard(stone);
+        }
+
+        private bool TryDiscard(Stone stone)
+        {
+            if (_disposed || stone == null || stone.Instance == null) return false;
+            var origin = _controls.DiscardAreas[0].StoneRoot.InverseTransformPoint(stone.transform.position);
+            if (!_session.TryDiscard(0, stone.Instance.Id)) return false;
+            _table.AnimateDiscard(0, origin);
+            return true;
+        }
+
+        private void PreviewLayOff(Stone stone, Vector3 position)
+        {
+            _table.PreviewLayOff(stone.Instance, position);
+        }
+
         private bool Drop(Stone stone, Vector3 position)
         {
+            _table.ClearPreview();
             if (_disposed) return false;
-            if (_controls.DiscardAreas[0].Contains(position))
-            {
-                var origin = _controls.DiscardAreas[0].StoneRoot.InverseTransformPoint(stone.transform.position);
-                if (!_session.TryDiscard(0, stone.Instance.Id)) return false;
-                _table.AnimateDiscard(0, origin);
-                return true;
-            }
-            return _table.TryFindMeld(position, out var index) && _session.TryLayOff(0, stone.Instance.Id, index);
+            if (_controls.DiscardAreas[0].Contains(position)) return TryDiscard(stone);
+            var origin = stone.transform.position;
+            if (!_table.TryFindMeld(stone.Instance, position, out var index) || !_session.TryLayOff(0, stone.Instance.Id, index)) return false;
+            _table.AnimateLayOff(stone.Instance.Id, origin);
+            return true;
         }
 
         private void UpdatePlans()
@@ -137,20 +156,19 @@ namespace Okey.Composition
         private void Render()
         {
             if (_disposed) return;
+            if (!_interaction.IsDragging) _table.ClearPreview();
             _hand.Refresh();
-            foreach (var view in _hand.Views)
-                view.ConfigureInspection(_session.MeldRules.IsWild(view.Instance));
             UpdatePlans();
             var local = _session.Players[0];
             _controls.DiscardAreas[_session.Players.Count - 1].SetAvailable(!_interaction.IsDragging && _session.CanTakeDiscard(0));
             _controls.Render(_session.Phase, _session.ActiveSeat, local.Hand.Count, _session.RemainingCount,
-                _series.Points, _pairs.Melds.Count, _session.Rules.SeriesThreshold, _session.Rules.PairThreshold,
+                _series.Points, _pairs.Melds.Count, _session.SeriesThreshold, _session.PairThreshold,
                 _session.Phase == TurnPhase.Finished ? local.Score : local.Penalty,
                 !_interaction.IsDragging && _session.CanDraw(0),
                 !_interaction.IsDragging && _session.ActiveSeat == 0 && _session.Phase == TurnPhase.AwaitingDiscard);
             _controls.RenderGroups(_series, _pairs, local.Opening);
             var grouped = local.Opening == OpeningMode.Pairs || local.Opening == OpeningMode.Closed &&
-                _pairs.Melds.Count >= _session.Rules.PairThreshold && _series.Points < _session.Rules.SeriesThreshold ? _pairs : _series;
+                _pairs.Melds.Count >= _session.PairThreshold && _series.Points < _session.SeriesThreshold ? _pairs : _series;
             var ids = grouped.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();
             foreach (var view in _hand.Views) view.Selection.SetGrouped(ids.Contains(view.Instance.Id));
         }
@@ -169,6 +187,8 @@ namespace Okey.Composition
             _controls.SeriesRequested -= OpenSeries;
             _controls.PairsRequested -= OpenPairs;
             _interaction.DropRequested -= Drop;
+            _interaction.DiscardRequested -= Discard;
+            _interaction.DragMoved -= PreviewLayOff;
             _interaction.Changed -= Render;
             _session.Changed -= Render;
         }

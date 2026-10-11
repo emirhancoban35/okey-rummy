@@ -23,13 +23,15 @@ namespace Okey.Composition
         {
             _controls.BotModeRequested += ToggleBots;
             _controls.PartnershipRequested += TogglePartners;
+            _controls.EscalatingRequested += ToggleEscalating;
             _controls.NewHandRequested += NextHand;
             _table.Changed += Render;
             Render();
         }
         private void ToggleBots() { _settings.ToggleBotMode(); Render(); }
+        private void ToggleEscalating() { _settings.ToggleEscalatingOpenings(); Render(); }
         private void TogglePartners() { _settings.TogglePartnerships(); Render(); }
-        private void Render() => _controls.RenderOptions(_settings.HumanlikeBots, _settings.Partnerships, _table.Phase == TurnPhase.Finished);
+        private void Render() => _controls.RenderOptions(_settings.HumanlikeBots, _settings.Partnerships, _table.Phase == TurnPhase.Finished, _settings.EscalatingOpenings);
         private void NextHand()
         {
             if (_loading) return;
@@ -40,6 +42,7 @@ namespace Okey.Composition
         {
             _controls.BotModeRequested -= ToggleBots;
             _controls.PartnershipRequested -= TogglePartners;
+            _controls.EscalatingRequested -= ToggleEscalating;
             _controls.NewHandRequested -= NextHand;
             _table.Changed -= Render;
         }
