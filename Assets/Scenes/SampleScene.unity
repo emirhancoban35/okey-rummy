@@ -779,6 +779,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59e4ccfe06ff4955a6c3fd8feda45a63, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _openingDealSettings: {fileID: 11400000, guid: 0f297d4a3fe8441d884d92306dacfcb4, type: 2}
   _deckSettings: {fileID: 11400000, guid: 5a34dc0ceb4843339ade7386a954525d, type: 2}
   _stonePrefab: {fileID: 7100000000000000001, guid: c876ee33957048a4ab1753bd6a57473a, type: 3}
 --- !u!1660057539 &9223372036854775807

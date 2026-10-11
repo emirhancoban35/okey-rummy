@@ -5,6 +5,7 @@ using DG.Tweening;
 using NUnit.Framework;
 using Okey.Composition;
 using Okey.Core.Decks;
+using Okey.Core.Dealing;
 using Okey.Presentation.Stones;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -49,6 +50,18 @@ namespace Okey.Tests.PlayMode
             Assert.That(_stone.Data.Value, Is.EqualTo(1));
             Assert.That(_stone.transform.parent, Is.EqualTo(_context.transform));
             Assert.That(_stone.GetComponent<StoneMotion>(), Is.Not.Null);
+        }
+
+        [Test]
+        public void SceneProvidesOneOpeningDealWithConfiguredHandAndRemainingPile()
+        {
+            var deal = _context.Container.Resolve<OpeningDeal>();
+
+            Assert.That(_context.Container.Resolve<OpeningDeal>(), Is.SameAs(deal));
+            Assert.That(deal.InitialHand.Count, Is.EqualTo(21));
+            Assert.That(deal.DrawPile.RemainingCount, Is.EqualTo(85));
+            var allIds = deal.InitialHand.Concat(deal.DrawPile.Draw(85)).Select(stone => stone.Id);
+            Assert.That(allIds, Is.EquivalentTo(Enumerable.Range(0, 106)));
         }
 
         [Test]

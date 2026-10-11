@@ -22,7 +22,15 @@ A real joker is a role determined by game rules, rather than a separate physical
 
 `DeckFactory.Create` generates an ordered, read-only collection of `StoneInstance` objects. Each physical stone has an ID unique within that deck. Recreating the same definition in the same order produces the same IDs; a new game needs its own session identity if IDs are persisted or sent over a network. Copies share immutable StoneData, while their physical identities remain distinct. Stone views bind a StoneInstance so later interactions can identify the selected physical stone.
 
-Generation does not shuffle, distribute, instantiate visuals or decide the joker. Those responsibilities will be introduced separately.
+Deck generation does not shuffle, distribute, instantiate visuals or decide the joker. These remain separate responsibilities.
+
+`IStoneShuffler` is the replaceable ordering strategy. SeededStoneShuffler applies Fisher-Yates using a private System.Random per shuffle, preserving the source collection and physical stone identities. Replaying a seed assumes the same deck definition, shuffle implementation and runtime; persist the ordered IDs for replay across different runtime versions.
+
+`DrawPile` owns a snapshot of ordered stones and consumes them with a cursor. TryDraw returns false when exhausted. Batch Draw validates availability before consuming any stones. Duplicate physical IDs and null entries are rejected.
+
+`OpeningDealFactory` combines generation, ordering and initial distribution. OpeningDeal contains the seed, an immutable snapshot of the initial hand and the remaining draw pile; it is not the live hand or turn state.
+
+`Assets/Settings/Dealing/StandardOpeningDeal.asset` controls the initial hand size and fixed/random seed selection. The standard configuration deals 21 stones and leaves 85 in the draw pile. These counts are asset data. GameInstaller provides one OpeningDeal per scene, created when first requested through Zenject. It does not render or animate the deal yet.
 
 `Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
 
@@ -49,4 +57,4 @@ PlayMode tests load the real scene and verify dependency resolution, prefab crea
 
 ## Next steps
 
-Introduce draw pile ordering and dealing, then hand and rack interactions, game flow, and interchangeable rules and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.
+Introduce hand and rack interactions, then game flow and interchangeable rules and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.
