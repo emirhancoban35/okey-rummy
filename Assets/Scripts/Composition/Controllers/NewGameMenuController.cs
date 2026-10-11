@@ -28,7 +28,15 @@ namespace Okey.Composition
         private void TogglePartnership() { _settings.TogglePartnerships(); Render(); }
         private void ToggleBots() { _settings.ToggleBotMode(); Render(); }
         private void ToggleEscalating() { _settings.ToggleEscalatingOpenings(); Render(); }
-        private void Render() => _view.Render(_settings.Partnerships, _settings.HumanlikeBots, _settings.EscalatingOpenings, _settings.ActiveProfile.Label, _settings.ActiveProfile.AllowsPublicMelds);
+        private void Render()
+        {
+            var text = _view.Texts;
+            _view.Render(_settings.ActiveProfile.Label,
+                _settings.Partnerships ? text.MenuPartners : text.MenuIndividual,
+                _settings.HumanlikeBots ? text.MenuHumanlike : text.MenuFast,
+                !_settings.ActiveProfile.AllowsPublicMelds ? text.MenuUnavailable : _settings.EscalatingOpenings ? text.MenuRising : text.MenuFixed,
+                _settings.ActiveProfile.AllowsPublicMelds);
+        }
         public void Dispose()
         {
             _view.RulesRequested -= ToggleRules;

@@ -1584,7 +1584,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Menus.NewGameMenuView
   _ruleButton: {fileID: 7128507860078921547}
   _ruleText: {fileID: 3616868325864314187}
-  _unavailableLabel: NOT USED
   _playButton: {fileID: 3844566124656503251}
   _partnershipButton: {fileID: 6914386303416455557}
   _botModeButton: {fileID: 7449151912984692126}
@@ -1592,14 +1591,9 @@ MonoBehaviour:
   _partnershipText: {fileID: 6181556650632462741}
   _botModeText: {fileID: 3876876385869147666}
   _escalatingText: {fileID: 7664657855173091575}
-  _individualLabel: INDIVIDUAL
-  _partnershipLabel: PARTNERS
-  _humanlikeLabel: HUMANLIKE
-  _fastLabel: FAST
-  _fixedLabel: FIXED
-  _risingLabel: RISING
   _card: {fileID: 6650448248348690872}
   _fadeDuration: 0.25
+  _texts: {fileID: 11400000, guid: 4044bd6d37bf4400ad856ea61c946730, type: 2}
 --- !u!1 &3974339171926222323
 GameObject:
   m_ObjectHideFlags: 0

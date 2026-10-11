@@ -1,3 +1,4 @@
+using Okey.Presentation.Text;
 using System;
 using DG.Tweening;
 using TMPro;
@@ -7,9 +8,10 @@ namespace Okey.Presentation.Menus
 {
     public sealed class NewGameMenuView : MonoBehaviour
     {
+        [SerializeField] private TableTextCatalog _texts;
+        public TableTextCatalog Texts => _texts;
         [SerializeField] private Button _ruleButton;
         [SerializeField] private TMP_Text _ruleText;
-        [SerializeField] private string _unavailableLabel = "NOT USED";
         [SerializeField] private Button _playButton;
         [SerializeField] private Button _partnershipButton;
         [SerializeField] private Button _botModeButton;
@@ -17,12 +19,6 @@ namespace Okey.Presentation.Menus
         [SerializeField] private TMP_Text _partnershipText;
         [SerializeField] private TMP_Text _botModeText;
         [SerializeField] private TMP_Text _escalatingText;
-        [SerializeField] private string _individualLabel = "INDIVIDUAL";
-        [SerializeField] private string _partnershipLabel = "PARTNERS";
-        [SerializeField] private string _humanlikeLabel = "HUMANLIKE";
-        [SerializeField] private string _fastLabel = "FAST";
-        [SerializeField] private string _fixedLabel = "FIXED";
-        [SerializeField] private string _risingLabel = "RISING";
         [SerializeField] private CanvasGroup _card;
         [SerializeField, Min(0)] private float _fadeDuration = .25f;
         private Tween _fade;
@@ -31,13 +27,13 @@ namespace Okey.Presentation.Menus
         public event Action PartnershipRequested;
         public event Action BotModeRequested;
         public event Action EscalatingRequested;
-        public void Render(bool partnerships, bool humanlike, bool escalating, string rulesLabel, bool publicMelds)
+        public void Render(string rules, string partnerships, string bots, string openings, bool canChooseOpenings)
         {
-            _ruleText.text = rulesLabel;
-            _escalatingButton.interactable = publicMelds;
-            _partnershipText.text = partnerships ? _partnershipLabel : _individualLabel;
-            _botModeText.text = humanlike ? _humanlikeLabel : _fastLabel;
-            _escalatingText.text = !publicMelds ? _unavailableLabel : escalating ? _risingLabel : _fixedLabel;
+            _ruleText.text = rules;
+            _partnershipText.text = partnerships;
+            _botModeText.text = bots;
+            _escalatingText.text = openings;
+            _escalatingButton.interactable = canChooseOpenings;
         }
         private void ToggleRules() => RulesRequested?.Invoke();
         private void Play() => PlayRequested?.Invoke();

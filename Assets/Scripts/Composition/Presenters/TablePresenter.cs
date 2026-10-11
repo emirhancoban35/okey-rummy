@@ -1,3 +1,4 @@
+using Okey.Presentation.Tables;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace Okey.Composition
     public sealed class TablePresenter : IInitializable, IDisposable
     {
         private readonly TableSession _session;
-        private readonly TurnControlsView _controls;
+        private readonly TableView _controls;
         private readonly StoneViewFactory _factory;
         private readonly List<Stone> _owned = new List<Stone>();
         private readonly Dictionary<int, Stone> _meldViews = new Dictionary<int, Stone>();
@@ -29,7 +30,7 @@ namespace Okey.Composition
         private bool _initialized;
         private bool _disposed;
 
-        public TablePresenter(TableSession session, TurnControlsView controls, StoneViewFactory factory)
+        public TablePresenter(TableSession session, TableView controls, StoneViewFactory factory)
         {
             _session = session;
             _controls = controls;
@@ -42,12 +43,13 @@ namespace Okey.Composition
             if (_disposed) throw new ObjectDisposedException(nameof(TablePresenter));
             if (_initialized) return;
             _initialized = true;
-            _controls.SetPlayerCount(_session.Players.Count);
-            _controls.SeriesBoard.Configure(_session.Rules.MinimumValue, _session.Rules.MaximumValue, false);
-            _controls.PairsBoard.Configure(_session.Rules.MinimumValue, _session.Rules.MaximumValue, true);
-            _controls.SeriesBoard.PageChanged += Render;
-            _controls.PairsBoard.PageChanged += Render;
-            CreatePublicStone(_session.Indicator, _controls.IndicatorRoot, _controls.IndicatorScale);
+            _controls.Surface.SetPlayerCount(_session.Players.Count);
+            _controls.Players.SetPlayerCount(_session.Players.Count);
+            _controls.Surface.SeriesBoard.Configure(_session.Rules.MinimumValue, _session.Rules.MaximumValue, false);
+            _controls.Surface.PairsBoard.Configure(_session.Rules.MinimumValue, _session.Rules.MaximumValue, true);
+            _controls.Surface.SeriesBoard.PageChanged += Render;
+            _controls.Surface.PairsBoard.PageChanged += Render;
+            CreatePublicStone(_session.Indicator, _controls.Surface.IndicatorRoot, _controls.Surface.IndicatorScale);
             _session.Changed += Render;
             Render();
         }
@@ -61,7 +63,7 @@ namespace Okey.Composition
         public bool TryFindMeld(Vector3 position, out int index)
         {
             for (index = 0; index < _meldGroups.Count; index++)
-                if (_meldGroups[index].Any(view => view.gameObject.activeSelf && Vector2.Distance(view.transform.position, position) <= _controls.MeldDropRadius))
+                if (_meldGroups[index].Any(view => view.gameObject.activeSelf && Vector2.Distance(view.transform.position, position) <= _controls.Surface.MeldDropRadius))
                     return true;
             index = -1;
             return false;
@@ -126,8 +128,8 @@ namespace Okey.Composition
         public void ClearPreview()
         {
             foreach (var view in _meldViews.Values) view.Selection.SetSelected(false);
-            _controls.SeriesBoard.HideTarget();
-            _controls.PairsBoard.HideTarget();
+            _controls.Surface.SeriesBoard.HideTarget();
+            _controls.Surface.PairsBoard.HideTarget();
         }
 
         public void AnimateLayOff(int stoneId, Vector3 worldOrigin)
@@ -155,7 +157,6 @@ namespace Okey.Composition
         private void Render()
         {
             if (_disposed) return;
-            _controls.SetMeldCount(_session.Melds.Count);
             if (!_winningHandShown && !_session.Game.AllowsPublicMelds && _session.WinningHand != null)
             {
                 _winningHandShown = true;
@@ -164,16 +165,21 @@ namespace Okey.Composition
                     var meld = _session.WinningHand.Melds[group];
                     for (var tile = 0; tile < meld.Tiles.Count; tile++)
                     {
-                        var view = CreatePublicStone(meld.Tiles[tile].Stone, _controls.WinningHandRoot, _controls.WinningTileScale);
-                        view.Motion.SnapTo(_controls.WinningTilePosition(group, tile, meld.Kind == MeldKind.Pair));
+                        var view = CreatePublicStone(meld.Tiles[tile].Stone, _controls.Surface.WinningHandRoot, _controls.Surface.WinningTileScale);
+                        view.Motion.SnapTo(_controls.Surface.WinningTilePosition(group, tile, meld.Kind == MeldKind.Pair));
                     }
                 }
             }
             for (var seat = 0; seat < _session.Players.Count; seat++)
             {
                 var player = _session.Players[seat];
-                if (seat > 0) _controls.RenderOpponent(seat, player.Hand.Count, player.Penalty, player.Score,
-                    seat == _session.ActiveSeat && _session.Phase != TurnPhase.Finished);
+                if (seat > 0)
+                {
+                    var active = seat == _session.ActiveSeat && _session.Phase != TurnPhase.Finished;
+                    _controls.Players.RenderOpponent(seat, string.Format(_controls.Texts.OpponentFormat,
+                        _controls.Texts.SeatName(seat), player.Hand.Count, player.Penalty, player.Score,
+                        active ? _controls.Texts.ActiveSeatText : string.Empty), active);
+                }
                 if (player.Discards.Count == 0)
                 {
                     if (_discards[seat] != null) _discards[seat].gameObject.SetActive(false);
@@ -182,7 +188,7 @@ namespace Okey.Composition
                 if (_discards[seat] != null) _discards[seat].gameObject.SetActive(true);
                 var last = player.Discards[player.Discards.Count - 1];
                 if (_discards[seat] == null)
-                    _discards[seat] = CreatePublicStone(last, _controls.DiscardAreas[seat].StoneRoot, _controls.DiscardScale);
+                    _discards[seat] = CreatePublicStone(last, _controls.Surface.DiscardAreas[seat].StoneRoot, _controls.Surface.DiscardScale);
                 else if (_discards[seat].Instance.Id != last.Id) _discards[seat].Initialize(last);
             }
             ClearPreview();
@@ -194,11 +200,11 @@ namespace Okey.Composition
             var series = 0;
             var pair = 0;
             var pairCount = _session.Melds.Count(meld => meld.Kind == MeldKind.Pair);
-            _controls.SeriesBoard.SetGroupCount(_session.Melds.Count - pairCount);
-            _controls.PairsBoard.SetGroupCount(pairCount);
+            _controls.Surface.SeriesBoard.SetGroupCount(_session.Melds.Count - pairCount);
+            _controls.Surface.PairsBoard.SetGroupCount(pairCount);
             foreach (var meld in _session.Melds)
             {
-                var board = meld.Kind == MeldKind.Pair ? _controls.PairsBoard : _controls.SeriesBoard;
+                var board = meld.Kind == MeldKind.Pair ? _controls.Surface.PairsBoard : _controls.Surface.SeriesBoard;
                 var ordinal = meld.Kind == MeldKind.Pair ? pair++ : series++;
                 _boardGroups.Add((board, ordinal));
                 var group = new List<Stone>();
@@ -230,8 +236,8 @@ namespace Okey.Composition
             if (_disposed) return;
             _disposed = true;
             _session.Changed -= Render;
-            _controls.SeriesBoard.PageChanged -= Render;
-            _controls.PairsBoard.PageChanged -= Render;
+            _controls.Surface.SeriesBoard.PageChanged -= Render;
+            _controls.Surface.PairsBoard.PageChanged -= Render;
             foreach (var view in _owned)
                 if (view != null)
                 {

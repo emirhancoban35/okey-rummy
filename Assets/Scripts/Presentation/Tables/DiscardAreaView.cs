@@ -2,7 +2,7 @@ using UnityEngine;
 using System;
 using UnityEngine.EventSystems;
 
-namespace Okey.Presentation.Racks
+namespace Okey.Presentation.Tables
 {
     public sealed class DiscardAreaView : MonoBehaviour, IPointerClickHandler
     {

@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-namespace Okey.Presentation.Racks
+namespace Okey.Presentation.Tables
 {
     public sealed class MeldBoardView : MonoBehaviour, IScrollHandler
     {

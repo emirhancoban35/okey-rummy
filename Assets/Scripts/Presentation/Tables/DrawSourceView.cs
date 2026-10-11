@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace Okey.Presentation.Racks
+namespace Okey.Presentation.Tables
 {
     public sealed class DrawSourceView : MonoBehaviour, IPointerDownHandler, IPointerClickHandler,
         IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler

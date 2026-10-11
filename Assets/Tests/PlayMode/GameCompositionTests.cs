@@ -1,3 +1,4 @@
+using Okey.Presentation.Tables;
 using System;
 using TMPro;
 using UnityEditor;
@@ -84,29 +85,29 @@ namespace Okey.Tests.PlayMode
                 DOTween.Complete(view.transform);
         }
 
-        private TurnControlsView Controls => _context.Container.Resolve<TurnControlsView>();
+        private TableView Controls => _context.Container.Resolve<TableView>();
         [UnityTest]
         public IEnumerator TableStartsWithDiscardAndDraggingToRightAreaAdvancesTheBots()
         {
             var session = _context.Container.Resolve<TableSession>();
-            Assert.That(Controls.DrawSource.CanDraw, Is.False);
+            Assert.That(Controls.Surface.DrawSource.CanDraw, Is.False);
             var stone = HandViews[0];
             var id = stone.Instance.Id;
             Interaction.TryBeginDrag(stone);
-            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            Interaction.EndDrag(stone, Controls.Surface.DiscardAreas[0].StoneRoot.position);
             Assert.That(session.ActiveSeat, Is.EqualTo(1));
             Assert.That(session.Players[0].Hand.Count, Is.EqualTo(21));
             Assert.That(HandViews.Any(view => view.Instance.Id == id), Is.False);
             var bot = _context.Container.Resolve<BotTurnController>();
             for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             Assert.That(session.ActiveSeat, Is.Zero);
-            Assert.That(Controls.DrawSource.CanDraw, Is.True);
+            Assert.That(Controls.Surface.DrawSource.CanDraw, Is.True);
             var data = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left };
-            Controls.DrawSource.OnPointerClick(data);
-            Controls.DrawSource.OnPointerClick(data);
+            Controls.Surface.DrawSource.OnPointerClick(data);
+            Controls.Surface.DrawSource.OnPointerClick(data);
             Assert.That(session.Players[0].Hand.Count, Is.EqualTo(22));
             Assert.That(session.RemainingCount, Is.EqualTo(16));
-            Assert.That(Controls.DiscardAreas.Take(4).All(area => area.StoneRoot.GetComponentInChildren<Stone>() != null), Is.True);
+            Assert.That(Controls.Surface.DiscardAreas.Take(4).All(area => area.StoneRoot.GetComponentInChildren<Stone>() != null), Is.True);
             yield return null;
         }
 
@@ -133,13 +134,13 @@ namespace Okey.Tests.PlayMode
         [Test]
         public void TimerBarsAndNumbersFollowTheActiveSeat()
         {
-            var serial = new SerializedObject(Controls);
+            var serial = new SerializedObject(Controls.Clock);
             var sliders = serial.FindProperty("_turnSliders");
             var texts = serial.FindProperty("_opponentClockTexts");
             Assert.That(sliders.arraySize, Is.EqualTo(4));
-            Controls.RenderClock(0, 22.5, false, 0, 45);
+            _context.Container.Resolve<TurnClockController>().RenderClock(0, 22.5, false, 0, 45);
             Assert.That(((Slider)sliders.GetArrayElementAtIndex(0).objectReferenceValue).value, Is.EqualTo(.5f));
-            Controls.RenderClock(2, 10, false, 0, 20);
+            _context.Container.Resolve<TurnClockController>().RenderClock(2, 10, false, 0, 20);
             for (var seat = 0; seat < 4; seat++)
             {
                 var slider = (Slider)sliders.GetArrayElementAtIndex(seat).objectReferenceValue;
@@ -148,7 +149,7 @@ namespace Okey.Tests.PlayMode
                 Assert.That(slider.fillRect.sizeDelta.x, Is.Zero);
             }
             Assert.That(((TMP_Text)texts.GetArrayElementAtIndex(1).objectReferenceValue).text, Is.EqualTo("10s"));
-            Controls.RenderClock(2, 0, false, 0, 20, true);
+            _context.Container.Resolve<TurnClockController>().RenderClock(2, 0, false, 0, 20, true);
             Assert.That(((Slider)sliders.GetArrayElementAtIndex(2).objectReferenceValue).value, Is.Zero);
             Assert.That(((TMP_Text)texts.GetArrayElementAtIndex(1).objectReferenceValue).text, Is.Empty);
         }
@@ -159,7 +160,7 @@ namespace Okey.Tests.PlayMode
             var settings = _context.Container.Resolve<TableSettings>();
             var table = _context.Container.Resolve<TableSession>();
             var original = settings.EscalatingOpenings;
-            var button = (Button)new SerializedObject(Controls).FindProperty("_escalatingButton").objectReferenceValue;
+            var button = (Button)new SerializedObject(Controls.Options).FindProperty("_escalatingButton").objectReferenceValue;
             try
             {
                 button.onClick.Invoke();
@@ -227,6 +228,7 @@ namespace Okey.Tests.PlayMode
         public void MovingGroupsUpdatesTheDisplayedPointsAndOpeningUsesThatSameArrangement()
         {
             _context.Container.Resolve<TurnController>().Dispose();
+            _context.Container.Resolve<TableHudPresenter>().Dispose();
             _context.Container.Resolve<HandPresenter>().Dispose();
             _context.Container.Resolve<TablePresenter>().Dispose();
             var deck = _context.Container.Resolve<DeckFactory>().Create(_context.Container.Resolve<DeckDefinition>()).ToArray();
@@ -242,11 +244,12 @@ namespace Okey.Tests.PlayMode
             var hand = new HandPresenter(session.Players[0].Hand,factory,Rack,interaction);
             var table = new TablePresenter(session,Controls,factory);
             var controller = new TurnController(session,hand,interaction,Controls,table,new RackMeldEvaluator(),Rack);
+            var hud = new TableHudPresenter(session,Controls,hand,interaction,table,new RackMeldEvaluator(),Rack);
             try
             {
-                hand.Initialize();table.Initialize();controller.Initialize();
-                var serialized = new SerializedObject(Controls);
-                var points = (TMPro.TMP_Text)serialized.FindProperty("_seriesPointsText").objectReferenceValue;
+                hand.Initialize();table.Initialize();hud.Initialize();controller.Initialize();
+                var serialized = new SerializedObject(Controls.SeriesAction);
+                var points = (TMPro.TMP_Text)serialized.FindProperty("_progressText").objectReferenceValue;
                 Assert.That(points.text, Is.EqualTo("66 / 66"));
                 var moved = hand.Views.Single(view=>view.Instance.Id==2);
                 interaction.TryBeginDrag(moved);
@@ -255,17 +258,17 @@ namespace Okey.Tests.PlayMode
                 interaction.TryBeginDrag(moved);
                 interaction.EndDrag(moved,SlotWorldPosition(1));
                 Assert.That(points.text, Is.EqualTo("66 / 66"));
-                ((Button)serialized.FindProperty("_seriesButton").objectReferenceValue).onClick.Invoke();
+                ((Button)serialized.FindProperty("_button").objectReferenceValue).onClick.Invoke();
                 Assert.That(session.Melds.Count, Is.EqualTo(2));
                 Assert.That(session.Players[0].Hand.Count, Is.EqualTo(2));
                 Assert.That(hand.Views.Count, Is.EqualTo(2));
                 DOTween.CompleteAll();
                 var layOff = hand.Views.Single(view => view.Instance.Id == 7);
-                var endpoint = Controls.MeldRoot.GetComponentsInChildren<Stone>().Single(view => view.Instance.Id == 3).transform.position + Vector3.right * Controls.MeldScale.x;
+                var endpoint = Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>().Single(view => view.Instance.Id == 3).transform.position + Vector3.right * Controls.Surface.SeriesBoard.TileScale.x;
                 var rackScale = layOff.transform.localScale;
                 interaction.TryBeginDrag(layOff);
                 interaction.DragTo(layOff, endpoint);
-                Assert.That(Vector3.Distance(layOff.transform.lossyScale, Controls.MeldScale), Is.LessThan(.001f));
+                Assert.That(Vector3.Distance(layOff.transform.lossyScale, Controls.Surface.SeriesBoard.TileScale), Is.LessThan(.001f));
                 interaction.CancelDrag(layOff);
                 Assert.That(layOff.transform.localScale, Is.EqualTo(rackScale));
                 interaction.TryBeginDrag(layOff);
@@ -274,16 +277,16 @@ namespace Okey.Tests.PlayMode
                 Assert.That(session.Melds[0].Tiles.Count, Is.EqualTo(4));
                 Assert.That(session.Players[0].Hand.Count, Is.EqualTo(1));
                 Assert.That(hand.Views.Count, Is.EqualTo(1));
-                var publicTile = Controls.MeldRoot.GetComponentsInChildren<Stone>().Single(view => view.Instance.Id == 7);
+                var publicTile = Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>().Single(view => view.Instance.Id == 7);
                 Assert.That(Vector3.Distance(publicTile.transform.position, endpoint), Is.LessThan(.001f));
             }
-            finally {controller.Dispose();table.Dispose();hand.Dispose();}
+            finally {controller.Dispose();hud.Dispose();table.Dispose();hand.Dispose();}
         }
 
         [UnityTest]
         public IEnumerator HelpAndSettingsStayHiddenUntilRequestedAndNeverOverlap()
         {
-            var serialized = new SerializedObject(Controls);
+            var serialized = new SerializedObject(Controls.Panels);
             var help = (GameObject)serialized.FindProperty("_helpPanel").objectReferenceValue;
             var settings = (GameObject)serialized.FindProperty("_settingsPanel").objectReferenceValue;
             Assert.That(help.activeSelf || settings.activeSelf, Is.False);
@@ -294,7 +297,7 @@ namespace Okey.Tests.PlayMode
             var camera = _scene.GetRootGameObjects().Select(root=>root.GetComponent<Camera>()).Single(value=>value!=null);
             var hits = new List<RaycastResult>();
             EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current)
-                {position=camera.WorldToScreenPoint(Controls.DrawSource.transform.position)},hits);
+                {position=camera.WorldToScreenPoint(Controls.Surface.DrawSource.transform.position)},hits);
             Assert.That(hits.Count, Is.GreaterThan(0));
             Assert.That(hits[0].gameObject.transform.IsChildOf(help.transform), Is.True, string.Join(", ", hits.Select(hit=>hit.gameObject.name+":"+hit.depth+":"+hit.sortingOrder)));
             ((Button)serialized.FindProperty("_settingsButton").objectReferenceValue).onClick.Invoke();
@@ -310,21 +313,21 @@ namespace Okey.Tests.PlayMode
             var session = _context.Container.Resolve<TableSession>();
             var stone = HandViews[0];
             Interaction.TryBeginDrag(stone);
-            var controlsFields = new SerializedObject(Controls);
+            var controlsFields = new SerializedObject(Controls.Surface);
             Assert.That(((GameObject)controlsFields.FindProperty("_discardCue").objectReferenceValue).activeSelf, Is.True);
-            Interaction.EndDrag(stone, Controls.DiscardAreas[1].StoneRoot.position);
+            Interaction.EndDrag(stone, Controls.Surface.DiscardAreas[1].StoneRoot.position);
             Assert.That(session.Players[0].Hand.Count, Is.EqualTo(22));
             Assert.That(session.ActiveSeat, Is.Zero);
             Interaction.TryBeginDrag(stone);
-            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            Interaction.EndDrag(stone, Controls.Surface.DiscardAreas[0].StoneRoot.position);
             var bot = _context.Container.Resolve<BotTurnController>();
             for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             Interaction.TryBeginDrag(HandViews[0]);
             _context.Container.Resolve<TurnController>().Draw();
-            Assert.That(Controls.DrawSource.CanDraw, Is.False);
+            Assert.That(Controls.Surface.DrawSource.CanDraw, Is.False);
             Assert.That(session.Players[0].Hand.Count, Is.EqualTo(21));
             Interaction.CancelDrag(HandViews[0]);
-            Assert.That(Controls.DrawSource.CanDraw, Is.True);
+            Assert.That(Controls.Surface.DrawSource.CanDraw, Is.True);
         }
 
         [Test]
@@ -357,23 +360,23 @@ namespace Okey.Tests.PlayMode
                     table.TryDiscard(seat,table.Players[seat].Hand.Slots.First(tile=>tile!=null).Id);
                 }
                 Assert.That(table.Melds.Count,Is.EqualTo(20));
-                Assert.That(Controls.SeriesBoard.PageCount,Is.EqualTo(2));
-                Assert.That(Controls.MeldRoot.GetComponentsInChildren<Stone>(true).Length,Is.EqualTo(60));
-                Assert.That(Controls.MeldRoot.GetComponentsInChildren<Stone>().Length,Is.EqualTo(48));
-                var original=Controls.MeldRoot.GetComponentsInChildren<Stone>().Single(view=>view.Instance.Id==1);
+                Assert.That(Controls.Surface.SeriesBoard.PageCount,Is.EqualTo(2));
+                Assert.That(Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>(true).Length,Is.EqualTo(60));
+                Assert.That(Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>().Length,Is.EqualTo(48));
+                var original=Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>().Single(view=>view.Instance.Id==1);
                 DOTween.CompleteAll();var origin=original.transform.position;
-                Controls.SeriesBoard.ChangePage(1);
-                Assert.That(Controls.MeldRoot.GetComponentsInChildren<Stone>().Length,Is.EqualTo(12));
+                Controls.Surface.SeriesBoard.ChangePage(1);
+                Assert.That(Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>().Length,Is.EqualTo(12));
                 Assert.That(original.gameObject.activeSelf,Is.False);
                 table.TryDraw(0,out var drawn);
                 Assert.That(drawn.Id,Is.EqualTo(69));
-                var target=Controls.SeriesBoard.transform.TransformPoint(Controls.SeriesBoard.GetPosition(new MeldBoardCell(1,0,3,5)));
+                var target=Controls.Surface.SeriesBoard.transform.TransformPoint(Controls.Surface.SeriesBoard.GetPosition(new MeldBoardCell(1,0,3,5)));
                 Assert.That(presenter.TryFindMeld(drawn,target,out var index),Is.True);
                 Assert.That(index,Is.EqualTo(19));
                 Assert.That(table.TryLayOff(0,drawn.Id,index),Is.True);
                 Assert.That(table.Melds[19].Tiles.Count,Is.EqualTo(4));
                 Assert.That(table.Melds[3].Tiles.Count,Is.EqualTo(3));
-                Controls.SeriesBoard.ChangePage(-1);
+                Controls.Surface.SeriesBoard.ChangePage(-1);
                 Assert.That(original.transform.position,Is.EqualTo(origin));
             }
             finally {presenter.Dispose();}
@@ -383,7 +386,7 @@ namespace Okey.Tests.PlayMode
         public void PublicViewsUseAnchorsAndNeverExposeOpponentHands()
         {
             var table = _context.Container.Resolve<TableSession>();
-            var indicator = Controls.IndicatorRoot.GetComponentInChildren<Stone>();
+            var indicator = Controls.Surface.IndicatorRoot.GetComponentInChildren<Stone>();
             Assert.That(indicator.Instance, Is.SameAs(table.Indicator));
             Assert.That(indicator.IsFaceUp, Is.True);
             Assert.That(indicator.transform.localPosition, Is.EqualTo(Vector3.zero));
@@ -416,10 +419,10 @@ namespace Okey.Tests.PlayMode
             table.MeldRules.TryCreate(deck.Skip(1).Take(3), MeldKind.Run, out var first);
             table.MeldRules.TryCreate(deck.Skip(4).Take(3), MeldKind.Run, out var second);
             Assert.That(table.TryOpen(0, OpeningMode.Series, new[] {first, second}), Is.True);
-            var original = Controls.MeldRoot.GetComponentsInChildren<Stone>();
+            var original = Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>();
             Assert.That(original.Length, Is.EqualTo(6));
             DOTween.CompleteAll();
-            var endpoint = original.Single(view => view.Instance.Id == 3).transform.position + Vector3.right * Controls.MeldScale.x;
+            var endpoint = original.Single(view => view.Instance.Id == 3).transform.position + Vector3.right * Controls.Surface.SeriesBoard.TileScale.x;
             Assert.That(presenter.TryFindMeld(deck[7], endpoint, out var target), Is.True);
             Assert.That(target, Is.Zero);
             Assert.That(presenter.TryFindMeld(deck[8], endpoint, out _), Is.False);
@@ -429,7 +432,7 @@ namespace Okey.Tests.PlayMode
             presenter.ClearPreview();
             Assert.That(highlight.activeSelf, Is.False);
             Assert.That(table.TryLayOff(0, 7, 0), Is.True);
-            var extended = Controls.MeldRoot.GetComponentsInChildren<Stone>();
+            var extended = Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>();
             Assert.That(extended.Length, Is.EqualTo(7));
             foreach (var view in original) Assert.That(extended, Does.Contain(view));
             foreach (var view in extended)
@@ -451,19 +454,19 @@ namespace Okey.Tests.PlayMode
         {
             var stone = HandViews[0];
             Interaction.TryBeginDrag(stone);
-            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            Interaction.EndDrag(stone, Controls.Surface.DiscardAreas[0].StoneRoot.position);
             var bot = _context.Container.Resolve<BotTurnController>();
             for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             Physics2D.SyncTransforms();
             var camera = _scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Single(value => value != null);
             var data = new PointerEventData(EventSystem.current)
             {
-                position = camera.WorldToScreenPoint(Controls.DrawSource.transform.position),
+                position = camera.WorldToScreenPoint(Controls.Surface.DrawSource.transform.position),
                 button = PointerEventData.InputButton.Left
             };
             var hits = new List<RaycastResult>();
             camera.GetComponent<Physics2DRaycaster>().Raycast(data, hits);
-            var hit = hits.First(result => result.gameObject.transform.IsChildOf(Controls.DrawSource.transform));
+            var hit = hits.First(result => result.gameObject.transform.IsChildOf(Controls.Surface.DrawSource.transform));
             ExecuteEvents.ExecuteHierarchy(hit.gameObject, data, ExecuteEvents.pointerClickHandler);
             Assert.That(_context.Container.Resolve<TableSession>().Players[0].Hand.Count, Is.EqualTo(22));
         }
@@ -524,11 +527,11 @@ namespace Okey.Tests.PlayMode
             var presenter = new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>());
             presenter.Initialize();
             Assert.That(table.TryOpen(0,OpeningMode.Pairs,new[] {meld}),Is.True);
-            Assert.That(Controls.PairsRoot.GetComponentsInChildren<Stone>().Length,Is.EqualTo(2));
-            Assert.That(Controls.MeldRoot.GetComponentsInChildren<Stone>().Length,Is.Zero);
+            Assert.That(Controls.Surface.PairsBoard.transform.GetComponentsInChildren<Stone>().Length,Is.EqualTo(2));
+            Assert.That(Controls.Surface.SeriesBoard.transform.GetComponentsInChildren<Stone>().Length,Is.Zero);
             presenter.Dispose();
             yield return null;
-            Assert.That(Controls.PairsRoot.GetComponentsInChildren<Stone>().Length,Is.Zero);
+            Assert.That(Controls.Surface.PairsBoard.transform.GetComponentsInChildren<Stone>().Length,Is.Zero);
         }
 
         [UnityTest]
@@ -536,13 +539,13 @@ namespace Okey.Tests.PlayMode
         {
             var stone = HandViews[0];
             Interaction.TryBeginDrag(stone);
-            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            Interaction.EndDrag(stone, Controls.Surface.DiscardAreas[0].StoneRoot.position);
             var bot = _context.Container.Resolve<BotTurnController>();
             for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             yield return null;
             Physics2D.SyncTransforms();
             var camera = _scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Single(value => value != null);
-            var position = camera.WorldToScreenPoint(Controls.DrawSource.transform.position + Vector3.down * .45f);
+            var position = camera.WorldToScreenPoint(Controls.Surface.DrawSource.transform.position + Vector3.down * .45f);
             CompleteHandMovement();
             var originalMouse = Mouse.current;
             var originalBackgroundBehavior = InputSystem.settings.backgroundBehavior;
@@ -562,7 +565,7 @@ namespace Okey.Tests.PlayMode
                 InputSystem.Update();
                 yield return null;
                 Assert.That(_context.Container.Resolve<TableSession>().Players[0].Hand.Count, Is.EqualTo(22));
-                Assert.That(Controls.DrawSource.CanDraw, Is.False);
+                Assert.That(Controls.Surface.DrawSource.CanDraw, Is.False);
             }
             finally
             {
@@ -578,7 +581,7 @@ namespace Okey.Tests.PlayMode
         {
             var stone = HandViews[0];
             Interaction.TryBeginDrag(stone);
-            Interaction.EndDrag(stone, Controls.DiscardAreas[0].StoneRoot.position);
+            Interaction.EndDrag(stone, Controls.Surface.DiscardAreas[0].StoneRoot.position);
             var bot = _context.Container.Resolve<BotTurnController>();
             for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             var table = _context.Container.Resolve<TableSession>();
@@ -586,21 +589,21 @@ namespace Okey.Tests.PlayMode
             var data = new PointerEventData(EventSystem.current)
             {
                 pointerId = 29,
-                position = camera.WorldToScreenPoint(Controls.DrawSource.transform.position),
+                position = camera.WorldToScreenPoint(Controls.Surface.DrawSource.transform.position),
                 button = PointerEventData.InputButton.Left,
                 pointerPressRaycast = new RaycastResult { module = camera.GetComponent<Physics2DRaycaster>() }
             };
             var before = HandViews.Select(view => view.Instance.Id).ToHashSet();
-            Controls.DrawSource.OnPointerDown(data);
-            Controls.DrawSource.OnBeginDrag(data);
-            Controls.DrawSource.OnBeginDrag(data);
+            Controls.Surface.DrawSource.OnPointerDown(data);
+            Controls.Surface.DrawSource.OnBeginDrag(data);
+            Controls.Surface.DrawSource.OnBeginDrag(data);
             var drawn = HandViews.Single(view => !before.Contains(view.Instance.Id));
             Assert.That(Interaction.IsDragging, Is.True);
             Assert.That(table.Players[0].Hand.Count, Is.EqualTo(22));
             data.position = camera.WorldToScreenPoint(SlotWorldPosition(26));
-            Controls.DrawSource.OnDrag(data);
-            Controls.DrawSource.OnEndDrag(data);
-            Controls.DrawSource.OnPointerClick(data);
+            Controls.Surface.DrawSource.OnDrag(data);
+            Controls.Surface.DrawSource.OnEndDrag(data);
+            Controls.Surface.DrawSource.OnPointerClick(data);
             Assert.That(Interaction.IsDragging, Is.False);
             Assert.That(table.Players[0].Hand.FindSlot(drawn.Instance.Id), Is.EqualTo(26));
             Assert.That(table.RemainingCount, Is.EqualTo(16));
@@ -613,7 +616,7 @@ namespace Okey.Tests.PlayMode
         {
             var original = HandViews;
             Interaction.TryBeginDrag(original[3]);
-            Interaction.EndDrag(original[3], Controls.DiscardAreas[0].StoneRoot.position);
+            Interaction.EndDrag(original[3], Controls.Surface.DiscardAreas[0].StoneRoot.position);
             var bot = _context.Container.Resolve<BotTurnController>();
             for (var action = 0; action < 100 && _context.Container.Resolve<TableSession>().ActiveSeat != 0; action++) bot.Act();
             _context.Container.Resolve<TurnController>().Draw();

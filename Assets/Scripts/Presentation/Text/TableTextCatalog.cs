@@ -1,0 +1,89 @@
+using UnityEngine;
+
+namespace Okey.Presentation.Text
+{
+    [CreateAssetMenu(menuName = "Okey/Presentation/Table Text")]
+    public sealed class TableTextCatalog : ScriptableObject
+    {
+        [SerializeField] private string[] _seatNames;
+        [SerializeField, TextArea] private string _openLabel;
+        public string OpenLabel => _openLabel;
+        [SerializeField, TextArea] private string _finishLabel;
+        public string FinishLabel => _finishLabel;
+        [SerializeField, TextArea] private string _pairsLabel;
+        public string PairsLabel => _pairsLabel;
+        [SerializeField, TextArea] private string _openHelp;
+        public string OpenHelp => _openHelp;
+        [SerializeField, TextArea] private string _classicHelp;
+        public string ClassicHelp => _classicHelp;
+        [SerializeField, TextArea] private string _emptyStockStatus;
+        public string EmptyStockStatus => _emptyStockStatus;
+        [SerializeField, TextArea] private string _classicDiscardStatus;
+        public string ClassicDiscardStatus => _classicDiscardStatus;
+        [SerializeField, TextArea] private string _winnerFormat;
+        public string WinnerFormat => _winnerFormat;
+        [SerializeField, TextArea] private string _drawnRoundLabel;
+        public string DrawnRoundLabel => _drawnRoundLabel;
+        [SerializeField, TextArea] private string _progressFormat;
+        public string ProgressFormat => _progressFormat;
+        [SerializeField, TextArea] private string _additionalGroupFormat;
+        public string AdditionalGroupFormat => _additionalGroupFormat;
+        [SerializeField, TextArea] private string _escalatingOnLabel;
+        public string EscalatingOnLabel => _escalatingOnLabel;
+        [SerializeField, TextArea] private string _escalatingOffLabel;
+        public string EscalatingOffLabel => _escalatingOffLabel;
+        [SerializeField, TextArea] private string _humanlikeBotLabel;
+        public string HumanlikeBotLabel => _humanlikeBotLabel;
+        [SerializeField, TextArea] private string _fastBotLabel;
+        public string FastBotLabel => _fastBotLabel;
+        [SerializeField, TextArea] private string _nextPartnerLabel;
+        public string NextPartnerLabel => _nextPartnerLabel;
+        [SerializeField, TextArea] private string _nextIndividualLabel;
+        public string NextIndividualLabel => _nextIndividualLabel;
+        [SerializeField, TextArea] private string _individualModeLabel;
+        public string IndividualModeLabel => _individualModeLabel;
+        [SerializeField, TextArea] private string _partnerModeFormat;
+        public string PartnerModeFormat => _partnerModeFormat;
+        [SerializeField, TextArea] private string _secondsFormat;
+        public string SecondsFormat => _secondsFormat;
+        [SerializeField, TextArea] private string _localSeatName;
+        public string LocalSeatName => _localSeatName;
+        [SerializeField, TextArea] private string _clockFormat;
+        public string ClockFormat => _clockFormat;
+        [SerializeField, TextArea] private string _activeSeatText;
+        public string ActiveSeatText => _activeSeatText;
+        [SerializeField, TextArea] private string _openingSuccessText;
+        public string OpeningSuccessText => _openingSuccessText;
+        [SerializeField, TextArea] private string _openingFailureFormat;
+        public string OpeningFailureFormat => _openingFailureFormat;
+        [SerializeField, TextArea] private string _drawStatus;
+        public string DrawStatus => _drawStatus;
+        [SerializeField, TextArea] private string _discardStatus;
+        public string DiscardStatus => _discardStatus;
+        [SerializeField, TextArea] private string _waitingFormat;
+        public string WaitingFormat => _waitingFormat;
+        [SerializeField, TextArea] private string _handFormat;
+        public string HandFormat => _handFormat;
+        [SerializeField, TextArea] private string _pileFormat;
+        public string PileFormat => _pileFormat;
+        [SerializeField, TextArea] private string _penaltyFormat;
+        public string PenaltyFormat => _penaltyFormat;
+        [SerializeField, TextArea] private string _opponentFormat;
+        public string OpponentFormat => _opponentFormat;
+        [SerializeField, TextArea] private string _menuUnavailable;
+        public string MenuUnavailable => _menuUnavailable;
+        [SerializeField, TextArea] private string _menuIndividual;
+        public string MenuIndividual => _menuIndividual;
+        [SerializeField, TextArea] private string _menuPartners;
+        public string MenuPartners => _menuPartners;
+        [SerializeField, TextArea] private string _menuHumanlike;
+        public string MenuHumanlike => _menuHumanlike;
+        [SerializeField, TextArea] private string _menuFast;
+        public string MenuFast => _menuFast;
+        [SerializeField, TextArea] private string _menuFixed;
+        public string MenuFixed => _menuFixed;
+        [SerializeField, TextArea] private string _menuRising;
+        public string MenuRising => _menuRising;
+        public string SeatName(int seat) => seat == 0 ? _localSeatName : _seatNames[seat - 1];
+    }
+}

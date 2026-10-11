@@ -1,3 +1,4 @@
+using Okey.Presentation.Tables;
 using System.Collections;
 using System.Linq;
 using NUnit.Framework;
@@ -82,11 +83,11 @@ namespace Okey.Tests.PlayMode
             Assert.That(table.Players.Select(player=>player.Hand.Count),Is.EqualTo(new[] {15,14,14,14}));
             Assert.That(table.RemainingCount,Is.EqualTo(48));
             Assert.That(table.Options.EscalatingOpenings,Is.False);
-            var controls=context.Container.Resolve<TurnControlsView>();
-            var fields=new SerializedObject(controls);
+            var controls=context.Container.Resolve<TableView>();
+            var fields=new SerializedObject(controls.Surface);
             Assert.That(((GameObject)fields.FindProperty("_classicPanel").objectReferenceValue).activeSelf,Is.True);
-            Assert.That(((TMP_Text)fields.FindProperty("_seriesActionLabel").objectReferenceValue).text,Is.EqualTo("FINISH"));
-            Assert.That(((TMP_Text)fields.FindProperty("_pairActionLabel").objectReferenceValue).text,Is.EqualTo("PAIRS"));
+            Assert.That(controls.SeriesAction.Label.text,Is.EqualTo("FINISH"));
+            Assert.That(controls.PairAction.Label.text,Is.EqualTo("PAIRS"));
             var visuals=fields.FindProperty("_publicMeldVisuals");
             Assert.That(visuals.arraySize,Is.GreaterThanOrEqualTo(4));
             for(var index=0;index<visuals.arraySize;index++)
@@ -111,6 +112,7 @@ namespace Okey.Tests.PlayMode
             container.Resolve<TickableManager>().Remove(container.Resolve<BotTurnController>());
             container.Resolve<TickableManager>().Remove(container.Resolve<TurnClockController>());
             container.Resolve<TurnController>().Dispose();
+            container.Resolve<TableHudPresenter>().Dispose();
             container.Resolve<HandPresenter>().Dispose();
             container.Resolve<TablePresenter>().Dispose();
             StoneInstance Tile(int id, int value, StoneColor color = StoneColor.Red) =>
@@ -121,10 +123,10 @@ namespace Okey.Tests.PlayMode
                 .Concat(winning)
                 .Concat(Enumerable.Range(100,76).Select(id=>Tile(id,id%13+1,(StoneColor)(id%4)))).ToArray();
             var table = new TableSession(_settings.CreateRules(),deck,28,startingSeat:1,game:new ClassicOkeyGame(new MeldPlanner()));
-            var controls = container.Resolve<TurnControlsView>();
+            var controls = container.Resolve<TableView>();
             var presenter = new TablePresenter(table,controls,container.Resolve<StoneViewFactory>());
             presenter.Initialize();
-            Assert.That(controls.WinningHandRoot.childCount,Is.Zero);
+            Assert.That(controls.Surface.WinningHandRoot.childCount,Is.Zero);
             var bot = new BotTurnController(table,new ClassicOkeyStrategy(new MeldPlanner()),_settings,new SeededRandomSource(7));
             bot.Act();
             Assert.That(table.Winner,Is.EqualTo(1));
@@ -132,7 +134,7 @@ namespace Okey.Tests.PlayMode
             Assert.That(table.Players[1].Hand.Count,Is.EqualTo(14));
             Assert.That(table.Melds,Is.Empty);
             Assert.That(table.WinningHand.TileCount,Is.EqualTo(14));
-            Assert.That(controls.WinningHandRoot.childCount,Is.EqualTo(14));
+            Assert.That(controls.Surface.WinningHandRoot.childCount,Is.EqualTo(14));
             Assert.That(table.Players[1].Opening,Is.EqualTo(OpeningMode.Pairs));
             presenter.Dispose();
         }

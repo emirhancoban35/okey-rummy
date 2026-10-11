@@ -1,3 +1,4 @@
+using Okey.Presentation.Tables;
 using System;
 using Okey.Configuration;
 using Okey.Core.Decks;
@@ -19,7 +20,7 @@ namespace Okey.Composition
         [SerializeField] private Stone _stonePrefab;
         [SerializeField] private OpeningDealSettings _openingDealSettings;
         [SerializeField] private RackView _rackView;
-        [SerializeField] private TurnControlsView _controlsView;
+        [SerializeField] private TableView _controlsView;
         [SerializeField] private TableSettings _tableSettings;
         [SerializeField] private SceneNavigationSettings _navigationSettings;
 
@@ -55,12 +56,14 @@ namespace Okey.Composition
             Container.BindInstance(_controlsView);
             Container.BindInterfacesAndSelfTo<HandPresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<TablePresenter>().AsSingle();
+            Container.BindInterfacesAndSelfTo<TableHudPresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<TurnController>().AsSingle();
             Container.BindInterfacesAndSelfTo<BotTurnController>().AsSingle();
             Container.BindInterfacesAndSelfTo<TurnClockController>().AsSingle();
             Container.BindInterfacesAndSelfTo<TableOptionsController>().AsSingle();
             Container.BindExecutionOrder<HandPresenter>(-10);
             Container.BindExecutionOrder<TablePresenter>(-5);
+            Container.BindExecutionOrder<TableHudPresenter>(-2);
         }
 
     }

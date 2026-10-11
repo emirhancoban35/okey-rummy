@@ -181,6 +181,146 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_renderer: {fileID: 7611310474454770385}
   m_maskType: 0
+--- !u!1 &135109468388056041
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7458727992314451352}
+  - component: {fileID: 5422746563637292374}
+  - component: {fileID: 4228453244741910410}
+  m_Layer: 0
+  m_Name: ClassicDescription
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7458727992314451352
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 135109468388056041}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 657321188839430194}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -6}
+  m_SizeDelta: {x: 650, y: 70}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &5422746563637292374
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 135109468388056041}
+  m_CullTransparentMesh: 1
+--- !u!114 &4228453244741910410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 135109468388056041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 'Runs and sets, or seven pairs.
+
+    Keep your tiles on the rack until
+    you finish.'
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 7bb306869ebc34ed88557c8166f09720, type: 2}
+  m_sharedMaterial: {fileID: -6197956808570050061, guid: 7bb306869ebc34ed88557c8166f09720, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontColor: {r: 0.14, g: 0.29, b: 0.22, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: 0
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 22
+  m_fontSizeBase: 22
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 0
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0.5
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &216403874891505172
 GameObject:
   m_ObjectHideFlags: 0
@@ -2302,6 +2442,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2612190364033038752}
+  - component: {fileID: 4074406422211470202}
+  - component: {fileID: 4185703523252661764}
   - component: {fileID: 531418078723336100}
   m_Layer: 0
   m_Name: GameControls
@@ -2356,7 +2498,7 @@ Transform:
   - {fileID: 7180630102981788636}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &531418078723336100
+--- !u!114 &4074406422211470202
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2365,9 +2507,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 867189076649220387}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c02444ea8cf44b13a4f815818690a975, type: 3}
+  m_Script: {fileID: 11500000, guid: 3a0f61f8cbce4cc18323087c525ffc73, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Racks.TurnControlsView
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.TablePlayersView
+  _opponents:
+  - {fileID: 4924046206041468657}
+  - {fileID: 8861960515577166807}
+  - {fileID: 4029675016196896544}
+--- !u!114 &4185703523252661764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867189076649220387}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2458dc8785f4cfdbe39454c8be3da37, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.TableSurfaceView
   _publicMeldVisuals:
   - {fileID: 4977728918807027695}
   - {fileID: 4276933959722800559}
@@ -2389,120 +2547,48 @@ MonoBehaviour:
   - {fileID: 1972459282132383964}
   - {fileID: 3952410134070665387}
   _classicPanel: {fileID: 2401415351275525246}
-  _winningHandRoot: {fileID: 7180630102981788636}
-  _winningTileScale: {x: 0.5, y: 0.6, z: 1}
-  _winningTileSpacing: {x: 0.56, y: 0.72}
-  _seriesActionLabel: {fileID: 1084698969948818124}
-  _pairActionLabel: {fileID: 4288648050246775815}
-  _helpText: {fileID: 1522399603491730595}
-  _openLabel: OPEN
-  _finishLabel: FINISH
-  _pairsLabel: PAIRS
-  _openHelp: Drag to a matching meld. Double tap a tile to discard.
-  _classicHelp: Draw from the pile or the previous discard. Keep your hand closed.
-    Complete all tiles as runs and sets, or seven pairs. Discard the spare tile to
-    win.
-  _classicDiscardStatus: Arrange, then discard.
-  _winnerFormat: '{0} wins'
-  _drawnRoundLabel: Stock empty. Round drawn.
-  _settingsButton: {fileID: 8691041279239045563}
-  _helpButton: {fileID: 803345736589558152}
-  _closeSettingsButton: {fileID: 5326720808229833001}
-  _closeHelpButton: {fileID: 3526595097254733648}
-  _settingsPanel: {fileID: 7010586345931116677}
-  _helpPanel: {fileID: 5190911281786156452}
-  _seriesPointsText: {fileID: 5640030667255954484}
-  _pairCountText: {fileID: 3280020120484558463}
-  _progressFormat: '{0} / {1}'
-  _additionalGroupFormat: + {0}
-  _seriesProgress: {fileID: 7941211987176088683}
-  _pairProgress: {fileID: 6462656596962756991}
-  _drawCue: {fileID: 7364170082691210931}
-  _discardCue: {fileID: 1311258197050004808}
-  _botModeButton: {fileID: 5853902672491482101}
-  _partnershipButton: {fileID: 7577585125896010203}
-  _newHandButton: {fileID: 4581243805439268736}
-  _escalatingButton: {fileID: 5180943862809506826}
-  _escalatingLabel: {fileID: 4269460705813632181}
-  _escalatingOnLabel: 'NEXT: RISING OPENINGS'
-  _escalatingOffLabel: 'NEXT: FIXED OPENINGS'
-  _humanlikeBotLabel: 'BOTS: HUMANLIKE'
-  _fastBotLabel: 'BOTS: FAST'
-  _nextPartnerLabel: 'NEXT: PARTNERS'
-  _nextIndividualLabel: 'NEXT: INDIVIDUAL'
-  _individualModeLabel: INDIVIDUAL TABLE
-  _partnerModeFormat: "PARTNERS  \xB7  You + North  \xB7  Team {0}"
-  _botModeLabel: {fileID: 3107525476001688173}
-  _partnershipLabel: {fileID: 3984474004887116381}
-  _clockText: {fileID: 9036432439918255964}
-  _turnSliders:
-  - {fileID: 6050536935880919160}
-  - {fileID: 1562651758459093870}
-  - {fileID: 8209515095048227014}
-  - {fileID: 7940204413256367248}
-  _opponentClockTexts:
-  - {fileID: 4021800839881333741}
-  - {fileID: 3169033022586561726}
-  - {fileID: 7962078874708413153}
-  _secondsFormat: '{0:0}s'
-  _localSeatName: You
-  _clockFormat: '{1:0}s'
-  _modeText: {fileID: 5468522240858732832}
-  _seriesBoard: {fileID: 6604368868370701694}
-  _pairsBoard: {fileID: 9078425313416769262}
+  _emptyMeldHint: {fileID: 8925378023123043565}
   _drawSource: {fileID: 1387414976671030627}
   _discardAreas:
   - {fileID: 6865445815203481057}
   - {fileID: 38471512893926395}
   - {fileID: 5084223953155269372}
   - {fileID: 3636091718765690593}
-  _opponentTexts:
-  - {fileID: 407723956854142526}
-  - {fileID: 1733962628549970247}
-  - {fileID: 6684458715323234175}
-  _seatNames:
-  - East
-  - North
-  - West
-  _opponentHighlights:
-  - {fileID: 3595998471128385711}
-  - {fileID: 7865124177580299212}
-  - {fileID: 6250685116131363888}
-  _activeSeatColor: {r: 0.76, g: 0.49, b: 0.25, a: 1}
-  _idleSeatColor: {r: 0.74, g: 0.62, b: 0.42, a: 1}
-  _activeSeatText: PLAYING
-  _emptyMeldHint: {fileID: 8925378023123043565}
-  _feedbackText: {fileID: 5936983557175881521}
-  _openingSuccessText: OK
-  _openingFailureFormat: + {0}
-  _successColor: {r: 0.2, g: 0.44, b: 0.27, a: 1}
-  _failureColor: {r: 0.7, g: 0.22, b: 0.15, a: 1}
-  _feedbackHold: 2.5
-  _feedbackFade: 0.4
-  _opponentHands:
-  - {fileID: 2451637609705365360}
-  - {fileID: 4635211769076718773}
-  - {fileID: 8588955762487447427}
-  _seriesButton: {fileID: 5408799220170113247}
-  _pairsButton: {fileID: 8234007248195711449}
-  _statusText: {fileID: 826389786483023611}
-  _handText: {fileID: 1371558031627361886}
-  _pileText: {fileID: 3179769407803082871}
-  _pointsText: {fileID: 330011810061227271}
-  _penaltyText: {fileID: 5648749477983432195}
-  _drawStatus: YOU
-  _discardStatus: YOU
-  _finishedStatus: FINISHED
-  _waitingFormat: '{0}'
-  _handFormat: '{0}'
-  _pileFormat: '{0}'
-  _pointsFormat: Series  {0} / {1}     |     Pairs  {2} / {3}
-  _penaltyFormat: '{0}'
-  _opponentFormat: "{0}  \xB7  {1}"
-  _discardScale: {x: 0.51, y: 0.74, z: 1}
-  _indicatorScale: {x: 0.46, y: 0.54, z: 1}
+  _drawCue: {fileID: 7364170082691210931}
+  _discardCue: {fileID: 1311258197050004808}
+  _seriesBoard: {fileID: 6604368868370701694}
+  _pairsBoard: {fileID: 9078425313416769262}
   _indicatorRoot: {fileID: 6511732554461191250}
+  _indicatorScale: {x: 0.46, y: 0.54, z: 1}
+  _discardScale: {x: 0.51, y: 0.74, z: 1}
   _meldDropRadius: 0.3
+  _winningHandRoot: {fileID: 7180630102981788636}
+  _winningTileScale: {x: 0.5, y: 0.6, z: 1}
+  _winningTileSpacing: {x: 0.56, y: 0.72}
+  _pairGroupsPerRow: 4
+  _pairGroupGapColumns: 1
+--- !u!114 &531418078723336100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867189076649220387}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c02444ea8cf44b13a4f815818690a975, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.TableView
+  _texts: {fileID: 11400000, guid: 4044bd6d37bf4400ad856ea61c946730, type: 2}
+  _surface: {fileID: 4185703523252661764}
+  _hud: {fileID: 4008641180569798257}
+  _seriesAction: {fileID: 5146025585849812447}
+  _pairAction: {fileID: 8137104383654614127}
+  _clock: {fileID: 5761227165309810687}
+  _players: {fileID: 4074406422211470202}
+  _panels: {fileID: 6916746851686287624}
+  _options: {fileID: 2045729912217426414}
+  _feedback: {fileID: 1964060963598396046}
 --- !u!1 &879640823663225152
 GameObject:
   m_ObjectHideFlags: 0
@@ -4125,6 +4211,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5032321097536880107}
+  - component: {fileID: 5146025585849812447}
   - component: {fileID: 5753633969931364887}
   - component: {fileID: 7487973522032940493}
   - component: {fileID: 5408799220170113247}
@@ -4162,6 +4249,22 @@ RectTransform:
   m_AnchoredPosition: {x: -150, y: 0}
   m_SizeDelta: {x: 260, y: 76}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &5146025585849812447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1305335533212792374}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e53740bd6044e368d5332ad0b055020, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.MeldActionView
+  _button: {fileID: 5408799220170113247}
+  _label: {fileID: 1084698969948818124}
+  _progressText: {fileID: 5640030667255954484}
+  _progress: {fileID: 7941211987176088683}
 --- !u!222 &5753633969931364887
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7762,6 +7865,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5536076609600214264}
+  - {fileID: 7458727992314451352}
   m_Father: {fileID: 4432552494188441282}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -8572,6 +8676,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4432552494188441282}
+  - component: {fileID: 2045729912217426414}
+  - component: {fileID: 6916746851686287624}
   - component: {fileID: 2034466308217067810}
   - component: {fileID: 2980790037727766248}
   - component: {fileID: 6283398228583858408}
@@ -8614,6 +8720,44 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &2045729912217426414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2814581421547276963}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b05a48fa5be642ec8adce85b9c6b7f6b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.TableOptionsView
+  _botModeButton: {fileID: 5853902672491482101}
+  _partnershipButton: {fileID: 7577585125896010203}
+  _newHandButton: {fileID: 4581243805439268736}
+  _escalatingButton: {fileID: 5180943862809506826}
+  _botModeLabel: {fileID: 3107525476001688173}
+  _partnershipLabel: {fileID: 3984474004887116381}
+  _escalatingLabel: {fileID: 4269460705813632181}
+--- !u!114 &6916746851686287624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2814581421547276963}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9280608644594657bb8e9126ff862121, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.OverlayPanelsView
+  _settingsButton: {fileID: 8691041279239045563}
+  _helpButton: {fileID: 803345736589558152}
+  _closeSettingsButton: {fileID: 5326720808229833001}
+  _closeHelpButton: {fileID: 3526595097254733648}
+  _settingsPanel: {fileID: 7010586345931116677}
+  _helpPanel: {fileID: 5190911281786156452}
+  _helpText: {fileID: 1522399603491730595}
 --- !u!223 &2034466308217067810
 Canvas:
   m_ObjectHideFlags: 0
@@ -10067,6 +10211,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7629620165303898936}
+  - component: {fileID: 1964060963598396046}
   - component: {fileID: 4619303858931923871}
   - component: {fileID: 5936983557175881521}
   m_Layer: 0
@@ -10095,6 +10240,23 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 38}
   m_SizeDelta: {x: 600, y: 36}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1964060963598396046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3395839362467823433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af0d62aa7941429fbf3250c87d8c4031, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.TableFeedbackView
+  _feedbackText: {fileID: 5936983557175881521}
+  _successColor: {r: 0.2, g: 0.44, b: 0.27, a: 1}
+  _failureColor: {r: 0.7, g: 0.22, b: 0.15, a: 1}
+  _feedbackHold: 2.5
+  _feedbackFade: 0.4
 --- !u!222 &4619303858931923871
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -10891,6 +11053,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8824219298761779050}
+  - component: {fileID: 5761227165309810687}
   - component: {fileID: 7803183237158841006}
   - component: {fileID: 9036432439918255964}
   m_Layer: 0
@@ -10919,6 +11082,28 @@ RectTransform:
   m_AnchoredPosition: {x: 435, y: 0}
   m_SizeDelta: {x: 120, y: 35}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &5761227165309810687
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3718213251683365386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1558adeec134a46a11d0597ad3e9d93, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.TurnClockView
+  _clockText: {fileID: 9036432439918255964}
+  _turnSliders:
+  - {fileID: 6050536935880919160}
+  - {fileID: 1562651758459093870}
+  - {fileID: 8209515095048227014}
+  - {fileID: 7940204413256367248}
+  _opponentClockTexts:
+  - {fileID: 4021800839881333741}
+  - {fileID: 3169033022586561726}
+  - {fileID: 7962078874708413153}
 --- !u!222 &7803183237158841006
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -14134,7 +14319,7 @@ GameObject:
   - component: {fileID: 2833728516029207027}
   - component: {fileID: 4587502302675742736}
   m_Layer: 0
-  m_Name: ClassicInstructions
+  m_Name: ClassicTitle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -14156,8 +14341,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 650, y: 150}
+  m_AnchoredPosition: {x: 0, y: 42}
+  m_SizeDelta: {x: 650, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2833728516029207027
 CanvasRenderer:
@@ -14187,12 +14372,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'CLASSIC OKEY
-
-    <size=22>Runs and sets, or seven pairs.
-
-    Keep
-    your tiles on the rack until you finish.</size>'
+  m_text: CLASSIC OKEY
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7bb306869ebc34ed88557c8166f09720, type: 2}
   m_sharedMaterial: {fileID: -6197956808570050061, guid: 7bb306869ebc34ed88557c8166f09720, type: 2}
@@ -16425,6 +16605,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7520683541706202463}
+  - component: {fileID: 8861960515577166807}
   - component: {fileID: 7865124177580299212}
   m_Layer: 0
   m_Name: SeatBadge
@@ -16448,6 +16629,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7734978110214108687}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8861960515577166807
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5805365178943930572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7817a5909e0c4186a6752449cba44362, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.OpponentSeatView
+  _hand: {fileID: 4635211769076718773}
+  _text: {fileID: 1733962628549970247}
+  _highlight: {fileID: 7865124177580299212}
+  _activeColor: {r: 0.76, g: 0.49, b: 0.25, a: 1}
+  _idleColor: {r: 0.74, g: 0.62, b: 0.42, a: 1}
 --- !u!212 &7865124177580299212
 SpriteRenderer:
   serializedVersion: 2
@@ -16958,6 +17156,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7928564540719721197}
+  - component: {fileID: 4029675016196896544}
   - component: {fileID: 6250685116131363888}
   m_Layer: 0
   m_Name: SeatBadge
@@ -16981,6 +17180,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7223539980862474918}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4029675016196896544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5996606578671686618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7817a5909e0c4186a6752449cba44362, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.OpponentSeatView
+  _hand: {fileID: 8588955762487447427}
+  _text: {fileID: 6684458715323234175}
+  _highlight: {fileID: 6250685116131363888}
+  _activeColor: {r: 0.76, g: 0.49, b: 0.25, a: 1}
+  _idleColor: {r: 0.74, g: 0.62, b: 0.42, a: 1}
 --- !u!212 &6250685116131363888
 SpriteRenderer:
   serializedVersion: 2
@@ -17312,6 +17528,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2653986164684345836}
+  - component: {fileID: 4924046206041468657}
   - component: {fileID: 3595998471128385711}
   m_Layer: 0
   m_Name: SeatBadge
@@ -17335,6 +17552,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3073502265970059492}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4924046206041468657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6211565982080773552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7817a5909e0c4186a6752449cba44362, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.OpponentSeatView
+  _hand: {fileID: 2451637609705365360}
+  _text: {fileID: 407723956854142526}
+  _highlight: {fileID: 3595998471128385711}
+  _activeColor: {r: 0.76, g: 0.49, b: 0.25, a: 1}
+  _idleColor: {r: 0.74, g: 0.62, b: 0.42, a: 1}
 --- !u!212 &3595998471128385711
 SpriteRenderer:
   serializedVersion: 2
@@ -19945,6 +20179,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2052641133567231878}
+  - component: {fileID: 4008641180569798257}
   - component: {fileID: 7346685816243521921}
   - component: {fileID: 3317741274677383980}
   - component: {fileID: 3829894173862385617}
@@ -19983,6 +20218,23 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 365}
   m_SizeDelta: {x: 1060, y: 94}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4008641180569798257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7303210661011043850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 156a810999104f5b9f29c82c4ba90f82, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.TableHudView
+  _statusText: {fileID: 826389786483023611}
+  _handText: {fileID: 1371558031627361886}
+  _pileText: {fileID: 3179769407803082871}
+  _penaltyText: {fileID: 5648749477983432195}
+  _modeText: {fileID: 5468522240858732832}
 --- !u!222 &7346685816243521921
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -21266,6 +21518,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7764693823001206219}
+  - component: {fileID: 8137104383654614127}
   - component: {fileID: 166633825155703295}
   - component: {fileID: 2702437950449511361}
   - component: {fileID: 8234007248195711449}
@@ -21302,6 +21555,22 @@ RectTransform:
   m_AnchoredPosition: {x: 150, y: 0}
   m_SizeDelta: {x: 260, y: 76}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &8137104383654614127
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7669542248025706681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e53740bd6044e368d5332ad0b055020, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.MeldActionView
+  _button: {fileID: 8234007248195711449}
+  _label: {fileID: 4288648050246775815}
+  _progressText: {fileID: 3280020120484558463}
+  _progress: {fileID: 6462656596962756991}
 --- !u!222 &166633825155703295
 CanvasRenderer:
   m_ObjectHideFlags: 0

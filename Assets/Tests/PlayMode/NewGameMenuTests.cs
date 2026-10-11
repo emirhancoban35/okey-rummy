@@ -1,3 +1,4 @@
+using Okey.Presentation.Tables;
 using System.Collections;
 using System.Linq;
 using NUnit.Framework;
@@ -92,8 +93,8 @@ namespace Okey.Tests.PlayMode
             var table = tableContext.Container.Resolve<TableSession>();
             Assert.That(table.Options.Partnerships, Is.EqualTo(partners));
             Assert.That(table.Options.EscalatingOpenings, Is.EqualTo(escalating));
-            var controls = tableContext.Container.Resolve<TurnControlsView>();
-            ((Button)new SerializedObject(controls).FindProperty("_newHandButton").objectReferenceValue).onClick.Invoke();
+            var controls = tableContext.Container.Resolve<TableView>();
+            ((Button)new SerializedObject(controls.Options).FindProperty("_newHandButton").objectReferenceValue).onClick.Invoke();
             deadline = Time.realtimeSinceStartup + 15;
             while (SceneManager.GetActiveScene().name != "MainMenu" && Time.realtimeSinceStartup < deadline) yield return null;
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
