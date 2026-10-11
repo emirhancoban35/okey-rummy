@@ -108,6 +108,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8d679e067fd4628b8bc06d24951ed5b, type: 3}
   m_Name:
   m_EditorClassIdentifier:
+  _rowCapacity: 14
   _stoneRoot: {fileID: 7200000000000000003}
   _dealOrigin: {fileID: 7200000000000000005}
   _slots:

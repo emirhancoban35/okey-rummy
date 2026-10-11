@@ -8,6 +8,8 @@ namespace Okey.Presentation.Racks
     [DisallowMultipleComponent]
     public sealed class RackView : MonoBehaviour
     {
+        [SerializeField, Min(1)] private int _rowCapacity = 14;
+        public int RowCapacity => _rowCapacity;
         [SerializeField] private Transform _stoneRoot;
         [SerializeField] private Transform _dealOrigin;
         [SerializeField] private Transform[] _slots = Array.Empty<Transform>();
