@@ -23,7 +23,7 @@ The main menu is the first scene in Build Settings. **SampleScene.unity** can al
 - Two rack rows with adjacent placement, optional gaps and insertion that shifts neighboring tiles.
 - Opening totals calculated from the player's actual adjacent rack groups.
 - Drawing from the closed pile, corner discard trays, double-tap discarding and drag-and-drop layoffs.
-- Public melds on separate series and pair boards, with compatible drop-target highlights.
+- Public melds on separate series and pair boards, with reserved extension slots, compatible drop-target highlights and paging.
 - Plain tile backs, manual tile flipping, distinct color settings and editable typography.
 - Remaining seconds and progress bars for the active seat, with automatic legal play on timeout.
 - A small new-game menu, contextual help and table settings.
@@ -38,7 +38,7 @@ The main menu is the first scene in Build Settings. **SampleScene.unity** can al
 | Arrange | Drag a tile to a rack slot. Occupied slots shift toward the nearest gap. |
 | Separate groups | Leave an empty slot between groups. Groups do not cross rack rows. |
 | Open series or pairs | Use the opening card showing the matching tile example and current total. |
-| Lay off a tile | Drag it onto a compatible public meld or its adjacent endpoint. The target highlights. |
+| Lay off a tile | Drag it into the highlighted empty cell of a compatible public meld. |
 | Discard | Drop a tile into the bottom-right tray, or double-tap it during your discard phase. |
 | Flip a tile | Hold it for half a second. Hold again to turn it face up. |
 | Take the previous discard | Once opened, click the previous player's tray to immediately extend a compatible meld. |
@@ -50,13 +50,17 @@ Rack rearrangement is available during other players' turns. Draws, openings, la
 
 The default table uses a 106-tile deck. A random starting seat receives 22 tiles; the other seats receive 21. An indicator is set aside and 20 tiles remain in the stock. Subsequent tables rotate the starting seat. The indicator determines the real joker; fake jokers represent that fixed color and value.
 
-An initial series opening needs **101 points**, or a pair opening needs **five pairs**. The local opening evaluator uses adjacent tiles on the same rack row and reserves a tile for the final discard. Invalid opening attempts apply a configurable penalty and preserve the hand. Additional melds use the player's existing opening mode. Joker assignments in public melds remain fixed.
+An initial series opening needs **101 points**, or a pair opening needs **five pairs**. The local opening evaluator uses adjacent tiles on the same rack row and reserves a tile for the final discard. Invalid opening attempts apply a configurable penalty and preserve the hand. Additional melds use the player's existing opening mode. Joker assignments in public melds remain fixed. Each series or set occupies its own row. Runs use number-aligned columns: 1–2–3 starts at the left edge, while 3–4–5 reserves two positions on its left and the remaining values on its right. Sets reserve fixed color slots. Adding tiles keeps existing tiles and other melds in place. Rows fill downward through separate lanes; page buttons or the mouse wheel keep a full board accessible without shrinking tiles.
 
 Rising openings increase the series and pair thresholds independently. Each successful initial opening sets its corresponding next threshold to the opened total plus a configurable increment, which defaults to one. Additional melds and invalid attempts do not raise thresholds.
 
 This build forbids taking a discard while closed. An opened player may take only the previous seat's latest discard, and only to immediately extend a public meld. Failed pickups change neither the discard nor the stock.
 
 Successful openings refresh the turn timer. When time expires, the game cancels any drag, draws if required and discards legally. Discarding the final tile finishes the round. Partnership scoring groups opposite seats and excludes the winning partner's remaining hand.
+
+![Reserved meld rows and paging](Docs/Images/meld-board-layout.png)
+
+Layout preview using a custom stress-test deck: number-aligned runs, fixed color slots and twenty public melds across two pages.
 
 These are the project's explicit rule choices. Regional variations, special immediate-finish cases and cumulative multi-round matches are not implemented.
 

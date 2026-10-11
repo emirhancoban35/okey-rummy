@@ -129,7 +129,7 @@ namespace Okey.Composition
 
         private void PreviewLayOff(Stone stone, Vector3 position)
         {
-            _table.PreviewLayOff(stone.Instance, position);
+            _interaction.SetDragScale(stone, _table.PreviewLayOff(stone.Instance, position, out var scale) ? scale : null);
         }
 
         private bool Drop(Stone stone, Vector3 position)

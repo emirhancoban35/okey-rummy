@@ -262,6 +262,12 @@ namespace Okey.Tests.PlayMode
                 DOTween.CompleteAll();
                 var layOff = hand.Views.Single(view => view.Instance.Id == 7);
                 var endpoint = Controls.MeldRoot.GetComponentsInChildren<Stone>().Single(view => view.Instance.Id == 3).transform.position + Vector3.right * Controls.MeldScale.x;
+                var rackScale = layOff.transform.localScale;
+                interaction.TryBeginDrag(layOff);
+                interaction.DragTo(layOff, endpoint);
+                Assert.That(Vector3.Distance(layOff.transform.lossyScale, Controls.MeldScale), Is.LessThan(.001f));
+                interaction.CancelDrag(layOff);
+                Assert.That(layOff.transform.localScale, Is.EqualTo(rackScale));
                 interaction.TryBeginDrag(layOff);
                 interaction.DragTo(layOff, endpoint);
                 interaction.EndDrag(layOff, endpoint);
@@ -319,6 +325,58 @@ namespace Okey.Tests.PlayMode
             Assert.That(session.Players[0].Hand.Count, Is.EqualTo(21));
             Interaction.CancelDrag(HandViews[0]);
             Assert.That(Controls.DrawSource.CanDraw, Is.True);
+        }
+
+        [Test]
+        public void FullBoardsKeepEveryMeldAccessibleAndOnlyAcceptTargetsOnTheVisiblePage()
+        {
+            _context.Container.Resolve<TablePresenter>().Dispose();
+            StoneInstance Tile(int id,int value,StoneColor color=StoneColor.Red) =>
+                new StoneInstance(id,new StoneData(StoneType.Regular,color,value));
+            var deck=Enumerable.Range(0,100).Select(id=>Tile(id,7,StoneColor.Black)).ToArray();
+            deck[0]=Tile(0,13,StoneColor.Blue);
+            var starts=new[]{1,18,34,50};
+            foreach(var start in starts)
+                for(var tile=0;tile<15;tile++) deck[start+tile]=Tile(start+tile,3+tile%3);
+            deck[69]=Tile(69,6);
+            var table=new TableSession(new OkeyRules(4,16,1,13,1,5,101,202,101,-101,101,2,2),deck,28);
+            var presenter=new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>());
+            presenter.Initialize();
+            try
+            {
+                for(var seat=0;seat<4;seat++)
+                {
+                    if(seat>0) table.TryDraw(seat);
+                    var melds=new List<Meld>();
+                    for(var group=0;group<5;group++)
+                    {
+                        Assert.That(table.MeldRules.TryCreate(deck.Skip(starts[seat]+group*3).Take(3),MeldKind.Run,out var meld),Is.True);
+                        melds.Add(meld);
+                    }
+                    Assert.That(table.TryOpen(seat,OpeningMode.Series,melds),Is.True);
+                    table.TryDiscard(seat,table.Players[seat].Hand.Slots.First(tile=>tile!=null).Id);
+                }
+                Assert.That(table.Melds.Count,Is.EqualTo(20));
+                Assert.That(Controls.SeriesBoard.PageCount,Is.EqualTo(2));
+                Assert.That(Controls.MeldRoot.GetComponentsInChildren<Stone>(true).Length,Is.EqualTo(60));
+                Assert.That(Controls.MeldRoot.GetComponentsInChildren<Stone>().Length,Is.EqualTo(48));
+                var original=Controls.MeldRoot.GetComponentsInChildren<Stone>().Single(view=>view.Instance.Id==1);
+                DOTween.CompleteAll();var origin=original.transform.position;
+                Controls.SeriesBoard.ChangePage(1);
+                Assert.That(Controls.MeldRoot.GetComponentsInChildren<Stone>().Length,Is.EqualTo(12));
+                Assert.That(original.gameObject.activeSelf,Is.False);
+                table.TryDraw(0,out var drawn);
+                Assert.That(drawn.Id,Is.EqualTo(69));
+                var target=Controls.SeriesBoard.transform.TransformPoint(Controls.SeriesBoard.GetPosition(new MeldBoardCell(1,0,3,5)));
+                Assert.That(presenter.TryFindMeld(drawn,target,out var index),Is.True);
+                Assert.That(index,Is.EqualTo(19));
+                Assert.That(table.TryLayOff(0,drawn.Id,index),Is.True);
+                Assert.That(table.Melds[19].Tiles.Count,Is.EqualTo(4));
+                Assert.That(table.Melds[3].Tiles.Count,Is.EqualTo(3));
+                Controls.SeriesBoard.ChangePage(-1);
+                Assert.That(original.transform.position,Is.EqualTo(origin));
+            }
+            finally {presenter.Dispose();}
         }
 
         [Test]

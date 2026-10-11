@@ -13,6 +13,7 @@ namespace Okey.Composition
         private readonly RackView _rack;
         private readonly Dictionary<int, Stone> _views = new Dictionary<int, Stone>();
         private Stone _dragged;
+        private Vector3 _dragScale;
         public Stone Selected { get; private set; }
         public bool IsDragging => _dragged != null;
         public event Action Changed;
@@ -77,6 +78,7 @@ namespace Okey.Composition
                 return false;
 
             _dragged = stone;
+            _dragScale = stone.transform.localScale;
             stone.Motion.SnapTo(stone.transform.localPosition);
             Changed?.Invoke();
             return true;
@@ -91,11 +93,21 @@ namespace Okey.Composition
             DragMoved?.Invoke(stone, worldPosition);
         }
 
+        public void SetDragScale(Stone stone, Vector3? worldScale)
+        {
+            if (_dragged == null || _dragged != stone) return;
+            var parentScale = stone.transform.parent.lossyScale;
+            stone.transform.localScale = worldScale.HasValue ? new Vector3(
+                worldScale.Value.x / parentScale.x, worldScale.Value.y / parentScale.y,
+                worldScale.Value.z / parentScale.z) : _dragScale;
+        }
+
         public void EndDrag(Stone stone, Vector3 worldPosition)
         {
             if (_dragged == null || _dragged != stone)
                 return;
 
+            stone.transform.localScale = _dragScale;
             _dragged = null;
             if (DropRequested?.Invoke(stone, worldPosition) == true)
             {
@@ -126,6 +138,7 @@ namespace Okey.Composition
             if (_dragged == null || _dragged != stone)
                 return;
 
+            stone.transform.localScale = _dragScale;
             _dragged = null;
             _rack.MoveToSlot(stone, _arrangement.FindSlot(stone.Instance.Id), false);
             Changed?.Invoke();

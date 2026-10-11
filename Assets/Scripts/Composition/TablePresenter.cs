@@ -21,6 +21,9 @@ namespace Okey.Composition
         private readonly Dictionary<int, Stone> _meldViews = new Dictionary<int, Stone>();
         private readonly Dictionary<int, Vector3> _meldPositions = new Dictionary<int, Vector3>();
         private readonly List<List<Stone>> _meldGroups = new List<List<Stone>>();
+        private readonly List<(MeldBoardView Board, int Group)> _boardGroups = new List<(MeldBoardView, int)>();
+        private readonly List<(int Index, MeldBoardView Board, MeldBoardCell Cell)> _layOffTargets = new List<(int, MeldBoardView, MeldBoardCell)>();
+        private int _targetStoneId = -1;
         private readonly Stone[] _discards;
         private bool _initialized;
         private bool _disposed;
@@ -39,7 +42,11 @@ namespace Okey.Composition
             if (_initialized) return;
             _initialized = true;
             _controls.SetPlayerCount(_session.Players.Count);
-            CreatePublicStone(_session.Indicator, _controls.IndicatorRoot, _controls.DiscardScale);
+            _controls.SeriesBoard.Configure(_session.Rules.MinimumValue, _session.Rules.MaximumValue, false);
+            _controls.PairsBoard.Configure(_session.Rules.MinimumValue, _session.Rules.MaximumValue, true);
+            _controls.SeriesBoard.PageChanged += Render;
+            _controls.PairsBoard.PageChanged += Render;
+            CreatePublicStone(_session.Indicator, _controls.IndicatorRoot, _controls.IndicatorScale);
             _session.Changed += Render;
             Render();
         }
@@ -53,7 +60,7 @@ namespace Okey.Composition
         public bool TryFindMeld(Vector3 position, out int index)
         {
             for (index = 0; index < _meldGroups.Count; index++)
-                if (_meldGroups[index].Any(view => Vector2.Distance(view.transform.position, position) <= _controls.MeldDropRadius))
+                if (_meldGroups[index].Any(view => view.gameObject.activeSelf && Vector2.Distance(view.transform.position, position) <= _controls.MeldDropRadius))
                     return true;
             index = -1;
             return false;
@@ -65,35 +72,61 @@ namespace Okey.Composition
             if (_session.ActiveSeat != 0 || _session.Phase != TurnPhase.AwaitingDiscard ||
                 _session.Players[0].Opening == OpeningMode.Closed || _session.Players[0].Hand.Count <= 1 ||
                 _session.Players[0].Hand.FindSlot(stone.Id) < 0) return false;
+            CacheLayOffTargets(stone);
             var nearest = float.MaxValue;
-            for (var candidate = 0; candidate < _meldGroups.Count; candidate++)
+            foreach (var target in _layOffTargets)
             {
-                if (!_session.MeldRules.TryExtend(_session.Melds[candidate], stone, out _)) continue;
-                var group = _meldGroups[candidate];
-                for (var tile = -1; tile <= group.Count; tile++)
-                {
-                    var target = tile < 0 ? _meldPositions[group[0].Instance.Id] - Vector3.right * _controls.MeldScale.x :
-                        tile == group.Count ? _meldPositions[group[group.Count - 1].Instance.Id] + Vector3.right * _controls.MeldScale.x :
-                        _meldPositions[group[tile].Instance.Id];
-                    var distance = Vector2.Distance(target, position);
-                    if (distance > _controls.MeldDropRadius || distance >= nearest) continue;
-                    nearest = distance;
-                    index = candidate;
-                }
+                if (!target.Board.ContainsTarget(position, target.Cell)) continue;
+                var worldTarget = target.Board.transform.TransformPoint(target.Board.GetPosition(target.Cell));
+                var distance = Vector2.Distance(worldTarget, position);
+                if (distance >= nearest) continue;
+                nearest = distance;
+                index = target.Index;
             }
             return index >= 0;
         }
 
-        public void PreviewLayOff(StoneInstance stone, Vector3 position)
+        private void CacheLayOffTargets(StoneInstance stone)
         {
+            if (_targetStoneId == stone.Id) return;
+            _targetStoneId = stone.Id;
+            _layOffTargets.Clear();
+            for (var index = 0; index < _session.Melds.Count; index++)
+            {
+                if (!_session.MeldRules.TryExtend(_session.Melds[index], stone, out var extended)) continue;
+                var placement = _boardGroups[index];
+                for (var tile = 0; tile < extended.Tiles.Count; tile++)
+                    if (extended.Tiles[tile].Stone.Id == stone.Id)
+                    {
+                        _layOffTargets.Add((index, placement.Board, placement.Board.Locate(extended, placement.Group, tile)));
+                        break;
+                    }
+            }
+        }
+
+        public void PreviewLayOff(StoneInstance stone, Vector3 position) => PreviewLayOff(stone, position, out _);
+
+        public bool PreviewLayOff(StoneInstance stone, Vector3 position, out Vector3 worldScale)
+        {
+            worldScale = default;
             ClearPreview();
-            if (TryFindMeld(stone, position, out var index))
-                foreach (var view in _meldGroups[index]) view.Selection.SetSelected(true);
+            if (!TryFindMeld(stone, position, out var index)) return false;
+            foreach (var view in _meldGroups[index]) view.Selection.SetSelected(true);
+            foreach (var target in _layOffTargets)
+                if (target.Index == index)
+                {
+                    target.Board.ShowTarget(target.Cell);
+                    worldScale = Vector3.Scale(target.Board.TileScale, target.Board.transform.lossyScale);
+                    return true;
+                }
+            return false;
         }
 
         public void ClearPreview()
         {
             foreach (var view in _meldViews.Values) view.Selection.SetSelected(false);
+            _controls.SeriesBoard.HideTarget();
+            _controls.PairsBoard.HideTarget();
         }
 
         public void AnimateLayOff(int stoneId, Vector3 worldOrigin)
@@ -139,32 +172,42 @@ namespace Okey.Composition
                 else if (_discards[seat].Instance.Id != last.Id) _discards[seat].Initialize(last);
             }
             ClearPreview();
+            _targetStoneId = -1;
+            _layOffTargets.Clear();
             _meldPositions.Clear();
             _meldGroups.Clear();
-            var column = 0;
-            var row = 0;
+            _boardGroups.Clear();
+            var series = 0;
             var pair = 0;
             var pairCount = _session.Melds.Count(meld => meld.Kind == MeldKind.Pair);
+            _controls.SeriesBoard.SetGroupCount(_session.Melds.Count - pairCount);
+            _controls.PairsBoard.SetGroupCount(pairCount);
             foreach (var meld in _session.Melds)
             {
-                if (meld.Kind != MeldKind.Pair && column + meld.Tiles.Count > _controls.MeldColumns) { row++; column = 0; }
+                var board = meld.Kind == MeldKind.Pair ? _controls.PairsBoard : _controls.SeriesBoard;
+                var ordinal = meld.Kind == MeldKind.Pair ? pair++ : series++;
+                _boardGroups.Add((board, ordinal));
                 var group = new List<Stone>();
-                var tileIndex = 0;
-                foreach (var tile in meld.Tiles)
+                for (var tileIndex = 0; tileIndex < meld.Tiles.Count; tileIndex++)
                 {
+                    var tile = meld.Tiles[tileIndex];
+                    var cell = board.Locate(meld, ordinal, tileIndex);
                     if (!_meldViews.TryGetValue(tile.Stone.Id, out var view))
                     {
-                        view = CreatePublicStone(tile.Stone, meld.Kind == MeldKind.Pair ? _controls.PairsRoot : _controls.MeldRoot, _controls.MeldScale);
+                        view = CreatePublicStone(tile.Stone, board.transform, board.TileScale);
                         _meldViews.Add(tile.Stone.Id, view);
                     }
-                    var target = meld.Kind == MeldKind.Pair ? _controls.GetPairPosition(pair, tileIndex++, pairCount) : _controls.GetMeldPosition(column++, row);
-                    view.transform.localScale = meld.Kind == MeldKind.Pair ? _controls.GetPairScale(pairCount) : _controls.MeldScale;
-                    _meldPositions[view.Instance.Id] = view.transform.parent.TransformPoint(target);
-                    if (view.transform.localPosition != target) view.Motion.MoveTo(target);
+                    var target = board.GetPosition(cell);
+                    view.transform.localScale = board.TileScale;
+                    _meldPositions[view.Instance.Id] = board.transform.TransformPoint(target);
+                    var visible = cell.Page == board.Page;
+                    var wasVisible = view.gameObject.activeSelf;
+                    view.gameObject.SetActive(visible);
+                    if (!wasVisible || !visible) view.Motion.SnapTo(target);
+                    else if (view.transform.localPosition != target) view.Motion.MoveTo(target);
                     group.Add(view);
                 }
                 _meldGroups.Add(group);
-                if (meld.Kind == MeldKind.Pair) pair++; else column++;
             }
         }
 
@@ -173,6 +216,8 @@ namespace Okey.Composition
             if (_disposed) return;
             _disposed = true;
             _session.Changed -= Render;
+            _controls.SeriesBoard.PageChanged -= Render;
+            _controls.PairsBoard.PageChanged -= Render;
             foreach (var view in _owned)
                 if (view != null)
                 {

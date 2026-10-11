@@ -91,13 +91,11 @@ namespace Okey.Presentation.Racks
         [SerializeField] private string _localSeatName = "You";
         [SerializeField] private string _clockFormat = "{0}  ·  {1:0}s";
         [SerializeField] private TMP_Text _modeText;
-        [SerializeField] private Transform _pairsRoot;
-        [SerializeField, Min(1)] private int _pairRows = 7;
-        public Transform PairsRoot => _pairsRoot != null ? _pairsRoot : _meldRoot;
-        [SerializeField, Min(.1f)] private float _pairWidth = 2.4f;
-        private float PairSpacing(int count) => Mathf.Min(_meldSpacing.x, _pairWidth / (Mathf.Max(1, Mathf.CeilToInt((float)count / _pairRows)) * 3));
-        public Vector3 GetPairScale(int count) => new Vector3(_meldScale.x * PairSpacing(count) / _meldSpacing.x, _meldScale.y, 1);
-        public Vector3 GetPairPosition(int index, int tile, int count) => new Vector3((index / _pairRows * 3 + tile) * PairSpacing(count), -(index % _pairRows) * _meldSpacing.y, 0);
+        [SerializeField] private MeldBoardView _seriesBoard;
+        [SerializeField] private MeldBoardView _pairsBoard;
+        public MeldBoardView SeriesBoard => _seriesBoard;
+        public MeldBoardView PairsBoard => _pairsBoard;
+        public Transform PairsRoot => _pairsBoard.transform;
         private int _lastClockSeat = -1;
         private int _lastClockSecond = -1;
         private int _lastTeamScore = int.MinValue;
@@ -162,26 +160,21 @@ namespace Okey.Presentation.Racks
         [SerializeField] private string _penaltyFormat;
         [SerializeField] private string _opponentFormat;
         [SerializeField] private Vector3 _discardScale;
-        [SerializeField] private Transform _meldRoot;
+        [SerializeField] private Vector3 _indicatorScale = new Vector3(.46f,.54f,1);
+        public Vector3 IndicatorScale => _indicatorScale;
         [SerializeField] private Transform _indicatorRoot;
-        [SerializeField] private Vector3 _meldScale;
-        [SerializeField] private Vector2 _meldSpacing;
-        [SerializeField, Min(1)] private int _meldColumns;
         [SerializeField, Min(0)] private float _meldDropRadius;
 
         public DrawSourceView DrawSource => _drawSource;
         public DiscardAreaView[] DiscardAreas => _discardAreas;
-        public Transform MeldRoot => _meldRoot;
+        public Transform MeldRoot => _seriesBoard.transform;
         public Transform IndicatorRoot => _indicatorRoot;
         public Vector3 DiscardScale => _discardScale;
-        public Vector3 MeldScale => _meldScale;
+        public Vector3 MeldScale => _seriesBoard.TileScale;
         public float MeldDropRadius => _meldDropRadius;
         public event Action DrawRequested;
         public event Action SeriesRequested;
         public event Action PairsRequested;
-
-        public Vector3 GetMeldPosition(int column, int row) => new Vector3(column * _meldSpacing.x, -row * _meldSpacing.y, 0);
-        public int MeldColumns => _meldColumns;
 
         public void Render(TurnPhase phase, int seat, int handCount, int pileCount, int points, int pairs,
             int threshold, int pairThreshold, int penalty, bool canDraw, bool canOpen)
