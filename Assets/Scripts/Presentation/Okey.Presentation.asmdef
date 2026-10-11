@@ -1,0 +1,9 @@
+{
+    "name": "Okey.Presentation",
+    "rootNamespace": "Okey.Presentation",
+    "references": [
+        "Okey.Core",
+        "Unity.TextMeshPro",
+        "Unity.ugui"
+    ]
+}

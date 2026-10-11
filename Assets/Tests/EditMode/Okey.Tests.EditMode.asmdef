@@ -1,0 +1,16 @@
+{
+    "name": "Okey.Tests.EditMode",
+    "rootNamespace": "Okey.Tests.EditMode",
+    "references": [
+        "Okey.Core",
+        "Okey.Presentation",
+        "Unity.TextMeshPro",
+        "Unity.ugui"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

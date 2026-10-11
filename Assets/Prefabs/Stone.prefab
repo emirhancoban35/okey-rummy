@@ -569,6 +569,8 @@ GameObject:
   - component: {fileID: 6627361381005753812}
   - component: {fileID: 5775414758946862466}
   - component: {fileID: 2488788817723600486}
+  - component: {fileID: 7100000000000000001}
+  - component: {fileID: 7100000000000000002}
   m_Layer: 0
   m_Name: Stone
   m_TagString: Untagged
@@ -664,3 +666,35 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_EffectDistance: {x: 10.2, y: -1}
   m_UseGraphicAlpha: 1
+--- !u!114 &7100000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5319078084092294871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ad35b1f918a5de4dbf612fda2e635b6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _visual: {fileID: 7100000000000000002}
+  _isFaceUp: 1
+--- !u!114 &7100000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5319078084092294871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79fddb0347833d4b803c3540b95e8dd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _numberText: {fileID: 8115422398033071391}
+  _symbolRenderer: {fileID: 5910362169564439784}
+  _faceUpVisuals:
+  - {fileID: 3894424235564243990}
+  - {fileID: 1311306477032272759}
+  _settings: {fileID: 11400000, guid: f854337c7baa43fa9e33a40e6b036cda, type: 2}
