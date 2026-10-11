@@ -20,17 +20,20 @@ namespace Okey.Composition
         [SerializeField] private RackView _rackView;
         [SerializeField] private TurnControlsView _controlsView;
         [SerializeField] private TableSettings _tableSettings;
+        [SerializeField] private SceneNavigationSettings _navigationSettings;
 
         public override void InstallBindings()
         {
-            if (_deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null || _controlsView == null || _tableSettings == null)
-                throw new InvalidOperationException("Deck settings, opening deal settings, stone prefab, rack view, turn controls and table settings must be assigned to the game installer.");
+            if (_deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null || _controlsView == null || _tableSettings == null || _navigationSettings == null)
+                throw new InvalidOperationException("Deck settings, opening deal settings, stone prefab, rack view, turn controls, table settings and navigation settings must be assigned to the game installer.");
 
             Container.BindInstance(_deckSettings.CreateDefinition());
             Container.Bind<DeckFactory>().AsSingle();
             Container.Bind<IStoneShuffler>().To<SeededStoneShuffler>().AsSingle();
             Container.Bind<OpeningDealFactory>().AsSingle();
             Container.BindInstance(_tableSettings);
+            Container.BindInstance(_navigationSettings);
+            Container.Bind<ITableNavigation>().To<SceneTableNavigation>().AsSingle();
             Container.BindInstance(_tableSettings.CreateRules());
             Container.Bind<MeldPlanner>().AsSingle();
             Container.Bind<RackMeldEvaluator>().AsSingle();

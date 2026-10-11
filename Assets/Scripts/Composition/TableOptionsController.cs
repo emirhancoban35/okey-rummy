@@ -3,7 +3,6 @@ using Okey.Configuration;
 using Okey.Core.Dealing;
 using Okey.Core.Tables;
 using Okey.Presentation.Racks;
-using UnityEngine.SceneManagement;
 using Zenject;
 namespace Okey.Composition
 {
@@ -12,12 +11,13 @@ namespace Okey.Composition
         private readonly TableSession _table;
         private readonly TableSettings _settings;
         private readonly TurnControlsView _controls;
-        private bool _loading;
-        public TableOptionsController(TableSession table, TableSettings settings, TurnControlsView controls)
+        private readonly ITableNavigation _navigation;
+        public TableOptionsController(TableSession table, TableSettings settings, TurnControlsView controls, ITableNavigation navigation)
         {
             _table = table;
             _settings = settings;
             _controls = controls;
+            _navigation = navigation;
         }
         public void Initialize()
         {
@@ -32,12 +32,7 @@ namespace Okey.Composition
         private void ToggleEscalating() { _settings.ToggleEscalatingOpenings(); Render(); }
         private void TogglePartners() { _settings.TogglePartnerships(); Render(); }
         private void Render() => _controls.RenderOptions(_settings.HumanlikeBots, _settings.Partnerships, _table.Phase == TurnPhase.Finished, _settings.EscalatingOpenings);
-        private void NextHand()
-        {
-            if (_loading) return;
-            _loading = true;
-            SceneManager.LoadSceneAsync(_controls.gameObject.scene.name, LoadSceneMode.Single);
-        }
+        private void NextHand() => _navigation.OpenMenu();
         public void Dispose()
         {
             _controls.BotModeRequested -= ToggleBots;

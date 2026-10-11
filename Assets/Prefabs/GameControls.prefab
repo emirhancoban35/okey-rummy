@@ -11531,7 +11531,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: NEW TABLE
+  m_text: NEW GAME
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 249355da9e45b43c9a399a7de0495c83, type: 2}
   m_sharedMaterial: {fileID: -2785888994825977308, guid: 249355da9e45b43c9a399a7de0495c83, type: 2}
