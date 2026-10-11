@@ -1,0 +1,7 @@
+{
+    "name": "Okey.Configuration",
+    "rootNamespace": "Okey.Configuration",
+    "references": [
+        "Okey.Core"
+    ]
+}

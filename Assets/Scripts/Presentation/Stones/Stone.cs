@@ -10,17 +10,18 @@ namespace Okey.Presentation.Stones
         [SerializeField] private StoneVisual _visual;
         [SerializeField] private bool _isFaceUp = true;
 
-        public StoneData Data { get; private set; }
+        public StoneInstance Instance { get; private set; }
+        public StoneData Data => Instance?.Data;
         public bool IsFaceUp => _isFaceUp;
 
-        public void Initialize(StoneData data)
+        public void Initialize(StoneInstance stone)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            if (stone == null)
+                throw new ArgumentNullException(nameof(stone));
 
-            _visual.SetVisual(data);
+            _visual.SetVisual(stone.Data);
             _visual.SetFace(_isFaceUp);
-            Data = data;
+            Instance = stone;
         }
 
         public void SetFace(bool isFaceUp)

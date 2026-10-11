@@ -5,7 +5,8 @@
         "Okey.Core",
         "Okey.Presentation",
         "Unity.TextMeshPro",
-        "Unity.ugui"
+        "Unity.ugui",
+        "Okey.Configuration"
     ],
     "includePlatforms": [
         "Editor"

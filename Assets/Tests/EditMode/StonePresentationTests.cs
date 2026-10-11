@@ -33,10 +33,12 @@ namespace Okey.Tests.EditMode
             var settings = AssetDatabase.LoadAssetAtPath<StoneVisualSettings>(
                 "Assets/Settings/Stones/DefaultStoneVisualSettings.asset");
 
-            stone.Initialize(data);
+            var instance = new StoneInstance(0, data);
+            stone.Initialize(instance);
 
             var number = _instance.GetComponentInChildren<TMP_Text>();
             Assert.That(stone.Data, Is.SameAs(data));
+            Assert.That(stone.Instance, Is.SameAs(instance));
             Assert.That(number.text, Is.EqualTo("7"));
             Assert.That(number.color, Is.EqualTo(settings.GetColor(data.Color)));
         }
@@ -51,11 +53,11 @@ namespace Okey.Tests.EditMode
             try
             {
                 var second = secondInstance.GetComponent<Stone>();
-                first.Initialize(data);
-                second.Initialize(data);
+                first.Initialize(new StoneInstance(0, data));
+                second.Initialize(new StoneInstance(0, data));
 
                 first.SetFace(false);
-                first.Initialize(data);
+                first.Initialize(new StoneInstance(0, data));
 
                 Assert.That(first.IsFaceUp, Is.False);
                 Assert.That(second.IsFaceUp, Is.True);
@@ -80,7 +82,8 @@ namespace Okey.Tests.EditMode
             var settings = AssetDatabase.LoadAssetAtPath<StoneVisualSettings>(
                 "Assets/Settings/Stones/DefaultStoneVisualSettings.asset");
 
-            stone.Initialize(new StoneData(StoneType.FakeJoker, StoneColor.None, 0));
+            stone.Initialize(new StoneInstance(0,
+                new StoneData(StoneType.FakeJoker, StoneColor.None, 0)));
 
             Assert.That(_instance.GetComponentInChildren<TMP_Text>().text,
                 Is.EqualTo(settings.FakeJokerText));

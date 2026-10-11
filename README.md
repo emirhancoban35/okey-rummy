@@ -16,7 +16,15 @@ A real joker is a role determined by game rules, rather than a separate physical
 
 `Assets/Prefabs/Stone.prefab` contains the wired Stone and StoneVisual components. Its text, symbol, visible face objects and visual settings are serialized references. The text reference accepts both world-space TextMeshPro and Canvas text. Initializing a stone preserves the view's selected face visibility.
 
-`Assets/Tests/EditMode` verifies the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
+`Assets/Scripts/Configuration` contains Unity configuration adapters in `Okey.Configuration`, which references Core. `DeckSettings` converts Inspector data into an immutable `DeckDefinition`; later edits to an asset do not change an existing definition.
+
+`Assets/Settings/Decks/StandardOkeyDeck.asset` defines the standard 106 stones as configurable sets: type, color, inclusive number range and copies per number. Create other deck assets through Create > Okey > Deck Settings. DeckFactory has no standard Okey counts or number ranges built into it.
+
+`DeckFactory.Create` generates an ordered, read-only collection of `StoneInstance` objects. Each physical stone has an ID unique within that deck. Recreating the same definition in the same order produces the same IDs; a new game needs its own session identity if IDs are persisted or sent over a network. Copies share immutable StoneData, while their physical identities remain distinct. Stone views bind a StoneInstance so later interactions can identify the selected physical stone.
+
+Generation does not shuffle, distribute, instantiate visuals or decide the joker. Those responsibilities will be introduced separately.
+
+`Assets/Tests/EditMode` verifies deck generation, Inspector configuration, the model and actual prefab wiring. Run the EditMode suite from Unity's Test Runner.
 
 ## Development conventions
 
@@ -29,4 +37,4 @@ A real joker is a role determined by game rules, rather than a separate physical
 
 ## Next steps
 
-Introduce deck configuration and generation, then hand and rack interactions, game flow, and interchangeable rules and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.
+Introduce draw pile ordering and dealing, then hand and rack interactions, game flow, and interchangeable rules and penalties. Persistence, bot decisions and network synchronization can build on these boundaries when needed.
