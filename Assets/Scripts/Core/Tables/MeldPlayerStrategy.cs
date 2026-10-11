@@ -14,7 +14,7 @@ namespace Okey.Core.Tables
             if (mode == OpeningMode.Closed)
             {
                 var pairs = _planner.Find(observation.Hand, observation.MeldRules, observation.Rules, OpeningMode.Pairs);
-                if (pairs.Melds.Count >= observation.Rules.PairThreshold)
+                if (pairs.Melds.Count >= observation.PairThreshold)
                 {
                     mode = OpeningMode.Pairs;
                     return pairs;

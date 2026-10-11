@@ -27,6 +27,8 @@ MonoBehaviour:
   _jokerFinishMultiplier: 2
   _botActionDelay: 0.8
   _partnerships: 0
+  _escalatingOpenings: 0
+  _openingIncrement: 1
   _randomStartingSeat: 1
   _allowDiscardPickup: 1
   _turnSeconds: 45

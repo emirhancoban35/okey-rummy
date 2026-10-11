@@ -29,7 +29,8 @@ namespace Okey.Composition
 
         private PlayerObservation Observe(int seat) => new PlayerObservation(
             _table.Players[seat].Hand.Slots.Where(stone => stone != null), _table.Melds,
-            _table.Players[seat].Opening, _table.Rules, _table.MeldRules, _table.Players[(seat + 1) % _table.Players.Count].Discards);
+            _table.Players[seat].Opening, _table.Rules, _table.MeldRules, _table.Players[(seat + 1) % _table.Players.Count].Discards,
+            _table.SeriesThreshold, _table.PairThreshold);
 
         public void Tick()
         {
@@ -78,7 +79,7 @@ namespace Okey.Composition
             var observation = Observe(seat);
             var plan = _strategy.PlanOpening(observation, out var mode);
             var canOpen = plan.Melds.Count > 0 && (player.Opening != OpeningMode.Closed ||
-                (mode == OpeningMode.Pairs ? plan.Melds.Count >= _table.Rules.PairThreshold : plan.Points >= _table.Rules.SeriesThreshold));
+                (mode == OpeningMode.Pairs ? plan.Melds.Count >= _table.PairThreshold : plan.Points >= _table.SeriesThreshold));
             var shouldOpen = player.Opening != OpeningMode.Closed || !_holdOpening || plan.TileCount >= player.Hand.Count - 2 || _table.RemainingCount <= _table.Players.Count;
             if (canOpen && shouldOpen && _table.TryOpen(seat, mode, plan.Melds)) return;
             var mistake = _random.NextDouble() < _settings.MistakeChance;

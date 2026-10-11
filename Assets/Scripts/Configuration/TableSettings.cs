@@ -22,6 +22,10 @@ namespace Okey.Configuration
         [SerializeField, Min(1)] private int _jokerFinishMultiplier = 2;
         [SerializeField, Min(0.1f)] private float _botActionDelay = 0.8f;
         [SerializeField] private bool _partnerships;
+        [SerializeField] private bool _escalatingOpenings;
+        [SerializeField, Min(1)] private int _openingIncrement = 1;
+        public bool EscalatingOpenings => _escalatingOpenings;
+        public void ToggleEscalatingOpenings() => _escalatingOpenings = !_escalatingOpenings;
         [SerializeField] private bool _randomStartingSeat = true;
         [SerializeField] private bool _allowDiscardPickup = true;
         [SerializeField, Min(5)] private float _turnSeconds = 45;
@@ -44,7 +48,7 @@ namespace Okey.Configuration
         public float OpeningPatience => _openingPatience;
         public Vector2 ThinkingSeconds => _thinkingSeconds;
         public bool RandomStartingSeat => _randomStartingSeat;
-        public TableOptions CreateOptions() => new TableOptions(_partnerships, _allowDiscardPickup, _turnSeconds);
+        public TableOptions CreateOptions() => new TableOptions(_partnerships, _allowDiscardPickup, _turnSeconds, _escalatingOpenings, _openingIncrement);
         public float BotActionDelay => _botActionDelay;
         public OkeyRules CreateRules() => new OkeyRules(_playerCount, _handSize, _minimumValue, _maximumValue,
             _seriesThreshold, _pairThreshold, _invalidOpeningPenalty, _unopenedScore, _jokerScore, _winnerScore, _discardPenalty, _pairMultiplier, _jokerFinishMultiplier);

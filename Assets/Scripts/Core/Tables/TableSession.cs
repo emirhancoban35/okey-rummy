@@ -19,6 +19,8 @@ namespace Okey.Core.Tables
         public int OpeningRevision { get; private set; }
         public int TeamOf(int seat) => Options.Partnerships ? seat % 2 : seat;
         public int TeamScore(int seat) => Players.Where((player, index) => TeamOf(index) == TeamOf(seat)).Sum(player => player.Score);
+        public int SeriesThreshold { get; private set; }
+        public int PairThreshold { get; private set; }
         public OkeyRules Rules { get; }
         public IMeldRules MeldRules { get; }
         public StoneInstance Indicator { get; }
@@ -34,6 +36,8 @@ namespace Okey.Core.Tables
         {
             Rules = rules ?? throw new ArgumentNullException(nameof(rules));
             Options = options ?? new TableOptions();
+            SeriesThreshold = rules.SeriesThreshold;
+            PairThreshold = rules.PairThreshold;
             if (startingSeat < 0 || startingSeat >= rules.PlayerCount) throw new ArgumentOutOfRangeException(nameof(startingSeat));
             if (Options.Partnerships && rules.PlayerCount != 4) throw new ArgumentException("Partnerships require four seats.", nameof(options));
             StartingSeat = ActiveSeat = startingSeat;
@@ -112,12 +116,17 @@ namespace Okey.Core.Tables
                 melds.All(meld => mode == OpeningMode.Pairs ? meld.Kind == MeldKind.Pair : meld.Kind != MeldKind.Pair) &&
                 (player.Opening == OpeningMode.Closed || player.Opening == mode);
             if (player.Opening == OpeningMode.Closed)
-                valid &= mode == OpeningMode.Pairs ? melds.Count >= Rules.PairThreshold : validated.Sum(meld => meld.Points) >= Rules.SeriesThreshold;
+                valid &= mode == OpeningMode.Pairs ? melds.Count >= PairThreshold : validated.Sum(meld => meld.Points) >= SeriesThreshold;
             if (!valid)
             {
                 player.Penalty += Rules.InvalidOpeningPenalty;
                 Changed?.Invoke();
                 return false;
+            }
+            if (Options.EscalatingOpenings && player.Opening == OpeningMode.Closed)
+            {
+                if (mode == OpeningMode.Pairs) PairThreshold = validated.Count + Options.OpeningIncrement;
+                else SeriesThreshold = validated.Sum(meld => meld.Points) + Options.OpeningIncrement;
             }
             foreach (var tile in tiles) player.Hand.Remove(tile.Stone.Id);
             _melds.AddRange(validated);
