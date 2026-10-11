@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _colors:
   - StoneColor: 0
-    DisplayColor: {r: 0.84, g: 0.055, b: 0.085, a: 1}
+    DisplayColor: {r: 1, g: 0.12, b: 0.22, a: 1}
   - StoneColor: 1
-    DisplayColor: {r: 0.025, g: 0.31, b: 0.88, a: 1}
+    DisplayColor: {r: 0.02, g: 0.58, b: 1, a: 1}
   - StoneColor: 2
-    DisplayColor: {r: 0.86, g: 0.52, b: 0.005, a: 1}
+    DisplayColor: {r: 1, g: 0.72, b: 0, a: 1}
   - StoneColor: 3
-    DisplayColor: {r: 0.045, g: 0.045, b: 0.055, a: 1}
+    DisplayColor: {r: 0.16, g: 0.18, b: 0.22, a: 1}
   - StoneColor: 4
     DisplayColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   _fakeJokerText: J
