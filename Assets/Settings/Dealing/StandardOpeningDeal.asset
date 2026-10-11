@@ -15,3 +15,4 @@ MonoBehaviour:
   _initialHandSize: 21
   _useFixedSeed: 0
   _seed: 0
+  _initialPhase: 0

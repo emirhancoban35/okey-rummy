@@ -1,4 +1,5 @@
 using System;
+using Okey.Core.Dealing;
 using UnityEngine;
 
 namespace Okey.Configuration
@@ -9,8 +10,10 @@ namespace Okey.Configuration
         [SerializeField, Min(0)] private int _initialHandSize;
         [SerializeField] private bool _useFixedSeed;
         [SerializeField] private int _seed;
+        [SerializeField] private TurnPhase _initialPhase;
 
         public int InitialHandSize => _initialHandSize;
+        public TurnPhase InitialPhase => _initialPhase;
 
         public int CreateSeed()
         {

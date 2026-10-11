@@ -40,6 +40,15 @@ namespace Okey.Core.Decks
             return true;
         }
 
+        public bool Contains(int stoneId)
+        {
+            for (var index = _nextIndex; index < _stones.Length; index++)
+                if (_stones[index].Id == stoneId)
+                    return true;
+
+            return false;
+        }
+
         public IReadOnlyList<StoneInstance> Draw(int count)
         {
             if (count < 0)

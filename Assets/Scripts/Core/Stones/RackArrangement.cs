@@ -39,6 +39,33 @@ namespace Okey.Core.Stones
             return _positions.TryGetValue(stoneId, out var slot) ? slot : -1;
         }
 
+        public int Add(StoneInstance stone)
+        {
+            if (stone == null)
+                throw new ArgumentNullException(nameof(stone));
+            if (_positions.ContainsKey(stone.Id))
+                throw new ArgumentException("The stone already belongs to this rack.", nameof(stone));
+
+            var slot = Array.FindIndex(_slots, value => value == null);
+            if (slot < 0)
+                throw new InvalidOperationException("The rack is full.");
+
+            _slots[slot] = stone;
+            _positions.Add(stone.Id, slot);
+            return slot;
+        }
+
+        public StoneInstance Remove(int stoneId)
+        {
+            if (!_positions.TryGetValue(stoneId, out var slot))
+                throw new ArgumentException("The stone does not belong to this rack.", nameof(stoneId));
+
+            var stone = _slots[slot];
+            _slots[slot] = null;
+            _positions.Remove(stoneId);
+            return stone;
+        }
+
         public IReadOnlyList<StoneInstance> Move(int stoneId, int destination)
         {
             if (destination < 0 || destination >= Capacity)
