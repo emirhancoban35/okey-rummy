@@ -34,7 +34,7 @@ namespace Okey.Core.Rules
             public ulong Next;
         }
 
-        public MeldPlan Find(IEnumerable<StoneInstance> stones, MeldRules rules, OkeyRules settings, OpeningMode mode)
+        public MeldPlan Find(IEnumerable<StoneInstance> stones, IMeldRules rules, OkeyRules settings, OpeningMode mode)
         {
             var hand = stones.Where(stone => stone != null).ToArray();
             if (hand.Length > 63) throw new ArgumentException("The meld planner supports up to 63 stones.", nameof(stones));

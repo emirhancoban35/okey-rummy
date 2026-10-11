@@ -10,9 +10,9 @@ namespace Okey.Core.Tables
         public IReadOnlyList<Meld> Melds { get; }
         public OpeningMode Opening { get; }
         public OkeyRules Rules { get; }
-        public MeldRules MeldRules { get; }
+        public IMeldRules MeldRules { get; }
         public PlayerObservation(IEnumerable<StoneInstance> hand, IEnumerable<Meld> melds,
-            OpeningMode opening, OkeyRules rules, MeldRules meldRules)
+            OpeningMode opening, OkeyRules rules, IMeldRules meldRules)
         {
             Hand = new List<StoneInstance>(hand).AsReadOnly();
             Melds = new List<Meld>(melds).AsReadOnly();

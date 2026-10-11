@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5d7583a04a664a85824ced9843b8ad8, type: 3}
+  m_Name: Standard101Table
+  m_EditorClassIdentifier: Okey.Configuration::Okey.Configuration.TableSettings
+  _playerCount: 4
+  _handSize: 21
+  _minimumValue: 1
+  _maximumValue: 13
+  _seriesThreshold: 101
+  _pairThreshold: 5
+  _invalidOpeningPenalty: 101
+  _unopenedScore: 202
+  _jokerScore: 101
+  _discardPenalty: 101
+  _winnerScore: -101
+  _pairMultiplier: 2
+  _jokerFinishMultiplier: 2
+  _botActionDelay: 0.8

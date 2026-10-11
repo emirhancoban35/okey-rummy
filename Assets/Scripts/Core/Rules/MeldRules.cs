@@ -5,7 +5,7 @@ using Okey.Core.Stones;
 
 namespace Okey.Core.Rules
 {
-    public sealed class MeldRules
+    public sealed class MeldRules : IMeldRules
     {
         private readonly OkeyRules _rules;
         public StoneData Joker { get; }
@@ -14,7 +14,7 @@ namespace Okey.Core.Rules
         {
             _rules = rules ?? throw new ArgumentNullException(nameof(rules));
             if (indicator == null || indicator.Data.Type != StoneType.Regular ||
-                indicator.Data.Value < rules.MinimumValue || indicator.Data.Value > rules.MaximumValue)
+                indicator.Data.Color == StoneColor.None || indicator.Data.Value < rules.MinimumValue || indicator.Data.Value > rules.MaximumValue)
                 throw new ArgumentException("A regular indicator within the configured range is required.", nameof(indicator));
             Joker = new StoneData(StoneType.Regular, indicator.Data.Color,
                 indicator.Data.Value == rules.MaximumValue ? rules.MinimumValue : indicator.Data.Value + 1);
@@ -28,14 +28,17 @@ namespace Okey.Core.Rules
         public bool TryCreate(IEnumerable<StoneInstance> stones, MeldKind kind, out Meld meld)
         {
             meld = null;
+            if (stones == null) return false;
             var hand = stones.ToArray();
             if (hand.Any(stone => stone == null) || hand.Select(stone => stone.Id).Distinct().Count() != hand.Length)
                 return false;
             var fixedTiles = hand.Where(stone => !IsWild(stone)).ToArray();
+            if (fixedTiles.Any(stone => Resolve(stone).Color == StoneColor.None || Resolve(stone).Value < _rules.MinimumValue ||
+                Resolve(stone).Value > _rules.MaximumValue)) return false;
             var wild = new Queue<StoneInstance>(hand.Where(IsWild));
-            if (fixedTiles.Length == 0)
+            if (fixedTiles.Length == 0 && (kind != MeldKind.Pair || hand.Length != 2))
                 return false;
-            var first = Resolve(fixedTiles[0]);
+            var first = fixedTiles.Length == 0 ? Joker : Resolve(fixedTiles[0]);
             var placed = new List<MeldTile>();
             if (kind == MeldKind.Pair)
             {
@@ -61,8 +64,8 @@ namespace Okey.Core.Rules
                     return false;
                 var low = fixedTiles.Min(stone => Resolve(stone).Value);
                 var high = fixedTiles.Max(stone => Resolve(stone).Value);
-                var start = Math.Max(_rules.MinimumValue, high - hand.Length + 1);
-                if (start > low || start + hand.Length - 1 > _rules.MaximumValue)
+                var start = Math.Min(low, _rules.MaximumValue - hand.Length + 1);
+                if (start < _rules.MinimumValue || start + hand.Length - 1 < high)
                     return false;
                 for (var value = start; value < start + hand.Length; value++)
                 {
@@ -80,7 +83,9 @@ namespace Okey.Core.Rules
         public bool TryExtend(Meld meld, StoneInstance stone, out Meld extended)
         {
             extended = null;
-            if (meld.Kind == MeldKind.Pair || meld.Tiles.Any(tile => tile.Stone.Id == stone.Id))
+            if (meld == null || stone == null || Resolve(stone).Color == StoneColor.None ||
+                Resolve(stone).Value < _rules.MinimumValue || Resolve(stone).Value > _rules.MaximumValue ||
+                meld.Kind == MeldKind.Pair || meld.Tiles.Any(tile => tile.Stone.Id == stone.Id))
                 return false;
             var data = Resolve(stone);
             var tiles = meld.Tiles.ToList();

@@ -28,8 +28,10 @@ namespace Okey.Core.Tables
         {
             var plan = PlanOpening(observation, out _);
             var protectedIds = plan.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();
-            return observation.Hand.Where(stone => !protectedIds.Contains(stone.Id))
-                .OrderBy(stone => observation.MeldRules.IsWild(stone))
+            return observation.Hand.OrderBy(stone => observation.MeldRules.IsWild(stone) ||
+                    observation.Melds.Any(meld => observation.MeldRules.TryExtend(meld, stone, out _)))
+                .ThenBy(stone => observation.MeldRules.IsWild(stone))
+                .ThenBy(stone => protectedIds.Contains(stone.Id))
                 .ThenBy(stone => observation.Hand.Count(other => other.Id != stone.Id &&
                     (observation.MeldRules.Resolve(other).Value == observation.MeldRules.Resolve(stone).Value ||
                     (observation.MeldRules.Resolve(other).Color == observation.MeldRules.Resolve(stone).Color &&
