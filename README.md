@@ -11,7 +11,7 @@ Game rules and state live in a Unity-independent C# assembly. Zenject connects t
 1. Clone the repository and open it with **Unity 6000.3.15f1** through Unity Hub.
 2. Let Unity restore the packages and import the assets.
 3. Open **Assets/Scenes/MainMenu.unity** and press Play.
-4. Choose Classic Okey or 101 Okey, individual or partnership play, and humanlike or fast opponents. 101 tables also support fixed or rising opening thresholds. Select **Play** to start a table.
+4. Choose Classic Okey or 101 Okey, individual or partnership play, and humanlike or fast opponents. 101 tables also support fixed or rising opening thresholds and an optional joker reclaim rule. Select **Play** to start a table.
 
 The main menu is the first scene in Build Settings. **SampleScene.unity** can also be opened directly for table development. Zenject and DOTween are included in the repository; no separate plugin installation is needed.
 
@@ -45,7 +45,10 @@ The main menu is the first scene in Build Settings. **SampleScene.unity** can al
 | Lay off a tile | Drag it into the highlighted empty cell of a compatible public meld. |
 | Discard | Drop a tile into the bottom-right tray, or double-tap it during your discard phase. |
 | Flip a tile | Hold it for half a second. Hold again to turn it face up. |
-| Take the previous discard | Classic: click the previous player's tray to take the tile into your rack. 101: once opened, click it to immediately extend a compatible public meld. |
+| Return a trial tile in 101 | Click the previous tray again, or click the closed pile to return it and draw instead. |
+| Reclaim a public joker | Once opened, drag the tile matching its assigned color and value onto the public joker. Enable **Reclaim** in the new-game menu. |
+| Add a pair to the table | Once opened, drag the pair by its group handle onto the pair board. A pair opening must already exist. |
+| Take the previous discard | Classic: click the previous player's tray to take the tile into your rack. 101: click it to try the tile in your rack; use it in an opening, new meld, pair or legal layoff before discarding. |
 | Start another game | Open table settings and select **New Game** to return to the menu. |
 
 Rack rearrangement is available during other players' turns. Draws, openings, layoffs and discards always pass through the table's legality checks.
@@ -72,17 +75,21 @@ The base hand, meld and pickup rules follow the [Okey rules reference](https://w
 
 The default table uses a 106-tile deck. A random starting seat receives 22 tiles; the other seats receive 21. An indicator is set aside and 20 tiles remain in the stock. Subsequent tables rotate the starting seat. The indicator determines the real joker; fake jokers represent that fixed color and value.
 
-An initial series opening needs **101 points**, or a pair opening needs **five pairs**. The local opening evaluator uses adjacent tiles on the same rack row and reserves a tile for the final discard. Invalid opening attempts apply a configurable penalty and preserve the hand. Additional melds use the player's existing opening mode. Joker assignments in public melds remain fixed. Each series or set occupies its own row. Runs use number-aligned columns: 1–2–3 starts at the left edge, while 3–4–5 reserves two positions on its left and the remaining values on its right. Sets reserve fixed color slots. Adding tiles keeps existing tiles and other melds in place. Rows fill downward through separate lanes; page buttons or the mouse wheel keep a full board accessible without shrinking tiles.
+An initial series opening needs **101 points**, or a pair opening needs **five pairs**. The local opening evaluator uses adjacent tiles on the same rack row and reserves a tile for the final discard. Invalid opening attempts apply a configurable penalty and preserve the hand. Additional series melds use the player's existing opening mode. After anyone opens pairs, a series-opened player may also add pairs without changing their original opening mode or score treatment. Joker assignments in public melds remain fixed. Each series or set occupies its own row. Runs use number-aligned columns: 1–2–3 starts at the left edge, while 3–4–5 reserves two positions on its left and the remaining values on its right. Sets pack their three tiles side by side; the fourth color appends to the right without moving the existing tiles. Adding tiles keeps existing tiles and other melds in place. Rows fill downward through separate lanes; page buttons or the mouse wheel keep a full board accessible without shrinking tiles.
 
 Rising openings increase the series and pair thresholds independently. Each successful initial opening sets its corresponding next threshold to the opened total plus a configurable increment, which defaults to one. Additional melds and invalid attempts do not raise thresholds.
 
-101 forbids taking a discard while closed. An opened player may take only the previous seat's latest discard, and only to immediately extend a public meld. Failed pickups change neither the discard nor the stock.
+101 allows a trial of the previous seat's latest discard even while closed. The borrowed physical tile must participate in an opening that meets the current threshold, or, once opened, in a new meld, a pair or a legal public layoff. An unrelated opening cannot commit the pickup, and discarding is blocked until the borrowed tile is used. Clicking the tray again returns it without consuming stock; clicking the closed pile returns it and draws instead. A timeout also returns an unused trial tile before drawing. Explicit invalid opening attempts still receive the configured penalty.
+
+With joker reclaim enabled, an opened player may replace a public real joker with the tile matching its fixed assigned color and value. The physical joker returns to the replacing player's rack, in the replacement tile's slot. The original meld owner receives the profile's **Joker Reclaim Penalty**, default **101**; zero disables the charge while keeping reclaim available. **Reclaim Off** disables the exchange itself. This project uses one exact assigned replacement for runs, sets and pairs, including sets whose missing color could otherwise be ambiguous.
+
+The discard-use and pair-processing rules follow [Zynga's discard pickup guidance](https://zyngasupport.zendesk.com/hc/tr/articles/115003520231-Soldan-ta%C5%9F-al%C4%B1nabilir-mi) and [series-to-pairs guidance](https://zyngasupport.zendesk.com/hc/tr/articles/115003521251-Seri-a%C3%A7an-biri-%C3%A7ifte-i%C5%9Fleme-yapabilir-mi). [Zynga's joker guidance](https://zyngasupport.zendesk.com/hc/tr/articles/115003539012-Yerden-Okey-al%C4%B1nabilir-mi) requires an opened hand and a matching replacement. The optional owner charge follows the [101 Çetele rule summary](https://okey101cetele.com/blog/yandan-yerden-tas-alma); joker exchange variants differ between tables, so the exact assignment and penalty are explicit project rules.
 
 Successful openings refresh the turn timer. When time expires, the game cancels any drag, draws once if required and discards the lowest non-joker tile that cannot extend a public meld. If none is safe, a playable tile is preferred over a joker. Discarding the final tile finishes the round. Partnership scoring groups opposite seats and excludes the winning partner's remaining hand.
 
-![Reserved meld rows and paging](Docs/Images/meld-board-layout.png)
+![Contiguous sets on separate rows](Docs/Images/meld-board-layout.png)
 
-Layout preview using a custom stress-test deck: number-aligned runs, fixed color slots and twenty public melds across two pages.
+Layout preview: three-tile sets stay contiguous and each meld occupies its own row.
 
 These are the project's explicit rule choices. Other regional variants and indicator-show bonuses are not implemented.
 
@@ -94,9 +101,9 @@ Matches default to five hands, configured by `Match Rounds` on the table setting
 
 101 defaults to **−101 for finishing**, **101 for discarding a real joker**, and **101 for discarding a tile that extends a public meld**. The rule profile exposes `Winner Score`, `Joker Discard Penalty` and `Playable Discard Penalty` independently. Zero disables either discard charge. Final-tile finishes retain the scoring policy's joker/pair bonuses rather than receiving an extra discard charge.
 
-No player's hand count appears on the table. Fixed openings show the required threshold alone; rising openings show the current increased requirement. Initial openings announce the player and public opening value. Local turns show **YOUR TURN** and play a short cue. Drawing, discarding, opening, laying off, penalties and finishing have quieter event sounds; all bundled clips are procedurally synthesized and can be replaced in the audio asset. Long tile moves use a configurable shallow arc.
+No player's hand count appears on the table. Fixed openings show the required threshold alone; rising openings show the current increased requirement. Initial openings announce the player and public opening value. Local turns show **YOUR TURN** and play a short cue. Drawing, discarding, opening, laying off, penalties and finishing have quieter event sounds; all bundled clips are procedurally synthesized and can be replaced in the audio asset. Playable discards, joker discards and joker reclaims announce the affected player and charge explicitly. Notices queue so an opening or turn announcement cannot erase a penalty. Long tile moves use a configurable shallow arc.
 
-Rack group handles use a mixed run/set/pair evaluation independent of whether an opening is legal yet. Whole-group drops remain within one shelf, shift neighboring tiles and preserve physical tile identity. Group drags never trigger discard or layoff actions.
+Rack group handles use a mixed run/set/pair evaluation independent of whether an opening is legal yet. Whole-group drops remain within one shelf, shift neighboring tiles and preserve physical tile identity. Group drags never discard a group. A pair can be dropped onto the pair board when pair processing is legal; other outside-rack group drops return to the rack.
 
 ![101 score sheet](Docs/Images/score-sheet.png)
 
@@ -150,8 +157,8 @@ Multiplayer is not implemented. A future transport adapter can submit `PlayerAct
 
 | Asset | Editable values |
 | --- | --- |
-| `Assets/Settings/Dealing/Standard101Table.asset` | Available rule profiles, selected profile, player count, rising increment, partnerships, pickup rules, starter selection, timers, match hand count and bot behavior. |
-| `Assets/Settings/Dealing/Okey101Rules.asset` | 101 hand size, tile range, opening thresholds, penalties and score multipliers. |
+| `Assets/Settings/Dealing/Standard101Table.asset` | Available rule profiles, selected profile, player count, rising increment, partnerships, pickup and joker reclaim rules, starter selection, timers, match hand count and bot behavior. |
+| `Assets/Settings/Dealing/Okey101Rules.asset` | 101 hand size, tile range, opening thresholds, penalties (including joker reclaim) and score multipliers. |
 | `Assets/Settings/Dealing/ClassicOkeyRules.asset` | Classic hand size, tile range, pair count, round loss points and score multipliers. |
 | `Assets/Settings/Decks/StandardOkeyDeck.asset` | Tile types, colors, number ranges and copies. |
 | `Assets/Settings/Dealing/StandardOpeningDeal.asset` | Fixed or random shuffle seed. Its practice-hand fields are separate from table settings. |
@@ -210,7 +217,7 @@ Scene installers hold serialized asset and prefab references. Runtime controller
 
 Open **Window > General > Test Runner** and run both **EditMode** and **PlayMode** suites.
 
-EditMode tests cover definitions, deck generation, rack insertion, adjacent grouping, meld rules, penalties, rising thresholds, AI decisions, timers, ownership boundaries, replaceable opening policies and independent setup snapshots. PlayMode tests load actual scenes and verify Zenject bindings, prefab wiring, pointer interactions, drawing, discarding, layoffs, visibility, menu navigation, UI progress and local players in every supported seat.
+EditMode tests cover definitions, deck generation, rack insertion, adjacent grouping, meld rules, penalties, rising thresholds, AI decisions, timers, ownership boundaries, replaceable opening policies and independent setup snapshots. PlayMode tests load actual scenes and verify Zenject bindings, prefab wiring, pointer interactions, drawing, Classic discard pickup through real mouse input, trial returns, joker exchanges, pair group drops, queued feedback, discarding, layoffs, visibility, menu navigation, UI progress and local players in every supported seat.
 
 Table and menu layouts are also checked at **1920 × 1080** and **1106 × 614**. Preview images live in `Docs/Images`.
 
