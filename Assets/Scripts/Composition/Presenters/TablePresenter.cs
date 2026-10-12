@@ -16,6 +16,7 @@ namespace Okey.Composition
     public sealed class TablePresenter : IInitializable, IDisposable
     {
         private readonly LocalPlayerContext _local;
+        private readonly TablePlayerNames _names;
         private readonly TableSession _session;
         private readonly TableView _controls;
         private readonly StoneViewFactory _factory;
@@ -31,10 +32,11 @@ namespace Okey.Composition
         private bool _initialized;
         private bool _disposed;
 
-        public TablePresenter(TableSession session, TableView controls, StoneViewFactory factory, LocalPlayerContext local)
+        public TablePresenter(TableSession session, TableView controls, StoneViewFactory factory, LocalPlayerContext local, TablePlayerNames names)
         {
             _session = session;
             _local = local;
+            _names = names;
             _controls = controls;
             _factory = factory;
             _discards = new Stone[session.Players.Count];
@@ -53,6 +55,7 @@ namespace Okey.Composition
             _controls.Surface.PairsBoard.PageChanged += Render;
             CreatePublicStone(_session.Indicator, _controls.Surface.IndicatorRoot, _controls.Surface.IndicatorScale);
             _session.Changed += Render;
+            _names.Changed += Render;
             Render();
         }
 
@@ -179,7 +182,7 @@ namespace Okey.Composition
                 {
                     var active = seat == _session.ActiveSeat && _session.Phase != TurnPhase.Finished;
                     _controls.Players.RenderOpponent(_local.ViewSeat(seat), string.Format(_controls.Texts.OpponentFormat,
-                        _controls.Texts.SeatName(_local.ViewSeat(seat)), player.Hand.Count, player.Penalty, player.Score,
+                        _names.ForSeat(seat), player.Penalty, player.Score,
                         active ? _controls.Texts.ActiveSeatText : string.Empty), active);
                 }
                 if (player.Discards.Count == 0)
@@ -238,6 +241,7 @@ namespace Okey.Composition
             if (_disposed) return;
             _disposed = true;
             _session.Changed -= Render;
+            _names.Changed -= Render;
             _controls.Surface.SeriesBoard.PageChanged -= Render;
             _controls.Surface.PairsBoard.PageChanged -= Render;
             foreach (var view in _owned)

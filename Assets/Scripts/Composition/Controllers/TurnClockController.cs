@@ -9,15 +9,17 @@ namespace Okey.Composition
     public sealed class TurnClockController : ITickable
     {
         private readonly LocalPlayerContext _local;
+        private readonly TablePlayerNames _names;
         private readonly TableSession _table;
         private readonly TurnClock _clock;
         private readonly IPlayerStrategy _strategy;
         private readonly TableView _controls;
         private readonly RackInteractionController _interaction;
-        public TurnClockController(TableSession table, IPlayerStrategy strategy, TableView controls, RackInteractionController interaction, LocalPlayerContext local)
+        public TurnClockController(TableSession table, IPlayerStrategy strategy, TableView controls, RackInteractionController interaction, LocalPlayerContext local, TablePlayerNames names)
         {
             _table = table;
             _local = local;
+            _names = names;
             _clock = new TurnClock(table);
             _strategy = strategy;
             _controls = controls;
@@ -28,6 +30,7 @@ namespace Okey.Composition
         private bool _lastFinished;
         private int _lastModeScore = int.MinValue;
         private bool _lastPartners;
+        private string _lastPartnerName;
         public void RenderClock(int seat, double remaining, bool partners, int score, double duration, bool finished = false)
         {
             var text = _controls.Texts;
@@ -41,10 +44,12 @@ namespace Okey.Composition
                 _controls.Clock.RenderText(_local.ViewSeat(seat),
                     seat == _local.Seat ? string.Format(text.ClockFormat, text.LocalSeatName, seconds) : string.Format(text.SecondsFormat, seconds), !finished);
             }
-            if (score == _lastModeScore && partners == _lastPartners) return;
+            var partnerName = _names.ForSeat((_local.Seat + _table.Players.Count / 2) % _table.Players.Count);
+            if (score == _lastModeScore && partners == _lastPartners && partnerName == _lastPartnerName) return;
+            _lastPartnerName = partnerName;
             _lastModeScore = score;
             _lastPartners = partners;
-            _controls.Hud.RenderMode(partners ? string.Format(text.PartnerModeFormat, text.SeatName(0), text.SeatName(_local.ViewSeat((_local.Seat + _table.Players.Count / 2) % _table.Players.Count)), score) : text.IndividualModeLabel);
+            _controls.Hud.RenderMode(partners ? string.Format(text.PartnerModeFormat, _names.ForSeat(_local.Seat), partnerName, score) : text.IndividualModeLabel);
         }
         public void Tick() => Advance(Time.deltaTime);
         public void Advance(float seconds)

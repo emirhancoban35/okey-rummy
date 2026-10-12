@@ -13,6 +13,7 @@ namespace Okey.Composition
     public sealed class TableHudPresenter : IInitializable, IDisposable
     {
         private readonly LocalPlayerContext _local;
+        private readonly TablePlayerNames _names;
         private readonly TableSession _table;
         private readonly TableView _view;
         private readonly HandPresenter _hand;
@@ -25,10 +26,11 @@ namespace Okey.Composition
         private bool _initialized;
         private bool _disposed;
         public TableHudPresenter(TableSession table, TableView view, HandPresenter hand, RackInteractionController interaction,
-            TablePresenter publicStones, RackView rack, LocalPlayerContext local)
+            TablePresenter publicStones, RackView rack, LocalPlayerContext local, TablePlayerNames names)
         {
             _table = table;
             _local = local;
+            _names = names;
             _view = view;
             _hand = hand;
             _interaction = interaction;
@@ -41,6 +43,7 @@ namespace Okey.Composition
             if (_initialized) return;
             _initialized = true;
             _table.Changed += Refresh;
+            _names.Changed += Refresh;
             _interaction.Changed += Refresh;
             Refresh();
         }
@@ -97,8 +100,8 @@ namespace Okey.Composition
         {
             var text = _view.Texts;
             if (_table.Phase == TurnPhase.Finished)
-                return _table.Winner < 0 ? text.DrawnRoundLabel : string.Format(text.WinnerFormat, text.SeatName(_local.ViewSeat(_table.Winner)));
-            if (_table.ActiveSeat != _local.Seat) return string.Format(text.WaitingFormat, text.SeatName(_local.ViewSeat(_table.ActiveSeat)));
+                return _table.Winner < 0 ? text.DrawnRoundLabel : string.Format(text.WinnerFormat, _names.ForSeat(_table.Winner));
+            if (_table.ActiveSeat != _local.Seat) return string.Format(text.WaitingFormat, _names.ForSeat(_table.ActiveSeat));
             if (_table.Phase == TurnPhase.AwaitingDraw) return _table.CanEndDrawnRound(_local.Seat) ? text.EmptyStockStatus : text.DrawStatus;
             return _table.Game.AllowsPublicMelds ? text.DiscardStatus : text.ClassicDiscardStatus;
         }
@@ -107,6 +110,7 @@ namespace Okey.Composition
             if (_disposed) return;
             _disposed = true;
             _table.Changed -= Refresh;
+            _names.Changed -= Refresh;
             _interaction.Changed -= Refresh;
         }
     }

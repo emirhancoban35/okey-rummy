@@ -6,6 +6,8 @@ namespace Okey.Presentation.Tables
 {
     public sealed class TableView : MonoBehaviour
     {
+        [SerializeField] private Canvas _canvas;
+        public Canvas Canvas => _canvas;
         [SerializeField] private TableTextCatalog _texts;
         [SerializeField] private TableSurfaceView _surface;
         [SerializeField] private TableHudView _hud;

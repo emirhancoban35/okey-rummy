@@ -1,6 +1,6 @@
 # Table typography
 
-The interface uses Nunito SemiBold, with Nunito Bold for actions and tile numbers. The fonts are distributed under the SIL Open Font License in `OFL.txt`.
+The table interface uses Nunito Bold. Nunito SemiBold remains available for alternate styles and menu text. The fonts are distributed under the SIL Open Font License in `OFL.txt`.
 
 Source: [Google Fonts Nunito](https://github.com/google/fonts/tree/main/ofl/nunito), downloaded on October 11, 2026. The included TTF files are static instances of the upstream variable font at weights 600 and 700.
 

@@ -6,6 +6,8 @@ namespace Okey.Presentation.Text
     public sealed class TableTextCatalog : ScriptableObject
     {
         [SerializeField] private string[] _seatNames;
+        [SerializeField] private string[] _playerNames;
+        public string PlayerName(int seat) => seat == 0 ? _localSeatName : _playerNames[seat - 1];
         [SerializeField, TextArea] private string _openLabel;
         public string OpenLabel => _openLabel;
         [SerializeField, TextArea] private string _finishLabel;

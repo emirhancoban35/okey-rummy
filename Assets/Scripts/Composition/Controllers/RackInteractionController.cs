@@ -79,6 +79,7 @@ namespace Okey.Composition
 
             _dragged = stone;
             _dragScale = stone.transform.localScale;
+            stone.DragHandler.SetLifted(true);
             stone.Motion.SnapTo(stone.transform.localPosition);
             Changed?.Invoke();
             return true;
@@ -108,6 +109,7 @@ namespace Okey.Composition
                 return;
 
             stone.transform.localScale = _dragScale;
+            stone.DragHandler.SetLifted(false);
             _dragged = null;
             if (DropRequested?.Invoke(stone, worldPosition) == true)
             {
@@ -139,6 +141,7 @@ namespace Okey.Composition
                 return;
 
             stone.transform.localScale = _dragScale;
+            stone.DragHandler.SetLifted(false);
             _dragged = null;
             _rack.MoveToSlot(stone, _arrangement.FindSlot(stone.Instance.Id), false);
             Changed?.Invoke();

@@ -943,7 +943,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   _stone: {fileID: 7100000000000000001}
   _sortingGroup: {fileID: 7100000000000000005}
-  _dragSortingOrder: 1
+  _dragSortingOrder: 2000
 --- !u!210 &7100000000000000005
 SortingGroup:
   m_ObjectHideFlags: 0

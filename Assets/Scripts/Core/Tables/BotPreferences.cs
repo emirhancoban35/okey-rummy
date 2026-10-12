@@ -4,6 +4,7 @@ namespace Okey.Core.Tables
 {
     public sealed class BotPreferences
     {
+        public event Action Changed;
         public bool Humanlike { get; private set; }
         public double MistakeChance => Humanlike ? _mistakeChance : 0;
         public double OpeningPatience { get; }
@@ -32,6 +33,10 @@ namespace Okey.Core.Tables
         private static bool IsProbability(double value) => value >= 0 && value <= 1;
         private static bool IsDuration(double value) => value >= 0 && !double.IsInfinity(value);
 
-        public void ToggleMode() => Humanlike = !Humanlike;
+        public void ToggleMode()
+        {
+            Humanlike = !Humanlike;
+            Changed?.Invoke();
+        }
     }
 }

@@ -17,6 +17,7 @@ namespace Okey.Composition
     public sealed class GameInstaller : MonoInstaller
     {
         [SerializeField] private DeckSettings _deckSettings;
+        [SerializeField] private Camera _tableCamera;
         [SerializeField] private Stone _stonePrefab;
         [SerializeField] private OpeningDealSettings _openingDealSettings;
         [SerializeField] private RackView _rackView;
@@ -27,8 +28,8 @@ namespace Okey.Composition
 
         public override void InstallBindings()
         {
-            if (_deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null || _controlsView == null || _tableSettings == null || _navigationSettings == null)
-                throw new InvalidOperationException("Deck settings, opening deal settings, stone prefab, rack view, turn controls, table settings and navigation settings must be assigned to the game installer.");
+            if (_tableCamera == null || _deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null || _controlsView == null || _tableSettings == null || _navigationSettings == null)
+                throw new InvalidOperationException("Table camera, deck settings, opening deal settings, stone prefab, rack view, table controls, table settings and navigation settings must be assigned to the game installer.");
 
             Container.BindInstance(_deckSettings.CreateDefinition());
             Container.Bind<DeckFactory>().AsSingle();
@@ -61,6 +62,10 @@ namespace Okey.Composition
             Container.Bind<IReadOnlyRack>().FromMethod(context => context.Container.Resolve<IRackLayout>()).AsSingle();
             Container.Bind<RackInteractionController>().AsSingle();
             Container.BindInstance(_controlsView);
+            Container.BindInstance(_tableCamera);
+            Container.BindInstance(_controlsView.Texts);
+            Container.Bind<TablePlayerNames>().AsSingle();
+            Container.BindInterfacesTo<TableCanvasPresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<HandPresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<TablePresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<TableHudPresenter>().AsSingle();

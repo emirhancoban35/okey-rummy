@@ -16,6 +16,10 @@ MonoBehaviour:
   - East
   - North
   - West
+  _playerNames:
+  - Player123132
+  - Player482716
+  - Player907354
   _openLabel: OPEN
   _finishLabel: FINISH
   _pairsLabel: PAIRS
@@ -49,7 +53,7 @@ MonoBehaviour:
   _handFormat: '{0}'
   _pileFormat: '{0}'
   _penaltyFormat: '{0}'
-  _opponentFormat: "{0}  \xB7  {1}"
+  _opponentFormat: '{0}'
   _menuUnavailable: "NOT USED"
   _menuIndividual: "INDIVIDUAL"
   _menuPartners: "PARTNERS"

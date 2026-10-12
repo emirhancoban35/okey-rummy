@@ -120,6 +120,8 @@ flowchart TD
 | Menu and table navigation | `ITableNavigation` |
 | Tile art, text, colors and animation | Prefabs and visual settings assets |
 
+Opponent hand counts are hidden. Humanlike opponents use player names authored in the table text catalog; fast mode uses seat names. Name changes update opponent cards, turn status and winner text together.
+
 Fast opponents play at a fixed pace. Humanlike opponents use configurable thinking delays, opening patience and a default 1% mistake chance per discard decision. Their strategies receive snapshots of their own hand and public information; they cannot inspect opponents' hands or the stock. `BotDecisionPolicy` chooses draw/pickup/open/layoff/discard actions from a `PlayerTurnObservation`. `BotTurnController` only schedules and submits those decisions. A rule profile can replace the whole decision policy through `CreateBotDecisions`. Bot decisions use current rising thresholds; `TableSession.TryApply` validates submitted `PlayerAction` values.
 
 Multiplayer is not implemented. A future transport adapter can submit `PlayerAction` values to the table boundary and distribute public and seat-private state. It must add session identity, authoritative validation, synchronization and visibility handling. Variants that keep the draw/open/layoff/discard turn flow can replace opening policies, finish logic, scoring, bot decisions and rack action plans. A different turn lifecycle requires extending the turn flow; numeric configuration alone does not implement every variant.
@@ -149,13 +151,13 @@ Open **Assets/Prefabs/GameControls.prefab** in Prefab Mode. Its root **TableView
 | --- | --- |
 | Font asset, font size, alignment, wrapping, spacing or text color | The selected text object's TextMeshPro component inside the prefab |
 | Position, anchors, pivot, width or height | That object's RectTransform; moving the parent moves the whole card/panel |
-| Status messages, action labels, progress formats, seat names and menu options | **Assets/Settings/Presentation/EnglishTableText.asset**, referenced by both table and menu prefabs |
+| Status messages, action labels, progress formats, seat/player names and menu options | **Assets/Settings/Presentation/EnglishTableText.asset**, referenced by both table and menu prefabs |
 | Fixed headings and instructions | Their own text objects inside the prefab; **ClassicTitle** and **ClassicDescription** have independent font sizes |
 | Opening-card behavior and progress fill | **MeldActionView** on each series/pair card |
 | Clock bars and clock text references | **TurnClockView** on the turn clock |
 | Modal buttons and help text reference | **OverlayPanelsView** on the canvas |
 | Table settings buttons and labels | **TableOptionsView** on the canvas |
-| Opponent text/highlight | **OpponentSeatView** on the corresponding opponent |
+| Opponent name/highlight | **OpponentSeatView** on the corresponding opponent |
 | Draw, discard, board and winning-hand geometry | **TableSurfaceView** on the root; board cells use each **MeldBoardView** |
 
 Save changes in Prefab Mode outside Play Mode. Scene-instance overrides take precedence over prefab values; changes made to runtime instances during Play Mode disappear when Play Mode ends. Dynamic text content is formatted from the assigned catalog, so editing a live label's text is temporary; its typography and placement are not overwritten by rendering. To customize one table independently, duplicate the text catalog and assign that copy on its TableView.
@@ -168,13 +170,15 @@ The project uses a model, controller and presenter/view separation with Zenject.
 - **Composition/Controllers/**: input actions, bot turns, timeouts, options and navigation requests.
 - **Composition/Presenters/**: hand/public-tile synchronization and HUD state formatting.
 - **Composition/Installers/**: Zenject bindings and startup order.
-- **Composition/State/**: application flow state and local-seat mapping.
+- **Composition/State/**: application flow state, local-seat mapping and table display names.
 - **Composition/Factories/** and **Navigation/**: prefab creation and scene transitions.
 - **Presentation/Tables/**, **Racks/**, **Stones/** and **Menus/**: feature views.
 - **Presentation/Text/**: the text-catalog type; **Settings/Presentation/** contains its editable assets.
 - **Scripts/Editor/**: authoring helpers, compiled only for the Unity Editor.
 
 **TableView** is a reference container. **TableHudPresenter** formats the action plans supplied by the game and combines them with local input availability. The prefab holds an ordered array of action cards; add enough cards for the selected game. **TurnController** submits player actions. **TablePresenter** synchronizes public physical tiles. Layout values live in prefabs, wording lives in serialized text assets, and game values live in rule profiles. Constants that describe structural rules, such as two tiles per pair, still belong in code.
+
+The table canvas uses its assigned scene camera so dragged tiles can render above ordinary controls. Its sorting order and each tile’s drag sorting order are authored in their prefabs. Both rack and pile drags restore the original order on drop or cancellation.
 
 Scene installers hold serialized asset and prefab references. Runtime controllers do not construct UI layouts or assign font sizes and RectTransform dimensions. DOTween handles movement and short transitions; views cancel their owned tweens when disabled. `TableSettings` contains authored defaults. `GameFlowState` owns the application’s menu choices in a `GameSetup` and its `StartingSeatSequence` across menu/table navigation. Each table receives its own rules/options snapshot and `BotPreferences`; live changes never mutate the authored asset. Bot-mode changes apply to the current table and become the next menu default. Partnership and rising-opening choices apply to the next table.
 

@@ -274,15 +274,16 @@ namespace Okey.Tests.PlayMode
             var interaction = new RackInteractionController(session.Players[localSeat].Layout, Rack);
             var factory = _context.Container.Resolve<StoneViewFactory>();
             var hand = new HandPresenter(session.Players[localSeat].Hand, factory, Rack, interaction);
-            var table = new TablePresenter(session, Controls, factory, local);
+            var names = new TablePlayerNames(Controls.Texts, _context.Container.Resolve<BotPreferences>(), local);
+            var table = new TablePresenter(session, Controls, factory, local, names);
             var controller = new TurnController(session, hand, interaction, Controls, table, Rack, local);
-            var hud = new TableHudPresenter(session, Controls, hand, interaction, table, Rack, local);
+            var hud = new TableHudPresenter(session, Controls, hand, interaction, table, Rack, local, names);
             try
             {
                 hand.Initialize(); table.Initialize(); hud.Initialize(); controller.Initialize();
                 Assert.That(hand.Views.Select(view => view.Instance.Id), Is.EquivalentTo(
                     session.Players[localSeat].Hand.Slots.Where(tile => tile != null).Select(tile => tile.Id)));
-                var clock = new TurnClockController(session, _context.Container.Resolve<IPlayerStrategy>(), Controls, interaction, local);
+                var clock = new TurnClockController(session, _context.Container.Resolve<IPlayerStrategy>(), Controls, interaction, local, names);
                 clock.RenderClock(localSeat, 20, false, 0, 40);
                 var sliders = new SerializedObject(Controls.Clock).FindProperty("_turnSliders");
                 Assert.That(((Slider)sliders.GetArrayElementAtIndex(0).objectReferenceValue).value, Is.EqualTo(.5f));
@@ -319,9 +320,9 @@ namespace Okey.Tests.PlayMode
             var interaction = new RackInteractionController(session.Players[0].Layout,Rack);
             var factory = _context.Container.Resolve<StoneViewFactory>();
             var hand = new HandPresenter(session.Players[0].Hand,factory,Rack,interaction);
-            var table = new TablePresenter(session,Controls,factory,new LocalPlayerContext(0,session.Players.Count));
+            var table = new TablePresenter(session,Controls,factory,new LocalPlayerContext(0,session.Players.Count), _context.Container.Resolve<TablePlayerNames>());
             var controller = new TurnController(session,hand,interaction,Controls,table,Rack,new LocalPlayerContext(0,session.Players.Count));
-            var hud = new TableHudPresenter(session,Controls,hand,interaction,table,Rack,new LocalPlayerContext(0,session.Players.Count));
+            var hud = new TableHudPresenter(session,Controls,hand,interaction,table,Rack,new LocalPlayerContext(0,session.Players.Count), _context.Container.Resolve<TablePlayerNames>());
             try
             {
                 hand.Initialize();table.Initialize();hud.Initialize();controller.Initialize();
@@ -420,7 +421,7 @@ namespace Okey.Tests.PlayMode
                 for(var tile=0;tile<15;tile++) deck[start+tile]=Tile(start+tile,3+tile%3);
             deck[69]=Tile(69,6);
             var table=new TableSession(new OkeyRules(4,16,1,13,1,5,101,202,101,-101,101,2,2),deck,28, game: new Okey.Core.Games.Okey101Game());
-            var presenter=new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count));
+            var presenter=new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count), _context.Container.Resolve<TablePlayerNames>());
             presenter.Initialize();
             try
             {
@@ -460,6 +461,37 @@ namespace Okey.Tests.PlayMode
         }
 
         [Test]
+        public void HumanlikeOpponentsShowOnlyTheirPlayerNamesAndRefreshOnModeChange()
+        {
+            var preferences = _context.Container.Resolve<BotPreferences>();
+            var names = _context.Container.Resolve<TablePlayerNames>();
+            preferences.ToggleMode();
+            var labels = Controls.Players.GetComponentsInChildren<TMP_Text>()
+                .Where(text => text.name == "OpponentStatus").Select(text => text.text).ToArray();
+            Assert.That(labels, Is.EquivalentTo(new[] { names.ForSeat(1), names.ForSeat(2), names.ForSeat(3) }));
+            Assert.That(labels.All(label => label.StartsWith("Player")), Is.True);
+            preferences.ToggleMode();
+            labels = Controls.Players.GetComponentsInChildren<TMP_Text>()
+                .Where(text => text.name == "OpponentStatus").Select(text => text.text).ToArray();
+            Assert.That(labels, Is.EquivalentTo(new[] { "East", "North", "West" }));
+        }
+
+        [Test]
+        public void PileDragRendersAboveTheTableUiAndRestoresItsOrderOnCancel()
+        {
+            CompleteHandMovement();
+            var stone = HandViews[0];
+            var group = stone.GetComponent<SortingGroup>();
+            var originalOrder = group.sortingOrder;
+            Assert.That(Controls.Canvas.renderMode, Is.EqualTo(RenderMode.ScreenSpaceCamera));
+            Assert.That(Controls.Canvas.worldCamera, Is.Not.Null);
+            Assert.That(Interaction.TryBeginDrag(stone), Is.True);
+            Assert.That(group.sortingOrder, Is.GreaterThan(Controls.Canvas.sortingOrder));
+            Interaction.CancelDrag(stone);
+            Assert.That(group.sortingOrder, Is.EqualTo(originalOrder));
+        }
+
+        [Test]
         public void PublicViewsUseAnchorsAndNeverExposeOpponentHands()
         {
             var table = _context.Container.Resolve<TableSession>();
@@ -471,7 +503,7 @@ namespace Okey.Tests.PlayMode
                 .Where(stone => stone != null).Select(stone => stone.Id).ToHashSet();
             var visible = Controls.GetComponentsInChildren<Stone>().Concat(HandViews);
             Assert.That(visible.Any(view => view.Instance != null && opponentIds.Contains(view.Instance.Id)), Is.False);
-            Assert.That(visible.Count(view => view.Instance == null && !view.IsFaceUp), Is.EqualTo(12));
+            Assert.That(visible.Count(view => view.Instance == null && !view.IsFaceUp), Is.EqualTo(3));
         }
 
         [UnityTest]
@@ -491,7 +523,7 @@ namespace Okey.Tests.PlayMode
             deck[7] = Tile(7, 13);
             deck[8] = Tile(8, 2, StoneColor.Black);
             var table = new TableSession(new OkeyRules(4, 7, 1, 13, 66, 5, 101, 202, 101, -101, 101, 2, 2), deck, 28, game: new Okey.Core.Games.Okey101Game());
-            var presenter = new TablePresenter(table, Controls, _context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count));
+            var presenter = new TablePresenter(table, Controls, _context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count), _context.Container.Resolve<TablePlayerNames>());
             presenter.Initialize();
             table.MeldRules.TryCreate(deck.Skip(1).Take(3), MeldKind.Run, out var first);
             table.MeldRules.TryCreate(deck.Skip(4).Take(3), MeldKind.Run, out var second);
@@ -601,7 +633,7 @@ namespace Okey.Tests.PlayMode
             var pair = table.Players[0].Hand.Slots.Where(tile => tile != null && !table.MeldRules.IsWild(tile))
                 .GroupBy(tile => tile.Data.Value).First(group => group.Count() == 2).ToArray();
             table.MeldRules.TryCreate(pair, MeldKind.Pair, out var meld);
-            var presenter = new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count));
+            var presenter = new TablePresenter(table,Controls,_context.Container.Resolve<StoneViewFactory>(),new LocalPlayerContext(0,table.Players.Count), _context.Container.Resolve<TablePlayerNames>());
             presenter.Initialize();
             Assert.That(table.TryOpen(0,OpeningMode.Pairs,new[] {meld}),Is.True);
             Assert.That(Controls.Surface.PairsBoard.transform.GetComponentsInChildren<Stone>().Length,Is.EqualTo(2));

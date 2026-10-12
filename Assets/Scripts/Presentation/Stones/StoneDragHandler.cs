@@ -19,6 +19,7 @@ namespace Okey.Presentation.Stones
         private int _pointerId;
         private int _originalOrder;
         private bool _dragging;
+        private bool _lifted;
 
         public void Bind(IStoneDragTarget target)
         {
@@ -42,8 +43,7 @@ namespace Okey.Presentation.Stones
 
             _offset = _stone.transform.position - position;
             _pointerId = eventData.pointerId;
-            _originalOrder = _sortingGroup.sortingOrder;
-            _sortingGroup.sortingOrder = _dragSortingOrder;
+            SetLifted(true);
             _dragging = true;
         }
 
@@ -78,10 +78,18 @@ namespace Okey.Presentation.Stones
             return false;
         }
 
+        public void SetLifted(bool lifted)
+        {
+            if (_lifted == lifted) return;
+            if (lifted) _originalOrder = _sortingGroup.sortingOrder;
+            _sortingGroup.sortingOrder = lifted ? _dragSortingOrder : _originalOrder;
+            _lifted = lifted;
+        }
+
         private void RestoreOrder()
         {
             _dragging = false;
-            _sortingGroup.sortingOrder = _originalOrder;
+            SetLifted(false);
         }
 
         private void Cancel()
