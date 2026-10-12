@@ -1,4 +1,7 @@
+using System;
 using System.Linq;
+using System.Collections.Generic;
+using Okey.Core.Stones;
 using Okey.Core.Rules;
 
 namespace Okey.Core.Tables
@@ -6,7 +9,12 @@ namespace Okey.Core.Tables
     public sealed class MeldPlayerStrategy : IPlayerStrategy
     {
         private readonly MeldPlanner _planner;
-        public MeldPlayerStrategy(MeldPlanner planner) => _planner = planner;
+        private readonly DiscardWeights _weights;
+        public MeldPlayerStrategy(MeldPlanner planner, DiscardWeights weights = null)
+        {
+            _planner = planner;
+            _weights = weights ?? new DiscardWeights();
+        }
 
         public MeldPlan PlanOpening(PlayerObservation observation, out OpeningMode mode)
         {
@@ -31,6 +39,21 @@ namespace Okey.Core.Tables
             return plan;
         }
 
+        private double RetentionValue(StoneInstance stone, PlayerObservation observation, HashSet<int> protectedIds)
+        {
+            var data = observation.MeldRules.Resolve(stone);
+            var value = data.Value * _weights.LowTile;
+            foreach (var other in observation.Hand.Where(other => other.Id != stone.Id && !protectedIds.Contains(other.Id)))
+            {
+                var candidate = observation.MeldRules.Resolve(other);
+                var distance = Math.Abs(candidate.Value - data.Value);
+                if (candidate.Color == data.Color)
+                    value += distance == 0 ? _weights.Duplicate : distance == 1 ? _weights.Adjacent : distance == 2 ? _weights.Gap : 0;
+                else if (distance == 0) value += _weights.Set;
+            }
+            return value;
+        }
+
         public int ChooseDiscard(PlayerObservation observation)
         {
             var plan = PlanOpening(observation, out _);
@@ -39,10 +62,7 @@ namespace Okey.Core.Tables
                     observation.Melds.Any(meld => observation.MeldRules.TryExtend(meld, stone, out _)))
                 .ThenBy(stone => observation.MeldRules.IsWild(stone))
                 .ThenBy(stone => protectedIds.Contains(stone.Id))
-                .ThenBy(stone => observation.Hand.Count(other => other.Id != stone.Id &&
-                    (observation.MeldRules.Resolve(other).Value == observation.MeldRules.Resolve(stone).Value ||
-                    (observation.MeldRules.Resolve(other).Color == observation.MeldRules.Resolve(stone).Color &&
-                    System.Math.Abs(observation.MeldRules.Resolve(other).Value - observation.MeldRules.Resolve(stone).Value) <= 2))))
+                .ThenBy(stone => RetentionValue(stone, observation, protectedIds))
                 .ThenBy(stone => observation.NextPlayerDiscards.Count == 0 ? 0 :
                     observation.NextPlayerDiscards.Reverse().Take(3).Any(discard =>
                         observation.MeldRules.Resolve(discard).Value == observation.MeldRules.Resolve(stone).Value ||

@@ -9,6 +9,7 @@ namespace Okey.Core.Rules
     {
         private readonly OkeyRules _rules;
         public StoneData Joker { get; }
+        private readonly StoneData _indicator;
 
         public MeldRules(OkeyRules rules, StoneInstance indicator)
         {
@@ -16,6 +17,7 @@ namespace Okey.Core.Rules
             if (indicator == null || indicator.Data.Type != StoneType.Regular ||
                 indicator.Data.Color == StoneColor.None || indicator.Data.Value < rules.MinimumValue || indicator.Data.Value > rules.MaximumValue)
                 throw new ArgumentException("A regular indicator within the configured range is required.", nameof(indicator));
+            _indicator = indicator.Data;
             Joker = new StoneData(StoneType.Regular, indicator.Data.Color,
                 indicator.Data.Value == rules.MaximumValue ? rules.MinimumValue : indicator.Data.Value + 1);
         }
@@ -32,13 +34,16 @@ namespace Okey.Core.Rules
             var hand = stones.ToArray();
             if (hand.Any(stone => stone == null) || hand.Select(stone => stone.Id).Distinct().Count() != hand.Length)
                 return false;
-            var fixedTiles = hand.Where(stone => !IsWild(stone)).ToArray();
+            var indicatorPair = kind == MeldKind.Pair && _rules.AllowsIndicatorPairs;
+            bool IsPairIndicator(StoneInstance stone) => indicatorPair && stone.Data.Type == StoneType.Regular &&
+                stone.Data.Color == _indicator.Color && stone.Data.Value == _indicator.Value;
+            var fixedTiles = hand.Where(stone => !IsWild(stone) && !IsPairIndicator(stone)).ToArray();
             if (fixedTiles.Any(stone => Resolve(stone).Color == StoneColor.None || Resolve(stone).Value < _rules.MinimumValue ||
                 Resolve(stone).Value > _rules.MaximumValue)) return false;
             var wild = new Queue<StoneInstance>(hand.Where(IsWild));
             if (fixedTiles.Length == 0 && (kind != MeldKind.Pair || hand.Length != 2))
                 return false;
-            var first = fixedTiles.Length == 0 ? Joker : Resolve(fixedTiles[0]);
+            var first = fixedTiles.Length == 0 ? (hand.Any(IsPairIndicator) ? _indicator : Joker) : Resolve(fixedTiles[0]);
             var placed = new List<MeldTile>();
             if (kind == MeldKind.Pair)
             {

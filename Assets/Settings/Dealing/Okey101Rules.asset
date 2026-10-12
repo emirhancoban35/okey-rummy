@@ -24,6 +24,8 @@ MonoBehaviour:
   _playableDiscardPenalty: 101
   _jokerDiscardPenalty: 101
   _winnerScore: -101
+  _jokerReclaimPenalty: 101
   _pairMultiplier: 2
   _jokerFinishMultiplier: 2
-  _jokerReclaimPenalty: 101
+  _allowIndicatorPairs: 1
+  _botStrategy: {fileID: 11400000, guid: ebb1694d454194e619d4dc1d24233935, type: 2}

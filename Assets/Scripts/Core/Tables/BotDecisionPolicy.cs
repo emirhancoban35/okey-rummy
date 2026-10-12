@@ -49,7 +49,8 @@ namespace Okey.Core.Tables
             if (_random.NextDouble() < preferences.MistakeChance)
                 return PlayerAction.Discard(player.Hand[_random.Next(player.Hand.Count)].Id);
             if (turn.Game.OpeningPolicy.CanLayOff(player.Opening, player.Hand.Count))
-                foreach (var stone in player.Hand)
+                foreach (var stone in player.Hand.Where(stone => !player.MeldRules.IsWild(stone) || player.Hand.Count == 2)
+                    .OrderByDescending(stone => player.MeldRules.Resolve(stone).Value))
                     for (var index = 0; index < player.Melds.Count; index++)
                         if (player.MeldRules.TryExtend(player.Melds[index], stone, out _))
                             return PlayerAction.LayOff(stone.Id, index);

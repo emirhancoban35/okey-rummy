@@ -23,6 +23,9 @@ namespace Okey.Configuration
         [SerializeField, Min(0)] private int _jokerReclaimPenalty = 101;
         [SerializeField, Min(1)] private int _pairMultiplier = 2;
         [SerializeField, Min(1)] private int _jokerFinishMultiplier = 2;
+        [SerializeField] private bool _allowIndicatorPairs;
+        [SerializeField] private BotStrategySettings _botStrategy;
+        protected DiscardWeights DiscardWeights => _botStrategy == null ? new DiscardWeights() : _botStrategy.CreateWeights();
         public string Label => _label;
         public abstract bool AllowsPublicMelds { get; }
         protected abstract bool AllowsHighOne { get; }
@@ -33,6 +36,6 @@ namespace Okey.Configuration
         public OkeyRules CreateRules(int playerCount) => new OkeyRules(playerCount, _handSize, _minimumValue, _maximumValue,
             _seriesThreshold, _pairThreshold, _invalidOpeningPenalty, _unopenedScore, _jokerScore, _winnerScore,
             _playableDiscardPenalty, _pairMultiplier, _jokerFinishMultiplier, AllowsHighOne,
-            new DiscardPenalties(_jokerDiscardPenalty, _playableDiscardPenalty), _jokerReclaimPenalty);
+            new DiscardPenalties(_jokerDiscardPenalty, _playableDiscardPenalty), _jokerReclaimPenalty, _allowIndicatorPairs);
     }
 }

@@ -11,6 +11,6 @@ namespace Okey.Configuration
         public override bool AllowsPublicMelds => true;
         protected override bool AllowsHighOne => false;
         public override ITableGame CreateGame(MeldPlanner planner) => new Okey101Game();
-        public override IPlayerStrategy CreateStrategy(MeldPlanner planner) => new MeldPlayerStrategy(planner);
+        public override IPlayerStrategy CreateStrategy(MeldPlanner planner) => new MeldPlayerStrategy(planner, DiscardWeights);
     }
 }
