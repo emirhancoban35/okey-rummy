@@ -21,7 +21,7 @@ The main menu is the first scene in Build Settings. **SampleScene.unity** can al
 - One human player and three AI opponents, with individual and opposite-seat partnership modes.
 - Runs, sets and pairs, indicator-based real jokers and physical fake jokers.
 - Series and pair opening thresholds, configurable penalties, round scoring and rising openings (*katlamalı*).
-- Two rack rows with adjacent placement, optional gaps and insertion that shifts neighboring tiles.
+- Two rack rows with 16 editable slots each, adjacent placement, optional gaps and insertion that shifts neighboring tiles.
 - Opening totals calculated from the player's actual adjacent rack groups.
 - Drawing from the closed pile, corner discard trays, double-tap discarding and drag-and-drop layoffs.
 - Public melds on separate series and pair boards, with reserved extension slots, compatible drop-target highlights and paging.
