@@ -13,7 +13,7 @@ namespace Okey.Core.Games
         public ClassicOkeyGame(MeldPlanner planner) => _planner = planner ?? throw new ArgumentNullException(nameof(planner));
         public IOpeningPolicy OpeningPolicy { get; } = new ClosedHandOpeningPolicy();
         public bool AllowsPublicMelds => false;
-        public bool RequiresOpenDiscardPickup => false;
+        public bool RequiresDiscardUse => false;
         public bool AllowsEmptyStockPlay => true;
         public bool PenalizesPlayableDiscards => false;
         public bool TryFinish(IReadOnlyList<StoneInstance> hand, IMeldRules meldRules, OkeyRules rules, out MeldPlan plan, out OpeningMode mode)

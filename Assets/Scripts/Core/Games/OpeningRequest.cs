@@ -15,10 +15,12 @@ namespace Okey.Core.Games
         public int PairThreshold { get; }
         public OkeyRules Rules { get; }
         public TableOptions Options { get; }
+        public bool PairBoardOpen { get; }
 
         public OpeningRequest(OpeningMode mode, OpeningMode currentMode, IReadOnlyList<Meld> melds,
-            int handCount, bool hasValidTiles, int seriesThreshold, int pairThreshold, OkeyRules rules, TableOptions options)
+            int handCount, bool hasValidTiles, int seriesThreshold, int pairThreshold, OkeyRules rules, TableOptions options, bool pairBoardOpen = false)
         {
+            PairBoardOpen = pairBoardOpen;
             Mode = mode;
             CurrentMode = currentMode;
             Melds = melds;

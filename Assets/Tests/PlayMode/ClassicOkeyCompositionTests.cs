@@ -17,6 +17,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using Zenject;
 
 namespace Okey.Tests.PlayMode
@@ -165,5 +168,57 @@ namespace Okey.Tests.PlayMode
             Assert.That(_settings.CreateOptions().EscalatingOpenings,Is.True);
             Assert.That(((Button)menu.FindProperty("_escalatingButton").objectReferenceValue).interactable,Is.True);
         }
+        [UnityTest]
+        public IEnumerator PreviousDiscardAcceptsRealPointerInputInClassicOkey()
+        {
+            _settings.NextRules();
+            yield return SceneManager.LoadSceneAsync("SampleScene", LoadSceneMode.Additive);
+            yield return null;
+            yield return SceneManager.UnloadSceneAsync("MainMenu");
+            yield return null;
+            Physics2D.SyncTransforms();
+            var container = Context("SampleScene").Container;
+            container.Resolve<TickableManager>().Remove(container.Resolve<BotTurnController>());
+            container.Resolve<TickableManager>().Remove(container.Resolve<TurnClockController>());
+            var table = container.Resolve<TableSession>();
+            table.TryDiscard(0, table.Players[0].Hand.Slots.First(tile => tile != null).Id);
+            var bots = container.Resolve<BotTurnController>();
+            for (var step = 0; table.ActiveSeat != 0 && step < 100; step++) bots.Act();
+            Assert.That(table.Phase, Is.EqualTo(TurnPhase.AwaitingDraw));
+            var area = container.Resolve<TableView>().Surface.DiscardAreas[3];
+            var camera = container.Resolve<Camera>();
+            var point = (Vector2)camera.WorldToScreenPoint(area.StoneRoot.position);
+            var hits = new System.Collections.Generic.List<RaycastResult>();
+            EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = point }, hits);
+            Assert.That(hits.Count, Is.GreaterThan(0));
+            Assert.That(ExecuteEvents.GetEventHandler<IPointerClickHandler>(hits[0].gameObject), Is.EqualTo(area.gameObject),
+                string.Join(" / ", hits.Select(hit => hit.gameObject.name)));
+            var clicks = 0; area.Clicked += _ => clicks++;
+            var previous = table.Players[3].Discards.Last(); var stock = table.RemainingCount;
+            var originalMouse = Mouse.current;
+            var background = InputSystem.settings.backgroundBehavior;
+            var editor = InputSystem.settings.editorInputBehaviorInPlayMode;
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+            InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+            var mouse = InputSystem.AddDevice<Mouse>();
+            try
+            {
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = point }); InputSystem.Update(); yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = point }.WithButton(MouseButton.Left)); InputSystem.Update(); yield return null;
+                InputSystem.QueueStateEvent(mouse, new MouseState { position = point }); InputSystem.Update(); yield return null;
+                Assert.That(clicks, Is.EqualTo(1), "The discard tray did not receive the mouse click.");
+                Assert.That(table.Players[0].Hand.FindSlot(previous.Id), Is.GreaterThanOrEqualTo(0));
+                Assert.That(table.Phase, Is.EqualTo(TurnPhase.AwaitingDiscard));
+                Assert.That(table.RemainingCount, Is.EqualTo(stock));
+                Assert.That(table.PendingDiscard, Is.Null);
+            }
+            finally
+            {
+                InputSystem.RemoveDevice(mouse); InputSystem.settings.backgroundBehavior = background;
+                InputSystem.settings.editorInputBehaviorInPlayMode = editor;
+                if (originalMouse != null && originalMouse != mouse) originalMouse.MakeCurrent();
+            }
+        }
+
     }
 }

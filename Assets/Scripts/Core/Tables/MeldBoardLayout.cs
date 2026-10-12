@@ -32,7 +32,7 @@ namespace Okey.Core.Tables
                 throw new ArgumentOutOfRangeException(nameof(tileIndex));
             var tile = meld.Tiles[tileIndex];
             var column = meld.Kind == MeldKind.Run ? tile.Value - _minimumValue :
-                meld.Kind == MeldKind.Set ? (int)tile.Color : tileIndex;
+                tileIndex;
             if (column < 0 || column >= SeriesColumns) throw new ArgumentOutOfRangeException(nameof(meld));
             return new MeldBoardCell(groupIndex / Capacity, groupIndex / _rows % _lanes, groupIndex % _rows, column);
         }

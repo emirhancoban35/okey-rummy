@@ -29,9 +29,12 @@ namespace Okey.Tests.EditMode
         [TestCase(5, 29)]
         public void JokerAndPlayableDiscardPenaltiesAreConfiguredIndependently(int tile, int expected)
         {
-            var table = OpenTable(new DiscardPenalties(17, 29));
+            TableActionNotice notice = null;
+            var table = OpenTable(new DiscardPenalties(17, 29), value => notice = value);
             Assert.That(table.TryDiscard(0, tile), Is.True);
             Assert.That(table.Players[0].Penalty, Is.EqualTo(expected));
+            Assert.That(notice.PenaltyKind, Is.EqualTo(tile == 4 ? TablePenaltyKind.JokerDiscard : TablePenaltyKind.PlayableDiscard));
+            Assert.That(notice.PenaltySeat, Is.Zero);
         }
         [Test]
         public void ZeroPenaltiesDisableBothDiscardCharges()

@@ -36,6 +36,11 @@ namespace Okey.Presentation.Tables
         public MeldBoardCell Locate(Meld meld, int groupIndex, int tileIndex) => _layout.Locate(meld, groupIndex, tileIndex);
         public Vector3 GetPosition(MeldBoardCell cell) => new Vector3(
             cell.Lane * _size.x / _lanes + (cell.Column + .5f) * CellSize.x, -(cell.Row + .5f) * CellSize.y, 0);
+        public bool ContainsArea(Vector3 worldPosition)
+        {
+            var point = transform.InverseTransformPoint(worldPosition);
+            return point.x >= 0 && point.x <= _size.x && point.y <= 0 && point.y >= -_size.y;
+        }
         public bool ContainsTarget(Vector3 worldPosition, MeldBoardCell cell)
         {
             if (cell.Page != Page) return false;

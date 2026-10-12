@@ -10,7 +10,7 @@ namespace Okey.Core.Games
         IOpeningPolicy OpeningPolicy { get; }
         RackActionState PlanRackActions(RackActionRequest request);
         bool AllowsPublicMelds { get; }
-        bool RequiresOpenDiscardPickup { get; }
+        bool RequiresDiscardUse { get; }
         bool AllowsEmptyStockPlay { get; }
         bool PenalizesPlayableDiscards { get; }
         bool TryFinish(IReadOnlyList<StoneInstance> hand, IMeldRules meldRules, OkeyRules rules, out MeldPlan plan, out OpeningMode mode);

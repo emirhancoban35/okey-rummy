@@ -86,6 +86,21 @@ namespace Okey.Core.Rules
             return true;
         }
 
+        public bool TryReplaceJoker(Meld meld, StoneInstance replacement, out Meld replaced, out StoneInstance joker)
+        {
+            replaced = null;
+            joker = null;
+            if (meld == null || replacement == null || IsWild(replacement) ||
+                meld.Tiles.Any(tile => tile.Stone.Id == replacement.Id)) return false;
+            var data = Resolve(replacement);
+            var target = meld.Tiles.FirstOrDefault(tile => IsWild(tile.Stone) && tile.Color == data.Color && tile.Value == data.Value);
+            if (target == null) return false;
+            joker = target.Stone;
+            replaced = new Meld(meld.Kind, meld.Tiles.Select(tile => tile == target
+                ? new MeldTile(replacement, tile.Color, tile.Value) : tile));
+            return true;
+        }
+
         public bool TryExtend(Meld meld, StoneInstance stone, out Meld extended)
         {
             extended = null;

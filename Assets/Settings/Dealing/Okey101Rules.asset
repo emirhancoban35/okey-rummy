@@ -26,3 +26,4 @@ MonoBehaviour:
   _winnerScore: -101
   _pairMultiplier: 2
   _jokerFinishMultiplier: 2
+  _jokerReclaimPenalty: 101

@@ -22,6 +22,8 @@ namespace Okey.Configuration
         [SerializeField, Min(0)] private int _botLateHandMargin = 2;
 
         [SerializeField, Min(1)] private int _matchRounds = 5;
+        [SerializeField] private bool _allowJokerReclaim = true;
+        public bool AllowJokerReclaim => _allowJokerReclaim;
         public int MatchRounds => _matchRounds;
         public int PlayerCount => _playerCount;
         public TableRuleProfile[] RuleProfiles => (TableRuleProfile[])_ruleProfiles.Clone();

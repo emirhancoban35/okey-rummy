@@ -65,3 +65,11 @@ MonoBehaviour:
   _menuFast: "FAST"
   _menuFixed: "FIXED"
   _menuRising: "RISING"
+  _discardTrialStatus: "USE BORROWED TILE"
+  _discardTrialHelp: "Use this tile to open or meld.\nClick the pile to return and draw."
+  _playableDiscardNoticeFormat: "{0}\nPlayable discard · +{1}"
+  _jokerDiscardNoticeFormat: "{0}\nJoker discard · +{1}"
+  _jokerReclaimedNoticeFormat: "{2} reclaimed a joker\n{0} · +{1}"
+  _jokerReclaimOn: "RECLAIM ON"
+  _jokerReclaimOff: "RECLAIM OFF"
+  _previousDiscardHelp: Take from the highlighted tray before drawing.

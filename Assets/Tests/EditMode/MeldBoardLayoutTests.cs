@@ -59,12 +59,13 @@ namespace Okey.Tests.EditMode
             Assert.That(cells.All(cell=>cell.Page<2 && cell.Lane<2 && cell.Row<8 && cell.Column<13),Is.True);
         }
         [Test]
-        public void SetsKeepTheMissingColorSlotAvailableWithoutMovingExistingTiles()
+        public void SetsStayContiguousAndAppendTheirFourthTileWithoutMovingExistingTiles()
         {
             var stones=new[]{Tile(0,6),Tile(1,6,StoneColor.Yellow),Tile(2,6,StoneColor.Black)};
             Validation.TryCreate(stones,MeldKind.Set,out var meld);var layout=new MeldBoardLayout(8,2,1,13);
             Validation.TryExtend(meld,Tile(3,6,StoneColor.Blue),out var extended);
-            Assert.That(layout.Locate(extended,0,3).Column,Is.EqualTo(1));
+            Assert.That(layout.Locate(extended,0,3).Column,Is.EqualTo(3));
+            Assert.That(Enumerable.Range(0,3).Select(index => layout.Locate(meld,0,index).Column), Is.EqualTo(new[] { 0,1,2 }));
             Assert.That(layout.Locate(extended,0,1).Column,Is.EqualTo(layout.Locate(meld,0,1).Column));
         }
     }

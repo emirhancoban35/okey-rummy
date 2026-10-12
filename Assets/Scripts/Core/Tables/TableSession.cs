@@ -28,6 +28,10 @@ namespace Okey.Core.Tables
         public StoneInstance Indicator { get; }
         public IReadOnlyList<TablePlayer> Players { get; }
         public IReadOnlyList<Meld> Melds { get; }
+        private readonly List<int> _meldOwners = new List<int>();
+        public IReadOnlyList<int> MeldOwners { get; }
+        public StoneInstance PendingDiscard { get; private set; }
+        public bool PairBoardOpen => Players.Any(player => player.Opening == OpeningMode.Pairs);
         public MeldPlan WinningHand { get; private set; }
         public int ActiveSeat { get; private set; }
         public int Winner { get; private set; } = -1;
@@ -67,6 +71,7 @@ namespace Okey.Core.Tables
                 players[seat] = new TablePlayer(new RackArrangement(_pile.Draw(rules.HandSize + (seat == startingSeat ? 1 : 0)), capacity));
             Players = Array.AsReadOnly(players);
             Melds = _melds.AsReadOnly();
+            MeldOwners = _meldOwners.AsReadOnly();
         }
 
         private bool CanReceiveTile(int seat) => seat == ActiveSeat && Phase == TurnPhase.AwaitingDraw &&
@@ -75,23 +80,68 @@ namespace Okey.Core.Tables
         public bool CanEndDrawnRound(int seat) => CanReceiveTile(seat) && RemainingCount == 0 && Game.AllowsEmptyStockPlay;
 
         public bool CanTakeDiscard(int seat) => Options.AllowDiscardPickup && CanReceiveTile(seat) &&
-            (!Game.RequiresOpenDiscardPickup || Players[seat].Opening != OpeningMode.Closed) && Players[(seat + Players.Count - 1) % Players.Count].Discards.Count > 0;
+            Players[(seat + Players.Count - 1) % Players.Count].Discards.Count > 0;
 
         public bool TryTakeDiscard(int seat, int meldIndex = -1)
         {
             if (!CanTakeDiscard(seat)) return false;
             var previous = Players[(seat + Players.Count - 1) % Players.Count];
             var stone = previous.Discards[previous.Discards.Count - 1];
-            if (Game.RequiresOpenDiscardPickup)
+            if (meldIndex >= 0)
             {
-                if (meldIndex < 0 || meldIndex >= _melds.Count || !MeldRules.TryExtend(_melds[meldIndex], stone, out var extended)) return false;
+                if (!Game.AllowsPublicMelds || Players[seat].Opening == OpeningMode.Closed || meldIndex >= _melds.Count ||
+                    !MeldRules.TryExtend(_melds[meldIndex], stone, out var extended)) return false;
                 _melds[meldIndex] = extended;
             }
-            else Players[seat].OwnedHand.Add(stone);
+            else
+            {
+                Players[seat].OwnedHand.Add(stone);
+                if (Game.RequiresDiscardUse) PendingDiscard = stone;
+            }
             previous.TakeDiscard();
             Phase = TurnPhase.AwaitingDiscard;
             Changed?.Invoke();
             ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.TakeDiscard, seat));
+            return true;
+        }
+
+        public bool TryReturnDiscard(int seat)
+        {
+            if (seat != ActiveSeat || Phase != TurnPhase.AwaitingDiscard || PendingDiscard == null) return false;
+            var stone = Players[seat].OwnedHand.Remove(PendingDiscard.Id);
+            Players[(seat + Players.Count - 1) % Players.Count].Discard(stone);
+            PendingDiscard = null;
+            Phase = TurnPhase.AwaitingDraw;
+            Changed?.Invoke();
+            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.ReturnDiscard, seat));
+            return true;
+        }
+
+        public bool CanReclaimJoker(int seat, int stoneId, int meldIndex, out Meld replaced, out StoneInstance joker)
+        {
+            replaced = null;
+            joker = null;
+            if (!Options.AllowJokerReclaim || !Game.AllowsPublicMelds || seat != ActiveSeat ||
+                Phase != TurnPhase.AwaitingDiscard || Players[seat].Opening == OpeningMode.Closed ||
+                meldIndex < 0 || meldIndex >= _melds.Count || PendingDiscard != null && PendingDiscard.Id != stoneId) return false;
+            var slot = Players[seat].Hand.FindSlot(stoneId);
+            return slot >= 0 && MeldRules.TryReplaceJoker(_melds[meldIndex], Players[seat].Hand.Slots[slot], out replaced, out joker);
+        }
+
+        public bool TryReclaimJoker(int seat, int stoneId, int meldIndex)
+        {
+            if (!CanReclaimJoker(seat, stoneId, meldIndex, out var replaced, out var joker)) return false;
+            var slot = Players[seat].Hand.FindSlot(stoneId);
+            Players[seat].OwnedHand.Remove(stoneId);
+            Players[seat].OwnedHand.Add(joker);
+            Players[seat].Layout.Move(joker.Id, slot);
+            _melds[meldIndex] = replaced;
+            PendingDiscard = null;
+            var owner = _meldOwners[meldIndex];
+            Players[owner].Penalty += Rules.JokerReclaimPenalty;
+            Changed?.Invoke();
+            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.ReclaimJoker, seat,
+                penalty: Rules.JokerReclaimPenalty, penaltyKind: TablePenaltyKind.JokerReclaimed, penaltySeat: owner));
             return true;
         }
 
@@ -136,13 +186,14 @@ namespace Okey.Core.Tables
                 validTiles &= canonical.Tiles.All(tile => ids.Add(tile.Stone.Id));
                 validated.Add(canonical);
             }
+            if (PendingDiscard != null && !ids.Contains(PendingDiscard.Id)) return false;
             var decision = Game.OpeningPolicy.Evaluate(new OpeningRequest(mode, player.Opening, validated,
-                player.Hand.Count, validTiles, SeriesThreshold, PairThreshold, Rules, Options));
+                player.Hand.Count, validTiles, SeriesThreshold, PairThreshold, Rules, Options, PairBoardOpen));
             if (!validTiles || !decision.Accepted)
             {
                 player.Penalty += decision.Penalty;
                 Changed?.Invoke();
-                ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Open, seat, penalty: decision.Penalty));
+                ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Open, seat, penalty: decision.Penalty, penaltyKind: TablePenaltyKind.InvalidOpening));
                 return false;
             }
             SeriesThreshold = decision.SeriesThreshold;
@@ -150,26 +201,35 @@ namespace Okey.Core.Tables
             var tiles = validated.SelectMany(meld => meld.Tiles).ToArray();
             foreach (var tile in tiles) player.OwnedHand.Remove(tile.Stone.Id);
             _melds.AddRange(validated);
+            _meldOwners.AddRange(Enumerable.Repeat(seat, validated.Count));
+            PendingDiscard = null;
             var initialOpening = player.Opening == OpeningMode.Closed;
             var openingValue = mode == OpeningMode.Pairs ? validated.Count : validated.Sum(meld => meld.Points);
             if (initialOpening) player.OpeningValue = openingValue;
-            player.Opening = mode;
+            if (initialOpening) player.Opening = mode;
             OpeningRevision++;
             Changed?.Invoke();
             ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Open, seat, openingValue, initialOpening: initialOpening));
             return true;
         }
 
-        public bool TryLayOff(int seat, int stoneId, int meldIndex)
+        public bool CanLayOff(int seat, int stoneId, int meldIndex, out Meld extended)
         {
-            if (!Game.AllowsPublicMelds || seat != ActiveSeat || Phase != TurnPhase.AwaitingDiscard || meldIndex < 0 || meldIndex >= _melds.Count)
-                return false;
+            extended = null;
+            if (!Game.AllowsPublicMelds || seat != ActiveSeat || Phase != TurnPhase.AwaitingDiscard ||
+                meldIndex < 0 || meldIndex >= _melds.Count || PendingDiscard != null && PendingDiscard.Id != stoneId) return false;
             var player = Players[seat];
             var slot = player.Hand.FindSlot(stoneId);
-            if (!Game.OpeningPolicy.CanLayOff(player.Opening, player.Hand.Count) || slot < 0 ||
-                !MeldRules.TryExtend(_melds[meldIndex], player.Hand.Slots[slot], out var extended)) return false;
-            player.OwnedHand.Remove(stoneId);
+            return Game.OpeningPolicy.CanLayOff(player.Opening, player.Hand.Count) && slot >= 0 &&
+                MeldRules.TryExtend(_melds[meldIndex], player.Hand.Slots[slot], out extended);
+        }
+
+        public bool TryLayOff(int seat, int stoneId, int meldIndex)
+        {
+            if (!CanLayOff(seat, stoneId, meldIndex, out var extended)) return false;
+            Players[seat].OwnedHand.Remove(stoneId);
             _melds[meldIndex] = extended;
+            PendingDiscard = null;
             Changed?.Invoke();
             ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.LayOff, seat));
             return true;
@@ -194,7 +254,7 @@ namespace Okey.Core.Tables
         {
             if (seat != ActiveSeat || Phase != TurnPhase.AwaitingDiscard) return false;
             var player = Players[seat];
-            if (player.Hand.FindSlot(stoneId) < 0) return false;
+            if (PendingDiscard != null || player.Hand.FindSlot(stoneId) < 0) return false;
             var stone = player.OwnedHand.Remove(stoneId);
             player.Discard(stone);
             var discardPenalty = DiscardPenaltyFor(player, stone);
@@ -214,7 +274,8 @@ namespace Okey.Core.Tables
             }
             if (Phase == TurnPhase.Finished) ApplyScores(Winner >= 0 && MeldRules.IsWild(stone));
             Changed?.Invoke();
-            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Discard, seat, penalty: discardPenalty));
+            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Discard, seat, penalty: discardPenalty,
+                penaltyKind: discardPenalty == 0 ? TablePenaltyKind.None : MeldRules.IsWild(stone) ? TablePenaltyKind.JokerDiscard : TablePenaltyKind.PlayableDiscard));
             return true;
         }
 
@@ -226,7 +287,7 @@ namespace Okey.Core.Tables
             var observation = new PlayerObservation(player.Hand.Slots.Where(stone => stone != null), _melds,
                 player.Opening, Rules, MeldRules, next.Discards, SeriesThreshold, PairThreshold);
             return new PlayerTurnObservation(observation, Phase, Game, Options,
-                CanTakeDiscard(seat) ? previous.Discards[previous.Discards.Count - 1] : null, RemainingCount, Players.Count);
+                CanTakeDiscard(seat) ? previous.Discards[previous.Discards.Count - 1] : null, RemainingCount, Players.Count, PendingDiscard?.Id ?? -1, PairBoardOpen);
         }
 
         public bool TryApply(int seat, PlayerAction action)
@@ -234,6 +295,8 @@ namespace Okey.Core.Tables
             if (action == null) throw new ArgumentNullException(nameof(action));
             switch (action.Kind)
             {
+                case PlayerActionKind.ReturnDiscard: return TryReturnDiscard(seat);
+                case PlayerActionKind.ReclaimJoker: return TryReclaimJoker(seat, action.StoneId, action.MeldIndex);
                 case PlayerActionKind.Draw: return TryDraw(seat);
                 case PlayerActionKind.TakeDiscard: return TryTakeDiscard(seat, action.MeldIndex);
                 case PlayerActionKind.Open: return TryOpen(seat, action.Opening, action.Melds);

@@ -20,6 +20,7 @@ namespace Okey.Configuration
         [SerializeField, Min(0)] private int _playableDiscardPenalty;
         [SerializeField, Min(0)] private int _jokerDiscardPenalty;
         [SerializeField] private int _winnerScore;
+        [SerializeField, Min(0)] private int _jokerReclaimPenalty = 101;
         [SerializeField, Min(1)] private int _pairMultiplier = 2;
         [SerializeField, Min(1)] private int _jokerFinishMultiplier = 2;
         public string Label => _label;
@@ -32,6 +33,6 @@ namespace Okey.Configuration
         public OkeyRules CreateRules(int playerCount) => new OkeyRules(playerCount, _handSize, _minimumValue, _maximumValue,
             _seriesThreshold, _pairThreshold, _invalidOpeningPenalty, _unopenedScore, _jokerScore, _winnerScore,
             _playableDiscardPenalty, _pairMultiplier, _jokerFinishMultiplier, AllowsHighOne,
-            new DiscardPenalties(_jokerDiscardPenalty, _playableDiscardPenalty));
+            new DiscardPenalties(_jokerDiscardPenalty, _playableDiscardPenalty), _jokerReclaimPenalty);
     }
 }

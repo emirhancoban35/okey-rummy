@@ -43,16 +43,22 @@ namespace Okey.Composition
         }
         private void Action(TableActionNotice notice)
         {
-            if (notice.Penalty > 0)
+            if (notice.PenaltyKind != TablePenaltyKind.None)
             {
                 _view.Audio.Play(TableSoundCue.Penalty);
-                _view.Feedback.Show(string.Format(_view.Texts.PenaltyNoticeFormat, _names.ForSeat(notice.Seat), notice.Penalty), false);
+                var format = notice.PenaltyKind == TablePenaltyKind.PlayableDiscard ? _view.Texts.PlayableDiscardNoticeFormat :
+                    notice.PenaltyKind == TablePenaltyKind.JokerDiscard ? _view.Texts.JokerDiscardNoticeFormat :
+                    notice.PenaltyKind == TablePenaltyKind.JokerReclaimed ? _view.Texts.JokerReclaimedNoticeFormat : _view.Texts.PenaltyNoticeFormat;
+                _view.Feedback.Show(string.Format(format, _names.ForSeat(notice.PenaltySeat), notice.Penalty, _names.ForSeat(notice.Seat)), false);
                 return;
             }
             switch (notice.Kind)
             {
-                case PlayerActionKind.Draw:
-                case PlayerActionKind.TakeDiscard: _view.Audio.Play(TableSoundCue.Draw); break;
+                case PlayerActionKind.TakeDiscard:
+                    if (notice.Seat == _local.Seat && _table.PendingDiscard != null) _view.Feedback.Show(_view.Texts.DiscardTrialHelp, true);
+                    _view.Audio.Play(TableSoundCue.Draw);
+                    break;
+                case PlayerActionKind.Draw: _view.Audio.Play(TableSoundCue.Draw); break;
                 case PlayerActionKind.Discard: _view.Audio.Play(TableSoundCue.Discard); break;
                 case PlayerActionKind.LayOff: _view.Audio.Play(TableSoundCue.LayOff); break;
                 case PlayerActionKind.Open:

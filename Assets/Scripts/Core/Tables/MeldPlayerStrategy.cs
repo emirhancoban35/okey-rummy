@@ -21,7 +21,14 @@ namespace Okey.Core.Tables
                 }
                 mode = OpeningMode.Series;
             }
-            return _planner.Find(observation.Hand, observation.MeldRules, observation.Rules, mode);
+            var plan = _planner.Find(observation.Hand, observation.MeldRules, observation.Rules, mode);
+            if (mode == OpeningMode.Series && observation.Opening == OpeningMode.Series && plan.TileCount == 0 &&
+                observation.Melds.Any(meld => meld.Kind == MeldKind.Pair))
+            {
+                mode = OpeningMode.Pairs;
+                return _planner.Find(observation.Hand, observation.MeldRules, observation.Rules, mode);
+            }
+            return plan;
         }
 
         public int ChooseDiscard(PlayerObservation observation)

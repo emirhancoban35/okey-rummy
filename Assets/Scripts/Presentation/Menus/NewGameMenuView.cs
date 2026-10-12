@@ -21,6 +21,9 @@ namespace Okey.Presentation.Menus
         [SerializeField] private TMP_Text _escalatingText;
         [SerializeField] private CanvasGroup _card;
         [SerializeField, Min(0)] private float _fadeDuration = .25f;
+        [SerializeField] private Button _jokerReclaimButton;
+        [SerializeField] private TMP_Text _jokerReclaimText;
+        public event Action JokerReclaimRequested;
         private Tween _fade;
         public event Action RulesRequested;
         public event Action PlayRequested;
@@ -35,6 +38,12 @@ namespace Okey.Presentation.Menus
             _escalatingText.text = openings;
             _escalatingButton.interactable = canChooseOpenings;
         }
+        public void RenderJokerReclaim(string label, bool available)
+        {
+            _jokerReclaimText.text = label;
+            _jokerReclaimButton.interactable = available;
+        }
+        private void ToggleJokerReclaim() => JokerReclaimRequested?.Invoke();
         private void ToggleRules() => RulesRequested?.Invoke();
         private void Play() => PlayRequested?.Invoke();
         private void TogglePartnership() => PartnershipRequested?.Invoke();
@@ -42,6 +51,7 @@ namespace Okey.Presentation.Menus
         private void ToggleEscalating() => EscalatingRequested?.Invoke();
         private void OnEnable()
         {
+            _jokerReclaimButton.onClick.AddListener(ToggleJokerReclaim);
             _ruleButton.onClick.AddListener(ToggleRules);
             _playButton.onClick.AddListener(Play);
             _partnershipButton.onClick.AddListener(TogglePartnership);
@@ -53,6 +63,7 @@ namespace Okey.Presentation.Menus
         private void OnDisable()
         {
             _fade?.Kill();
+            _jokerReclaimButton.onClick.RemoveListener(ToggleJokerReclaim);
             _ruleButton.onClick.RemoveListener(ToggleRules);
             _playButton.onClick.RemoveListener(Play);
             _partnershipButton.onClick.RemoveListener(TogglePartnership);

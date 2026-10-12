@@ -106,5 +106,19 @@ namespace Okey.Tests.PlayMode
             Assert.That(_settings.Partnerships, Is.EqualTo(partners));
             Assert.That(_settings.EscalatingOpenings, Is.EqualTo(escalating));
         }
+        [Test]
+        public void JokerReclaimChoiceUpdatesTheNextTableAndIsUnavailableInClassicOkey()
+        {
+            var original = _settings.AllowJokerReclaim;
+            Button("_jokerReclaimButton").onClick.Invoke();
+            Assert.That(_settings.AllowJokerReclaim, Is.EqualTo(!original));
+            Assert.That(_settings.CreateOptions().AllowJokerReclaim, Is.EqualTo(!original));
+            Button("_ruleButton").onClick.Invoke();
+            Assert.That(Button("_jokerReclaimButton").interactable, Is.False);
+            Assert.That(_settings.CreateOptions().AllowJokerReclaim, Is.False);
+            Button("_ruleButton").onClick.Invoke();
+            Assert.That(Button("_jokerReclaimButton").interactable, Is.True);
+        }
+
     }
 }

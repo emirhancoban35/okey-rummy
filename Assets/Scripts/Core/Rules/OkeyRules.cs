@@ -15,6 +15,7 @@ namespace Okey.Core.Rules
         public int UnopenedScore { get; }
         public int JokerScore { get; }
         public int WinnerScore { get; }
+        public int JokerReclaimPenalty { get; }
         public int DiscardPenalty { get; }
         public DiscardPenalties DiscardPenalties { get; }
         public int PairMultiplier { get; }
@@ -22,11 +23,11 @@ namespace Okey.Core.Rules
 
         public OkeyRules(int playerCount, int handSize, int minimumValue, int maximumValue,
             int seriesThreshold, int pairThreshold, int invalidOpeningPenalty, int unopenedScore,
-            int jokerScore, int winnerScore, int discardPenalty, int pairMultiplier, int jokerFinishMultiplier, bool allowsHighOne = false, DiscardPenalties discardPenalties = null)
+            int jokerScore, int winnerScore, int discardPenalty, int pairMultiplier, int jokerFinishMultiplier, bool allowsHighOne = false, DiscardPenalties discardPenalties = null, int jokerReclaimPenalty = 101)
         {
             if (playerCount < 2 || playerCount > 4 || handSize < 1 || minimumValue < 1 ||
                 maximumValue < minimumValue || seriesThreshold < 1 || pairThreshold < 1 ||
-                invalidOpeningPenalty < 0 || unopenedScore < 0 || jokerScore < 0 || discardPenalty < 0 || pairMultiplier < 1 || jokerFinishMultiplier < 1)
+                jokerReclaimPenalty < 0 || invalidOpeningPenalty < 0 || unopenedScore < 0 || jokerScore < 0 || discardPenalty < 0 || pairMultiplier < 1 || jokerFinishMultiplier < 1)
                 throw new ArgumentOutOfRangeException(nameof(playerCount), "Invalid table rules.");
             AllowsHighOne = allowsHighOne;
             PlayerCount = playerCount;
@@ -39,6 +40,7 @@ namespace Okey.Core.Rules
             UnopenedScore = unopenedScore;
             JokerScore = jokerScore;
             WinnerScore = winnerScore;
+            JokerReclaimPenalty = jokerReclaimPenalty;
             DiscardPenalty = discardPenalty;
             DiscardPenalties = discardPenalties ?? new DiscardPenalties(discardPenalty, discardPenalty);
             PairMultiplier = pairMultiplier;

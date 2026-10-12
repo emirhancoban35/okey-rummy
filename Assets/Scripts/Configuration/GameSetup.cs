@@ -16,6 +16,7 @@ namespace Okey.Configuration
         private readonly bool _allowDiscardPickup;
         private readonly double _turnSeconds;
         private readonly int _openingIncrement;
+        public bool AllowJokerReclaim { get; private set; }
         public int MatchRounds { get; }
         public int PlayerCount { get; }
         public int RuleIndex { get; private set; }
@@ -35,6 +36,7 @@ namespace Okey.Configuration
                 throw new ArgumentOutOfRangeException(nameof(defaults), "The selected rule profile does not exist.");
             PlayerCount = defaults.PlayerCount;
             MatchRounds = defaults.MatchRounds;
+            AllowJokerReclaim = defaults.AllowJokerReclaim;
             Partnerships = defaults.Partnerships;
             HumanlikeBots = defaults.HumanlikeBots;
             EscalatingOpenings = defaults.EscalatingOpenings;
@@ -50,6 +52,7 @@ namespace Okey.Configuration
             _openingIncrement = defaults.OpeningIncrement;
         }
 
+        public void ToggleJokerReclaim() => AllowJokerReclaim = !AllowJokerReclaim;
         public void NextRules() => RuleIndex = (RuleIndex + 1) % _profiles.Length;
         public void TogglePartnerships() { if (PlayerCount == 4) Partnerships = !Partnerships; }
         public void ToggleBotMode() => HumanlikeBots = !HumanlikeBots;
@@ -57,7 +60,8 @@ namespace Okey.Configuration
         public void ToggleEscalatingOpenings() => EscalatingOpenings = !EscalatingOpenings;
         public OkeyRules CreateRules() => ActiveProfile.CreateRules(PlayerCount);
         public TableOptions CreateOptions() => new TableOptions(Partnerships, _allowDiscardPickup, _turnSeconds,
-            EscalatingOpenings && ActiveProfile.AllowsPublicMelds, _openingIncrement);
+            EscalatingOpenings && ActiveProfile.AllowsPublicMelds, _openingIncrement,
+            AllowJokerReclaim && ActiveProfile.AllowsPublicMelds);
         public BotPreferences CreateBotPreferences() => new BotPreferences(HumanlikeBots, _mistakeChance,
             _openingPatience, _thinkingMinimum, _thinkingMaximum, _fastDelay, _lateHandMargin);
     }

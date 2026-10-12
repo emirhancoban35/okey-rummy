@@ -58,6 +58,7 @@ namespace Okey.Composition
             {
                 _interaction.CancelActiveDrag();
                 var seat = _table.ActiveSeat;
+                _table.TryReturnDiscard(seat);
                 if (_table.Phase == TurnPhase.AwaitingDraw) _table.TryDraw(seat);
                 if (_table.Phase == TurnPhase.AwaitingDiscard)
                     _table.TryDiscard(seat, _timeout.ChooseDiscard(new PlayerObservation(

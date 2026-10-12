@@ -11,12 +11,14 @@ namespace Okey.Core.Games
         public IMeldRules MeldRules { get; }
         public OkeyRules Rules { get; }
         public OpeningMode Opening { get; }
+        public bool PairBoardOpen { get; }
         public int SeriesThreshold { get; }
         public int PairThreshold { get; }
 
         public RackActionRequest(IReadOnlyList<StoneInstance> slots, int rowCapacity, IMeldRules meldRules,
-            OkeyRules rules, OpeningMode opening, int seriesThreshold, int pairThreshold)
+            OkeyRules rules, OpeningMode opening, int seriesThreshold, int pairThreshold, bool pairBoardOpen = false)
         {
+            PairBoardOpen = pairBoardOpen;
             Slots = slots;
             RowCapacity = rowCapacity;
             MeldRules = meldRules;

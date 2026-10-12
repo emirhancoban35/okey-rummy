@@ -22,6 +22,8 @@ namespace Okey.Core.Tables
             Melds = System.Array.AsReadOnly((melds ?? System.Array.Empty<Meld>()).ToArray());
         }
 
+        public static PlayerAction ReturnDiscard() => new PlayerAction(PlayerActionKind.ReturnDiscard);
+        public static PlayerAction ReclaimJoker(int stoneId, int meldIndex) => new PlayerAction(PlayerActionKind.ReclaimJoker, stoneId, meldIndex);
         public static PlayerAction Draw() => new PlayerAction(PlayerActionKind.Draw);
         public static PlayerAction TakeDiscard(int meldIndex = -1) => new PlayerAction(PlayerActionKind.TakeDiscard, meldIndex: meldIndex);
         public static PlayerAction Open(OpeningMode mode, IReadOnlyList<Meld> melds) => new PlayerAction(PlayerActionKind.Open, opening: mode, melds: melds);

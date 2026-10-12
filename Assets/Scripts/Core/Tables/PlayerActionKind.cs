@@ -1,4 +1,4 @@
 namespace Okey.Core.Tables
 {
-    public enum PlayerActionKind { Draw, TakeDiscard, Open, LayOff, Discard }
+    public enum PlayerActionKind { Draw, TakeDiscard, Open, LayOff, Discard, ReturnDiscard, ReclaimJoker }
 }

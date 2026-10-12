@@ -60,7 +60,7 @@ namespace Okey.Composition
             _rackGroups = _groups.FindGroups(hand, _rack.RowCapacity, _table.MeldRules);
             var player = _table.Players[_local.Seat];
             _actions = _table.Game.PlanRackActions(new RackActionRequest(hand, _rack.RowCapacity,
-                _table.MeldRules, _table.Rules, player.Opening, _table.SeriesThreshold, _table.PairThreshold));
+                _table.MeldRules, _table.Rules, player.Opening, _table.SeriesThreshold, _table.PairThreshold, _table.PairBoardOpen));
         }
         public void Refresh()
         {
@@ -72,12 +72,13 @@ namespace Okey.Composition
             var publicMelds = _table.Game.AllowsPublicMelds;
             var finished = _table.Phase == TurnPhase.Finished;
             var canAct = !_interaction.IsDragging && _table.ActiveSeat == _local.Seat && _table.Phase == TurnPhase.AwaitingDiscard;
-            var canDraw = !_interaction.IsDragging && (_table.CanDraw(_local.Seat) || _table.CanEndDrawnRound(_local.Seat));
+            var hasBorrowedTile = _table.ActiveSeat == _local.Seat && _table.PendingDiscard != null;
+            var canDraw = !_interaction.IsDragging && (hasBorrowedTile && _table.RemainingCount > 0 || _table.CanDraw(_local.Seat) || _table.CanEndDrawnRound(_local.Seat));
             var penalty = finished ? local.Score : local.Penalty;
             var text = _view.Texts;
             _view.Surface.Render(publicMelds, _table.Melds.Count == 0, !publicMelds && _table.Winner < 0,
-                canDraw, _table.ActiveSeat == _local.Seat && _table.Phase == TurnPhase.AwaitingDiscard,
-                !_interaction.IsDragging && _table.CanTakeDiscard(_local.Seat), _table.Players.Count);
+                canDraw, _table.ActiveSeat == _local.Seat && _table.Phase == TurnPhase.AwaitingDiscard && _table.PendingDiscard == null,
+                !_interaction.IsDragging && (_table.CanTakeDiscard(_local.Seat) || hasBorrowedTile), _table.Players.Count);
             _view.Hud.Render(Status(), string.Empty, string.Format(text.PileFormat, _table.RemainingCount),
                 string.Format(text.PenaltyFormat, penalty), penalty != 0);
             _view.Panels.RenderHelp(publicMelds ? text.OpenHelp : text.ClassicHelp);
@@ -96,7 +97,9 @@ namespace Okey.Composition
                     action.AdditionalGroups ? string.Format(text.AdditionalGroupFormat, action.Progress) :
                     string.Format(text.ProgressFormat, action.Progress, action.Required);
                 var fill = action.AdditionalGroups ? (action.Progress > 0 ? 1 : 0) : (float)action.Progress / action.Required;
-                view.Render(label, progress, fill, canAct && action.CanExecute);
+                var usesBorrowed = !hasBorrowedTile || action.Kind == RackActionKind.OpenMelds &&
+                    action.Plan.Melds.SelectMany(meld => meld.Tiles).Any(tile => tile.Stone.Id == _table.PendingDiscard.Id);
+                view.Render(label, progress, fill, canAct && action.CanExecute && usesBorrowed);
             }
             var groupedIds = _rackGroups.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();
             foreach (var stone in _hand.Views) stone.Selection.SetGrouped(groupedIds.Contains(stone.Instance.Id));
@@ -108,6 +111,7 @@ namespace Okey.Composition
             if (_table.Phase == TurnPhase.Finished)
                 return _table.Winner < 0 ? text.DrawnRoundLabel : string.Format(text.WinnerFormat, _names.ForSeat(_table.Winner));
             if (_table.ActiveSeat != _local.Seat) return string.Format(text.WaitingFormat, _names.ForSeat(_table.ActiveSeat));
+            if (_table.PendingDiscard != null) return text.DiscardTrialStatus;
             if (_table.Phase == TurnPhase.AwaitingDraw) return _table.CanEndDrawnRound(_local.Seat) ? text.EmptyStockStatus : text.DrawStatus;
             return _table.Game.AllowsPublicMelds ? text.DiscardStatus : text.ClassicDiscardStatus;
         }

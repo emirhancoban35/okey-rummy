@@ -14,7 +14,8 @@ namespace Okey.Core.Games
                 request.Melds.Sum(meld => meld.Tiles.Count) < request.HandCount &&
                 (request.Mode == OpeningMode.Series || pairs) &&
                 request.Melds.All(meld => pairs ? meld.Kind == MeldKind.Pair : meld.Kind != MeldKind.Pair) &&
-                (initial || request.CurrentMode == request.Mode) &&
+                (initial || request.CurrentMode == request.Mode ||
+                    request.CurrentMode == OpeningMode.Series && pairs && request.PairBoardOpen) &&
                 (!initial || (pairs ? request.Melds.Count >= request.PairThreshold : points >= request.SeriesThreshold));
             var series = request.SeriesThreshold;
             var pairCount = request.PairThreshold;

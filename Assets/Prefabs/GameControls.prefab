@@ -390,7 +390,7 @@ MonoBehaviour:
   _rows: 8
   _lanes: 3
   _size: {x: 2.65, y: 3.45}
-  _tileFill: {x: 0.89, y: 0.85}
+  _tileFill: {x: 1, y: 0.82}
   _pageControls: {fileID: 1266775711962871619}
   _previousButton: {fileID: 8542109804241293445}
   _nextButton: {fileID: 525324694848074012}
@@ -10424,10 +10424,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 4432552494188441282}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 540, y: -110}
-  m_SizeDelta: {x: 520, y: 45}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -180}
+  m_SizeDelta: {x: 700, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1964060963598396046
 MonoBehaviour:
@@ -10501,13 +10501,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 27
-  m_fontSizeBase: 27
+  m_fontSize: 24
+  m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -10723,7 +10723,7 @@ MonoBehaviour:
   _rows: 8
   _lanes: 2
   _size: {x: 7.25, y: 3.45}
-  _tileFill: {x: 0.89, y: 0.85}
+  _tileFill: {x: 1, y: 0.82}
   _pageControls: {fileID: 7309217202066348180}
   _previousButton: {fileID: 6290526632908210732}
   _nextButton: {fileID: 1794133793528632641}

@@ -19,6 +19,7 @@ namespace Okey.Composition
         }
         public void Initialize()
         {
+            _view.JokerReclaimRequested += ToggleJokerReclaim;
             _view.RulesRequested += ToggleRules;
             _view.PlayRequested += StartMatch;
             _view.PartnershipRequested += TogglePartnership;
@@ -27,6 +28,7 @@ namespace Okey.Composition
             Render();
         }
         private void StartMatch() { _matches.Reset(_settings); _navigation.StartTable(); }
+        private void ToggleJokerReclaim() { _settings.ToggleJokerReclaim(); Render(); }
         private void ToggleRules() { _settings.NextRules(); Render(); }
         private void TogglePartnership() { _settings.TogglePartnerships(); Render(); }
         private void ToggleBots() { _settings.ToggleBotMode(); Render(); }
@@ -34,6 +36,9 @@ namespace Okey.Composition
         private void Render()
         {
             var text = _view.Texts;
+            var publicMelds = _settings.ActiveProfile.AllowsPublicMelds;
+            _view.RenderJokerReclaim(!publicMelds ? text.MenuUnavailable :
+                _settings.AllowJokerReclaim ? text.JokerReclaimOn : text.JokerReclaimOff, publicMelds);
             _view.Render(_settings.ActiveProfile.Label,
                 _settings.Partnerships ? text.MenuPartners : text.MenuIndividual,
                 _settings.HumanlikeBots ? text.MenuHumanlike : text.MenuFast,
@@ -42,6 +47,7 @@ namespace Okey.Composition
         }
         public void Dispose()
         {
+            _view.JokerReclaimRequested -= ToggleJokerReclaim;
             _view.RulesRequested -= ToggleRules;
             _view.PlayRequested -= StartMatch;
             _view.PartnershipRequested -= TogglePartnership;

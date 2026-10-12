@@ -10,7 +10,7 @@ namespace Okey.Core.Games
     {
         public IOpeningPolicy OpeningPolicy { get; } = new Okey101OpeningPolicy();
         public bool AllowsPublicMelds => true;
-        public bool RequiresOpenDiscardPickup => true;
+        public bool RequiresDiscardUse => true;
         public bool AllowsEmptyStockPlay => false;
         public bool PenalizesPlayableDiscards => true;
         public bool TryFinish(IReadOnlyList<StoneInstance> hand, IMeldRules meldRules, OkeyRules rules, out MeldPlan plan, out OpeningMode mode)
@@ -37,7 +37,7 @@ namespace Okey.Core.Games
                 new RackActionPlan(RackActionKind.OpenMelds, OpeningMode.Series, series,
                     closed ? series.Points : series.TileCount, request.SeriesThreshold, request.Opening != OpeningMode.Pairs, !closed),
                 new RackActionPlan(RackActionKind.OpenMelds, OpeningMode.Pairs, pairs,
-                    pairs.Melds.Count, request.PairThreshold, request.Opening != OpeningMode.Series, !closed)
+                    pairs.Melds.Count, request.PairThreshold, request.Opening != OpeningMode.Series || request.PairBoardOpen, !closed)
             }, grouped);
         }
 

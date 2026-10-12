@@ -33,12 +33,12 @@ namespace Okey.Tests.EditMode
             Assert.That(table.TeamOf(0), Is.Not.EqualTo(table.TeamOf(1)));
         }
         [Test]
-        public void ClosedPlayerCannotTakeDiscardAndFailedPickupDoesNotChangeTable()
+        public void ClosedPlayerCanInspectADiscardButInvalidImmediateLayoffDoesNotChangeTable()
         {
             var table = Table();
             table.TryDiscard(0, table.Players[0].Hand.Slots.First(stone => stone != null).Id);
             var stock = table.RemainingCount;
-            Assert.That(table.CanTakeDiscard(1), Is.False);
+            Assert.That(table.CanTakeDiscard(1), Is.True);
             Assert.That(table.TryTakeDiscard(1, 0), Is.False);
             Assert.That(table.Players[0].Discards.Count, Is.EqualTo(1));
             Assert.That(table.RemainingCount, Is.EqualTo(stock));

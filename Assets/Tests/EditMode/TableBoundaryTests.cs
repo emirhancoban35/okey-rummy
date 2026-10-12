@@ -120,7 +120,7 @@ namespace Okey.Tests.EditMode
             private readonly Okey101Game _game = new Okey101Game();
             public IOpeningPolicy OpeningPolicy { get; } = new VariantOpeningPolicy();
             public bool AllowsPublicMelds => true;
-            public bool RequiresOpenDiscardPickup => true;
+            public bool RequiresDiscardUse => true;
             public bool AllowsEmptyStockPlay => false;
             public bool PenalizesPlayableDiscards => false;
             public RackActionState PlanRackActions(RackActionRequest request) => _game.PlanRackActions(request);

@@ -5,6 +5,22 @@ namespace Okey.Presentation.Text
     [CreateAssetMenu(menuName = "Okey/Presentation/Table Text")]
     public sealed class TableTextCatalog : ScriptableObject
     {
+        [SerializeField, TextArea] private string _discardTrialStatus;
+        [SerializeField] private string _previousDiscardHelp;
+        public string PreviousDiscardHelp => _previousDiscardHelp;
+        public string DiscardTrialStatus => _discardTrialStatus;
+        [SerializeField, TextArea] private string _discardTrialHelp;
+        public string DiscardTrialHelp => _discardTrialHelp;
+        [SerializeField, TextArea] private string _playableDiscardNoticeFormat;
+        public string PlayableDiscardNoticeFormat => _playableDiscardNoticeFormat;
+        [SerializeField, TextArea] private string _jokerDiscardNoticeFormat;
+        public string JokerDiscardNoticeFormat => _jokerDiscardNoticeFormat;
+        [SerializeField, TextArea] private string _jokerReclaimedNoticeFormat;
+        public string JokerReclaimedNoticeFormat => _jokerReclaimedNoticeFormat;
+        [SerializeField, TextArea] private string _jokerReclaimOn;
+        public string JokerReclaimOn => _jokerReclaimOn;
+        [SerializeField, TextArea] private string _jokerReclaimOff;
+        public string JokerReclaimOff => _jokerReclaimOff;
         [SerializeField] private string _yourTurnNotice;
         public string YourTurnNotice => _yourTurnNotice;
         [SerializeField] private string _openingNoticeFormat;

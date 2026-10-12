@@ -25,6 +25,7 @@ namespace Okey.Composition
         public event Action<Stone> DiscardRequested;
         public event Action<Stone, Vector3> DragMoved;
         public event Func<Stone, Vector3, bool> DropRequested;
+        public event Func<IReadOnlyList<int>, Vector3, bool> GroupDropRequested;
 
         public RackInteractionController(IRackLayout arrangement, RackView rack)
         {
@@ -147,13 +148,17 @@ namespace Okey.Composition
 
             if (_draggedGroup != null)
             {
-                if (_rack.TryFindSlot(worldPosition, out var groupDestination))
+                if (!_rack.TryFindSlot(worldPosition, out var groupDestination))
                 {
-                    var rowStart = groupDestination / _rack.RowCapacity * _rack.RowCapacity;
-                    var start = Mathf.Clamp(groupDestination - _draggedGroup.Length + 1, rowStart,
-                        Mathf.Min(rowStart + _rack.RowCapacity, _arrangement.Capacity) - _draggedGroup.Length);
-                    _arrangement.MoveGroup(_draggedGroup, start, _rack.RowCapacity);
+                    var group = _draggedGroup;
+                    FinishGroupDrag(false);
+                    GroupDropRequested?.Invoke(group, worldPosition);
+                    return;
                 }
+                var rowStart = groupDestination / _rack.RowCapacity * _rack.RowCapacity;
+                var start = Mathf.Clamp(groupDestination - _draggedGroup.Length + 1, rowStart,
+                    Mathf.Min(rowStart + _rack.RowCapacity, _arrangement.Capacity) - _draggedGroup.Length);
+                _arrangement.MoveGroup(_draggedGroup, start, _rack.RowCapacity);
                 FinishGroupDrag(true);
                 return;
             }

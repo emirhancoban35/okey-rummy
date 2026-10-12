@@ -78,7 +78,6 @@ namespace Okey.Composition
         {
             index = -1;
             if (_session.ActiveSeat != _local.Seat || _session.Phase != TurnPhase.AwaitingDiscard ||
-                !_session.Game.OpeningPolicy.CanLayOff(_session.Players[_local.Seat].Opening, _session.Players[_local.Seat].Hand.Count) ||
                 _session.Players[_local.Seat].Hand.FindSlot(stone.Id) < 0) return false;
             CacheLayOffTargets(stone);
             var nearest = float.MaxValue;
@@ -101,7 +100,8 @@ namespace Okey.Composition
             _layOffTargets.Clear();
             for (var index = 0; index < _session.Melds.Count; index++)
             {
-                if (!_session.MeldRules.TryExtend(_session.Melds[index], stone, out var extended)) continue;
+                if (!_session.CanReclaimJoker(_local.Seat, stone.Id, index, out var extended, out _) &&
+                    !_session.CanLayOff(_local.Seat, stone.Id, index, out extended)) continue;
                 var placement = _boardGroups[index];
                 for (var tile = 0; tile < extended.Tiles.Count; tile++)
                     if (extended.Tiles[tile].Stone.Id == stone.Id)
@@ -199,6 +199,15 @@ namespace Okey.Composition
             ClearPreview();
             _targetStoneId = -1;
             _layOffTargets.Clear();
+            var publicIds = _session.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();
+            foreach (var id in _meldViews.Keys.Where(id => !publicIds.Contains(id)).ToArray())
+            {
+                var stale = _meldViews[id];
+                stale.gameObject.SetActive(false);
+                UnityEngine.Object.Destroy(stale.gameObject);
+                _owned.Remove(stale);
+                _meldViews.Remove(id);
+            }
             _meldPositions.Clear();
             _meldGroups.Clear();
             _boardGroups.Clear();
