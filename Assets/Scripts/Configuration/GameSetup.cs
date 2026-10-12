@@ -16,6 +16,7 @@ namespace Okey.Configuration
         private readonly bool _allowDiscardPickup;
         private readonly double _turnSeconds;
         private readonly int _openingIncrement;
+        public int MatchRounds { get; }
         public int PlayerCount { get; }
         public int RuleIndex { get; private set; }
         public TableRuleProfile ActiveProfile => _profiles[RuleIndex];
@@ -33,6 +34,7 @@ namespace Okey.Configuration
             if (RuleIndex < 0 || RuleIndex >= _profiles.Length)
                 throw new ArgumentOutOfRangeException(nameof(defaults), "The selected rule profile does not exist.");
             PlayerCount = defaults.PlayerCount;
+            MatchRounds = defaults.MatchRounds;
             Partnerships = defaults.Partnerships;
             HumanlikeBots = defaults.HumanlikeBots;
             EscalatingOpenings = defaults.EscalatingOpenings;

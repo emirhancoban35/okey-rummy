@@ -557,6 +557,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59e4ccfe06ff4955a6c3fd8feda45a63, type: 3}
   _tableCamera: {fileID: 519420031}
+  _scoreboards:
+  - _profile: {fileID: 11400000, guid: 9a407ce9f10d4c7781e02d037e5a1e98, type: 2}
+    _prefab: {fileID: 4123391390216649929, guid: c4549b00e686948bb8da76c4c5cb4d75, type: 3}
+  - _profile: {fileID: 11400000, guid: 9f5d95ad7e014525a0743f14224917fd, type: 2}
+    _prefab: {fileID: 2437150473911681415, guid: 4f1ae88c3e77940bc96a33a7c8f82655, type: 3}
+  _seatColors: {fileID: 11400000, guid: 6b600124aed1d42cba7f5a415279bcfa, type: 2}
   m_Name:
   m_EditorClassIdentifier:
   _controlsView: {fileID: 1155771369}

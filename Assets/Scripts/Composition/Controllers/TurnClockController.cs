@@ -12,16 +12,16 @@ namespace Okey.Composition
         private readonly TablePlayerNames _names;
         private readonly TableSession _table;
         private readonly TurnClock _clock;
-        private readonly IPlayerStrategy _strategy;
+        private readonly TimeoutDiscardPolicy _timeout;
         private readonly TableView _controls;
         private readonly RackInteractionController _interaction;
-        public TurnClockController(TableSession table, IPlayerStrategy strategy, TableView controls, RackInteractionController interaction, LocalPlayerContext local, TablePlayerNames names)
+        public TurnClockController(TableSession table, TimeoutDiscardPolicy timeout, TableView controls, RackInteractionController interaction, LocalPlayerContext local, TablePlayerNames names)
         {
             _table = table;
             _local = local;
             _names = names;
             _clock = new TurnClock(table);
-            _strategy = strategy;
+            _timeout = timeout;
             _controls = controls;
             _interaction = interaction;
         }
@@ -60,7 +60,7 @@ namespace Okey.Composition
                 var seat = _table.ActiveSeat;
                 if (_table.Phase == TurnPhase.AwaitingDraw) _table.TryDraw(seat);
                 if (_table.Phase == TurnPhase.AwaitingDiscard)
-                    _table.TryDiscard(seat, _strategy.ChooseDiscard(new PlayerObservation(
+                    _table.TryDiscard(seat, _timeout.ChooseDiscard(new PlayerObservation(
                         _table.Players[seat].Hand.Slots.Where(stone => stone != null), _table.Melds,
                         _table.Players[seat].Opening, _table.Rules, _table.MeldRules,
                         seriesThreshold: _table.SeriesThreshold, pairThreshold: _table.PairThreshold)));

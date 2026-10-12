@@ -21,7 +21,8 @@ MonoBehaviour:
   _invalidOpeningPenalty: 101
   _unopenedScore: 202
   _jokerScore: 101
-  _discardPenalty: 101
+  _playableDiscardPenalty: 101
+  _jokerDiscardPenalty: 101
   _winnerScore: -101
   _pairMultiplier: 2
   _jokerFinishMultiplier: 2

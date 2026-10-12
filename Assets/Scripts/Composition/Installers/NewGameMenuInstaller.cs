@@ -14,7 +14,9 @@ namespace Okey.Composition
         {
             if (_tableSettings == null || _navigationSettings == null || _menu == null)
                 throw new InvalidOperationException("Menu, table settings and navigation settings must be assigned.");
-            Container.BindInstance(GameFlowState.Resolve(_tableSettings).Setup);
+            var flow = GameFlowState.Resolve(_tableSettings);
+            Container.BindInstance(flow.Setup);
+            Container.BindInstance(flow.Matches);
             Container.BindInstance(_navigationSettings);
             Container.BindInstance(_menu);
             Container.Bind<ITableNavigation>().To<SceneTableNavigation>().AsSingle();

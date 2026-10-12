@@ -12,6 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd441207dd034f9593e970f86a0a671b, type: 3}
   m_Name: EnglishTableText
   m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Text.TableTextCatalog
+  _yourTurnNotice: YOUR TURN
+  _openingNoticeFormat: "{0} opened with {1}"
+  _penaltyNoticeFormat: "{0} +{1} penalty"
+  _thresholdFormat: "{0}"
   _seatNames:
   - East
   - North
@@ -47,8 +51,8 @@ MonoBehaviour:
   _activeSeatText: PLAYING
   _openingSuccessText: OK
   _openingFailureFormat: + {0}
-  _drawStatus: YOU
-  _discardStatus: YOU
+  _drawStatus: YOUR TURN
+  _discardStatus: YOUR TURN
   _waitingFormat: '{0}'
   _handFormat: '{0}'
   _pileFormat: '{0}'

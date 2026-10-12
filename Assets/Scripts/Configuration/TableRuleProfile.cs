@@ -16,7 +16,9 @@ namespace Okey.Configuration
         [SerializeField, Min(0)] private int _invalidOpeningPenalty;
         [SerializeField, Min(0)] private int _unopenedScore;
         [SerializeField, Min(0)] private int _jokerScore;
-        [SerializeField, Min(0)] private int _discardPenalty;
+        [UnityEngine.Serialization.FormerlySerializedAs("_discardPenalty")]
+        [SerializeField, Min(0)] private int _playableDiscardPenalty;
+        [SerializeField, Min(0)] private int _jokerDiscardPenalty;
         [SerializeField] private int _winnerScore;
         [SerializeField, Min(1)] private int _pairMultiplier = 2;
         [SerializeField, Min(1)] private int _jokerFinishMultiplier = 2;
@@ -29,6 +31,7 @@ namespace Okey.Configuration
             new BotDecisionPolicy(strategy, random);
         public OkeyRules CreateRules(int playerCount) => new OkeyRules(playerCount, _handSize, _minimumValue, _maximumValue,
             _seriesThreshold, _pairThreshold, _invalidOpeningPenalty, _unopenedScore, _jokerScore, _winnerScore,
-            _discardPenalty, _pairMultiplier, _jokerFinishMultiplier, AllowsHighOne);
+            _playableDiscardPenalty, _pairMultiplier, _jokerFinishMultiplier, AllowsHighOne,
+            new DiscardPenalties(_jokerDiscardPenalty, _playableDiscardPenalty));
     }
 }

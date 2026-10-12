@@ -5,6 +5,8 @@ namespace Okey.Presentation.Tables
 {
     public sealed class TableHudView : MonoBehaviour
     {
+        [SerializeField] private UnityEngine.UI.Image _identity;
+        public void SetIdentity(Color color) => _identity.color = color;
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private TMP_Text _handText;
         [SerializeField] private TMP_Text _pileText;

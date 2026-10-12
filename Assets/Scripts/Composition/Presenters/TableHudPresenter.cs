@@ -23,11 +23,14 @@ namespace Okey.Composition
         private int[] _handIds;
         private int _openingRevision = -1;
         private RackActionState _actions;
+        private readonly RackMeldEvaluator _groups;
+        private MeldPlan _rackGroups;
         private bool _initialized;
         private bool _disposed;
         public TableHudPresenter(TableSession table, TableView view, HandPresenter hand, RackInteractionController interaction,
-            TablePresenter publicStones, RackView rack, LocalPlayerContext local, TablePlayerNames names)
+            TablePresenter publicStones, RackView rack, LocalPlayerContext local, TablePlayerNames names, RackMeldEvaluator groups)
         {
+            _groups = groups;
             _table = table;
             _local = local;
             _names = names;
@@ -54,6 +57,7 @@ namespace Okey.Composition
             if (_handIds != null && _handIds.SequenceEqual(ids) && _openingRevision == _table.OpeningRevision) return;
             _openingRevision = _table.OpeningRevision;
             _handIds = ids;
+            _rackGroups = _groups.FindGroups(hand, _rack.RowCapacity, _table.MeldRules);
             var player = _table.Players[_local.Seat];
             _actions = _table.Game.PlanRackActions(new RackActionRequest(hand, _rack.RowCapacity,
                 _table.MeldRules, _table.Rules, player.Opening, _table.SeriesThreshold, _table.PairThreshold));
@@ -74,7 +78,7 @@ namespace Okey.Composition
             _view.Surface.Render(publicMelds, _table.Melds.Count == 0, !publicMelds && _table.Winner < 0,
                 canDraw, _table.ActiveSeat == _local.Seat && _table.Phase == TurnPhase.AwaitingDiscard,
                 !_interaction.IsDragging && _table.CanTakeDiscard(_local.Seat), _table.Players.Count);
-            _view.Hud.Render(Status(), string.Format(text.HandFormat, local.Hand.Count), string.Format(text.PileFormat, _table.RemainingCount),
+            _view.Hud.Render(Status(), string.Empty, string.Format(text.PileFormat, _table.RemainingCount),
                 string.Format(text.PenaltyFormat, penalty), penalty != 0);
             _view.Panels.RenderHelp(publicMelds ? text.OpenHelp : text.ClassicHelp);
             if (_actions.Actions.Count > _view.Actions.Count)
@@ -88,13 +92,15 @@ namespace Okey.Composition
                 var action = _actions.Actions[index];
                 var label = action.Kind == RackActionKind.OpenMelds ? text.OpenLabel :
                     action.Kind == RackActionKind.Finish ? text.FinishLabel : text.PairsLabel;
-                var progress = action.AdditionalGroups ? string.Format(text.AdditionalGroupFormat, action.Progress) :
+                var progress = publicMelds ? string.Format(text.ThresholdFormat, action.Required) :
+                    action.AdditionalGroups ? string.Format(text.AdditionalGroupFormat, action.Progress) :
                     string.Format(text.ProgressFormat, action.Progress, action.Required);
                 var fill = action.AdditionalGroups ? (action.Progress > 0 ? 1 : 0) : (float)action.Progress / action.Required;
                 view.Render(label, progress, fill, canAct && action.CanExecute);
             }
-            var groupedIds = _actions.GroupedTiles.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();
+            var groupedIds = _rackGroups.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();
             foreach (var stone in _hand.Views) stone.Selection.SetGrouped(groupedIds.Contains(stone.Instance.Id));
+            _interaction.SetGroups(_rackGroups.Melds);
         }
         private string Status()
         {

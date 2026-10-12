@@ -1,5 +1,6 @@
 using Okey.Presentation.Tables;
 using System;
+using System.Linq;
 using Okey.Configuration;
 using Okey.Core.Decks;
 using Okey.Core.Games;
@@ -18,6 +19,8 @@ namespace Okey.Composition
     {
         [SerializeField] private DeckSettings _deckSettings;
         [SerializeField] private Camera _tableCamera;
+        [SerializeField] private ScoreboardBinding[] _scoreboards;
+        [SerializeField] private SeatColorSettings _seatColors;
         [SerializeField] private Stone _stonePrefab;
         [SerializeField] private OpeningDealSettings _openingDealSettings;
         [SerializeField] private RackView _rackView;
@@ -37,12 +40,15 @@ namespace Okey.Composition
             var flow = GameFlowState.Resolve(_tableSettings);
             var setup = flow.Setup;
             Container.BindInstance(setup);
+            Container.BindInstance(flow.Matches.For(setup));
+            Container.BindInstance(_seatColors);
             Container.BindInstance(new LocalPlayerContext(_localSeat, setup.PlayerCount));
             Container.BindInstance(setup.CreateBotPreferences());
             Container.BindInstance(_navigationSettings);
             Container.Bind<ITableNavigation>().To<SceneTableNavigation>().AsSingle();
             Container.BindInstance(setup.CreateRules());
             Container.Bind<MeldPlanner>().AsSingle();
+            Container.Bind<TimeoutDiscardPolicy>().AsSingle();
             Container.Bind<RackMeldEvaluator>().AsSingle();
             Container.Bind<IBotDecisionPolicy>().FromMethod(context => setup.ActiveProfile.CreateBotDecisions(
                 context.Container.Resolve<IPlayerStrategy>(), context.Container.Resolve<IRandomSource>())).AsSingle();
@@ -61,6 +67,11 @@ namespace Okey.Composition
                 context.Container.Resolve<TableSession>().Players[_localSeat].Layout).AsSingle();
             Container.Bind<IReadOnlyRack>().FromMethod(context => context.Container.Resolve<IRackLayout>()).AsSingle();
             Container.Bind<RackInteractionController>().AsSingle();
+            var scorePrefab = _scoreboards.Single(binding => binding.Profile == setup.ActiveProfile).Prefab;
+            var scores = Container.InstantiatePrefabForComponent<ScoreboardView>(scorePrefab, _controlsView.Canvas.transform);
+            Container.BindInstance(scores);
+            Container.BindInterfacesAndSelfTo<ScoreboardPresenter>().AsSingle();
+            Container.BindInterfacesAndSelfTo<TableExperiencePresenter>().AsSingle();
             Container.BindInstance(_controlsView);
             Container.BindInstance(_tableCamera);
             Container.BindInstance(_controlsView.Texts);

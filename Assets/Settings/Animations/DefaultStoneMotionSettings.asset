@@ -15,3 +15,5 @@ MonoBehaviour:
   _moveDuration: 0.25
   _moveEase: 6
   _useUnscaledTime: 0
+  _arcHeight: 0.18
+  _arcMinimumDistance: 1.5

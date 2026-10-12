@@ -28,3 +28,4 @@ MonoBehaviour:
   _botMistakeChance: 0.01
   _openingPatience: 0.35
   _thinkingSeconds: {x: 1.2, y: 3.8}
+  _matchRounds: 5

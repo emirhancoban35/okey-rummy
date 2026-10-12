@@ -277,13 +277,13 @@ namespace Okey.Tests.PlayMode
             var names = new TablePlayerNames(Controls.Texts, _context.Container.Resolve<BotPreferences>(), local);
             var table = new TablePresenter(session, Controls, factory, local, names);
             var controller = new TurnController(session, hand, interaction, Controls, table, Rack, local);
-            var hud = new TableHudPresenter(session, Controls, hand, interaction, table, Rack, local, names);
+            var hud = new TableHudPresenter(session, Controls, hand, interaction, table, Rack, local, names, new RackMeldEvaluator());
             try
             {
                 hand.Initialize(); table.Initialize(); hud.Initialize(); controller.Initialize();
                 Assert.That(hand.Views.Select(view => view.Instance.Id), Is.EquivalentTo(
                     session.Players[localSeat].Hand.Slots.Where(tile => tile != null).Select(tile => tile.Id)));
-                var clock = new TurnClockController(session, _context.Container.Resolve<IPlayerStrategy>(), Controls, interaction, local, names);
+                var clock = new TurnClockController(session, _context.Container.Resolve<TimeoutDiscardPolicy>(), Controls, interaction, local, names);
                 clock.RenderClock(localSeat, 20, false, 0, 40);
                 var sliders = new SerializedObject(Controls.Clock).FindProperty("_turnSliders");
                 Assert.That(((Slider)sliders.GetArrayElementAtIndex(0).objectReferenceValue).value, Is.EqualTo(.5f));
@@ -322,20 +322,21 @@ namespace Okey.Tests.PlayMode
             var hand = new HandPresenter(session.Players[0].Hand,factory,Rack,interaction);
             var table = new TablePresenter(session,Controls,factory,new LocalPlayerContext(0,session.Players.Count), _context.Container.Resolve<TablePlayerNames>());
             var controller = new TurnController(session,hand,interaction,Controls,table,Rack,new LocalPlayerContext(0,session.Players.Count));
-            var hud = new TableHudPresenter(session,Controls,hand,interaction,table,Rack,new LocalPlayerContext(0,session.Players.Count), _context.Container.Resolve<TablePlayerNames>());
+            var hud = new TableHudPresenter(session,Controls,hand,interaction,table,Rack,new LocalPlayerContext(0,session.Players.Count), _context.Container.Resolve<TablePlayerNames>(), new RackMeldEvaluator());
             try
             {
                 hand.Initialize();table.Initialize();hud.Initialize();controller.Initialize();
                 var serialized = new SerializedObject(Controls.Actions[0]);
                 var points = (TMPro.TMP_Text)serialized.FindProperty("_progressText").objectReferenceValue;
-                Assert.That(points.text, Is.EqualTo("66 / 66"));
+                Assert.That(points.text, Is.EqualTo("66"));
                 var moved = hand.Views.Single(view=>view.Instance.Id==2);
                 interaction.TryBeginDrag(moved);
                 interaction.EndDrag(moved,SlotWorldPosition(20));
-                Assert.That(points.text, Is.EqualTo("33 / 66"));
+                Assert.That(points.text, Is.EqualTo("66"));
+                Assert.That(((Image)serialized.FindProperty("_progress").objectReferenceValue).fillAmount, Is.EqualTo(.5f).Within(.001f));
                 interaction.TryBeginDrag(moved);
                 interaction.EndDrag(moved,SlotWorldPosition(1));
-                Assert.That(points.text, Is.EqualTo("66 / 66"));
+                Assert.That(points.text, Is.EqualTo("66"));
                 ((Button)serialized.FindProperty("_button").objectReferenceValue).onClick.Invoke();
                 Assert.That(session.Melds.Count, Is.EqualTo(2));
                 Assert.That(session.Players[0].Hand.Count, Is.EqualTo(2));
@@ -1031,5 +1032,120 @@ namespace Okey.Tests.PlayMode
             Assert.Throws<ArgumentNullException>(() => factory.Create(null, _context.transform));
             Assert.That(_context.transform.childCount, Is.EqualTo(childCount));
         }
+        [Test]
+        public void WholeMeldDragPreservesSpacingAndCannotTriggerADiscard()
+        {
+            var tiles = Enumerable.Range(0, 3).Select(index => new StoneInstance(5000 + index,
+                new StoneData(StoneType.Regular, StoneColor.Red, index + 3))).ToArray();
+            var hand = new RackArrangement(tiles, Rack.Capacity);
+            var interaction = new RackInteractionController(hand, Rack);
+            var presenter = new HandPresenter(hand, _context.Container.Resolve<StoneViewFactory>(), Rack, interaction);
+            presenter.Initialize();
+            try
+            {
+                var rules = new MeldRules(_context.Container.Resolve<OkeyRules>(),
+                    new StoneInstance(6000, new StoneData(StoneType.Regular, StoneColor.Blue, 13)));
+                Assert.That(rules.TryCreate(tiles, MeldKind.Run, out var meld), Is.True);
+                interaction.SetGroups(new[] { meld });
+                var views = presenter.Views.ToArray();
+                foreach (var view in views) DOTween.Complete(view.transform);
+                var handle = views[2];
+                Assert.That(handle.Selection.IsGroupHandle(handle.transform.TransformPoint(new Vector3(.35f, .35f))), Is.True);
+                var offset = views[0].transform.position - handle.transform.position;
+                var dropped = false;
+                interaction.DropRequested += (stone, position) => dropped = true;
+                Assert.That(interaction.TryBeginDrag(handle, true), Is.True);
+                interaction.DragTo(handle, SlotWorldPosition(10));
+                Assert.That(Vector3.Distance(views[0].transform.position - handle.transform.position, offset), Is.LessThan(.001f));
+                interaction.EndDrag(handle, SlotWorldPosition(10));
+                Assert.That(tiles.Select(tile => hand.FindSlot(tile.Id)), Is.EqualTo(new[] { 8, 9, 10 }));
+                Assert.That(dropped, Is.False);
+                Assert.That(interaction.IsDragging, Is.False);
+            }
+            finally { presenter.Dispose(); }
+        }
+
+        [Test]
+        public void LocalHandCountIsHiddenAndScoreSheetCanBeOpenedDuringPlay()
+        {
+            var actions = Controls.Canvas.transform.Find("OpeningActions");
+            Assert.That(actions.Find("HandCount").gameObject.activeSelf, Is.False);
+            Assert.That(actions.Find("HandIcon").gameObject.activeSelf, Is.False);
+            Assert.That(Controls.Hud.StatusText.text, Is.EqualTo(Controls.Texts.YourTurnNotice));
+            var view = _context.Container.Resolve<ScoreboardView>();
+            view.Show();
+            DOTween.CompleteAll();
+            Assert.That(view.transform.Find("ScorePanel").gameObject.activeSelf, Is.True);
+            Assert.That(view.GetComponentsInChildren<TMP_Text>().Any(text => text.text.Contains("101 OKEY")), Is.True);
+            Assert.That(view.GetComponentsInChildren<TMP_Text>().Any(text => text.text.Contains("Hand 1 / 5")), Is.True);
+        }
+
+        [Test]
+        public void MatchHistoriesAndPartnerColorsStaySeparateAcrossModes()
+        {
+            var setup = _settings.CreateSetup();
+            var matches = new MatchHistory();
+            var individual = matches.For(setup);
+            Assert.That(matches.For(setup), Is.SameAs(individual));
+            setup.TogglePartnerships();
+            var partners = matches.For(setup);
+            Assert.That(partners, Is.Not.SameAs(individual));
+            setup.NextRules();
+            Assert.That(matches.For(setup), Is.Not.SameAs(partners));
+            var colors = _context.Container.Resolve<SeatColorSettings>();
+            Assert.That(colors.For(0, true), Is.Not.EqualTo(colors.For(1, true)));
+            Assert.That(new TableOptions(partnerships: true).Partnerships, Is.True);
+        }
+
+        [Test]
+        public void TimeoutDrawsOnceAndDiscardsTheLowestSafeTile()
+        {
+            var table = _context.Container.Resolve<TableSession>();
+            table.TryDiscard(0, HandViews[0].Instance.Id);
+            var bot = _context.Container.Resolve<BotTurnController>();
+            for (var step = 0; table.ActiveSeat != 0 && step < 100; step++) bot.Act();
+            Assert.That(table.Phase, Is.EqualTo(TurnPhase.AwaitingDraw));
+            var stock = table.RemainingCount;
+            var count = table.Players[0].Hand.Count;
+            _context.Container.Resolve<TurnClockController>().Advance(46);
+            Assert.That(table.RemainingCount, Is.EqualTo(stock - 1));
+            Assert.That(table.Players[0].Hand.Count, Is.EqualTo(count));
+            var discarded = table.Players[0].Discards.Last();
+            var options = table.Players[0].Hand.Slots.Where(tile => tile != null).Concat(new[] { discarded });
+            var observation = new PlayerObservation(options, table.Melds, table.Players[0].Opening, table.Rules, table.MeldRules);
+            Assert.That(discarded.Id, Is.EqualTo(new TimeoutDiscardPolicy().ChooseDiscard(observation)));
+            Assert.That(table.ActiveSeat, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void FinishedHandOpensTheScoreSheetAndRecordsItsWinnerExactlyOnce()
+        {
+            _context.Container.Resolve<ScoreboardPresenter>().Dispose();
+            var deck = Enumerable.Range(0, 30).Select(id => new StoneInstance(id,
+                new StoneData(StoneType.Regular, StoneColor.Black, 8))).ToArray();
+            deck[0] = new StoneInstance(0, new StoneData(StoneType.Regular, StoneColor.Blue, 13));
+            for (var value = 1; value <= 3; value++)
+                deck[value] = new StoneInstance(value, new StoneData(StoneType.Regular, StoneColor.Red, value));
+            var table = new TableSession(new OkeyRules(4, 3, 1, 13, 1, 1, 101, 202, 101, -101, 101, 2, 2),
+                deck, 8, new Okey.Core.Games.Okey101Game());
+            var ledger = new MatchScoreLedger(4, 1);
+            var view = _context.Container.Resolve<ScoreboardView>();
+            var presenter = new ScoreboardPresenter(table, ledger, view, _context.Container.Resolve<TablePlayerNames>(),
+                new LocalPlayerContext(0, 4), _context.Container.Resolve<SeatColorSettings>(), _context.Container.Resolve<ITableNavigation>());
+            presenter.Initialize();
+            try
+            {
+                table.MeldRules.TryCreate(deck.Skip(1).Take(3), MeldKind.Run, out var meld);
+                Assert.That(table.TryOpen(0, OpeningMode.Series, new[] { meld }), Is.True);
+                Assert.That(table.TryDiscard(0, 4), Is.True);
+                Assert.That(view.transform.Find("ScorePanel").gameObject.activeSelf, Is.True);
+                Assert.That(view.GetComponentsInChildren<TMP_Text>().Any(text => text.text == "-101"), Is.True);
+                Assert.That(view.GetComponentsInChildren<TMP_Text>().Any(text => text.text.Contains("Match complete")), Is.True);
+                Assert.That(ledger.Rounds.Count, Is.EqualTo(1));
+                Assert.That(ledger.Record(table), Is.False);
+            }
+            finally { presenter.Dispose(); }
+        }
+
     }
 }

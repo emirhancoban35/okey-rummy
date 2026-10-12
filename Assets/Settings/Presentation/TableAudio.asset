@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1373ef8c3144588bc45a5fecb603d85, type: 3}
+  m_Name: TableAudio
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Tables.TableAudioSettings
+  _volume: 0.6
+  _cues:
+  - Sound: 0
+    Clip: {fileID: 8300000, guid: daea0c255be8f46adb97a9ebd938beeb, type: 3}
+    Volume: 0.65
+  - Sound: 1
+    Clip: {fileID: 8300000, guid: 84704f3f3e7b6468ab172f9c315805a4, type: 3}
+    Volume: 0.32
+  - Sound: 2
+    Clip: {fileID: 8300000, guid: f94bf12be25c44c2db76d6fdd6c06f09, type: 3}
+    Volume: 0.32
+  - Sound: 3
+    Clip: {fileID: 8300000, guid: 140649a4017a8423ca63ef41341fc96d, type: 3}
+    Volume: 0.32
+  - Sound: 4
+    Clip: {fileID: 8300000, guid: 60e9b1d9cff194dcbb41abbd96626a95, type: 3}
+    Volume: 0.32
+  - Sound: 5
+    Clip: {fileID: 8300000, guid: ab666615219be40b78493ebf5ea11d00, type: 3}
+    Volume: 0.32
+  - Sound: 6
+    Clip: {fileID: 8300000, guid: 20bb77ee3f68040e69d0c12bcf322e0d, type: 3}
+    Volume: 0.32

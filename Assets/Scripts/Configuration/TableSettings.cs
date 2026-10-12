@@ -21,6 +21,8 @@ namespace Okey.Configuration
         [SerializeField, Min(0.1f)] private float _botActionDelay = 0.8f;
         [SerializeField, Min(0)] private int _botLateHandMargin = 2;
 
+        [SerializeField, Min(1)] private int _matchRounds = 5;
+        public int MatchRounds => _matchRounds;
         public int PlayerCount => _playerCount;
         public TableRuleProfile[] RuleProfiles => (TableRuleProfile[])_ruleProfiles.Clone();
         public int RuleIndex => _ruleIndex;

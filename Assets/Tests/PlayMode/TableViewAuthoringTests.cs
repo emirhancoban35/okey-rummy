@@ -70,6 +70,7 @@ namespace Okey.Tests.PlayMode
             fields.FindProperty("_openLabel").stringValue = "CUSTOM OPEN";
             fields.FindProperty("_finishLabel").stringValue = "CUSTOM FINISH";
             fields.FindProperty("_progressFormat").stringValue = "[{0} of {1}]";
+            fields.FindProperty("_thresholdFormat").stringValue = "[{0}]";
             fields.ApplyModifiedPropertiesWithoutUndo();
             var viewFields = new SerializedObject(_view);
             viewFields.FindProperty("_texts").objectReferenceValue = copy;

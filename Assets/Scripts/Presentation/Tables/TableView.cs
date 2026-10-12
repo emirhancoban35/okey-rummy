@@ -6,6 +6,8 @@ namespace Okey.Presentation.Tables
 {
     public sealed class TableView : MonoBehaviour
     {
+        [SerializeField] private TableAudioView _audio;
+        public TableAudioView Audio => _audio;
         [SerializeField] private Canvas _canvas;
         public Canvas Canvas => _canvas;
         [SerializeField] private TableTextCatalog _texts;

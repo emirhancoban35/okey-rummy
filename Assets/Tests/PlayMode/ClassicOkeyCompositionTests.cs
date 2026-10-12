@@ -83,6 +83,11 @@ namespace Okey.Tests.PlayMode
             yield return null;
             var context=Context("SampleScene");
             var table=context.Container.Resolve<TableSession>();
+            var scores = context.Container.Resolve<ScoreboardView>();
+            scores.Show();
+            Assert.That(scores.GetComponentsInChildren<TMP_Text>().Any(text => text.text.Contains("CLASSIC OKEY")), Is.True);
+            Assert.That(scores.GetComponentsInChildren<TMP_Text>().Any(text => text.text == "PENALTY" || text.text == "OPENED"), Is.False);
+            scores.transform.Find("ScorePanel").gameObject.SetActive(false);
             Assert.That(table.Game,Is.TypeOf<ClassicOkeyGame>());
             Assert.That(context.Container.Resolve<IPlayerStrategy>(),Is.TypeOf<ClassicOkeyStrategy>());
             Assert.That(table.Rules.HandSize,Is.EqualTo(14));

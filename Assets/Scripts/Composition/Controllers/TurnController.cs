@@ -118,11 +118,7 @@ namespace Okey.Composition
                 return;
             }
             if (action.Kind != RackActionKind.OpenMelds) return;
-            var before = _session.Players[_local.Seat].Penalty;
-            var opened = _session.TryApply(_local.Seat, PlayerAction.Open(action.Mode, action.Plan.Melds));
-            var penalty = _session.Players[_local.Seat].Penalty - before;
-            if (opened || penalty > 0) _controls.Feedback.Show(opened ? _controls.Texts.OpeningSuccessText :
-                string.Format(_controls.Texts.OpeningFailureFormat, penalty), opened);
+            _session.TryApply(_local.Seat, PlayerAction.Open(action.Mode, action.Plan.Melds));
         }
 
         private void Discard(Stone stone)

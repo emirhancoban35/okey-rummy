@@ -6,6 +6,7 @@ namespace Okey.Composition
 {
     public sealed class GameFlowState : MonoBehaviour
     {
+        public MatchHistory Matches { get; } = new MatchHistory();
         public GameSetup Setup { get; private set; }
         public StartingSeatSequence StartingSeats { get; private set; }
 

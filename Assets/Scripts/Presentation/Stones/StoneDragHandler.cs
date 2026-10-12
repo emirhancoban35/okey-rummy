@@ -38,7 +38,7 @@ namespace Okey.Presentation.Stones
                 return;
 
             _plane = new Plane(_stone.transform.parent.forward, _stone.transform.position);
-            if (!TryGetPosition(eventData.position, out var position) || !_target.TryBeginDrag(_stone))
+            if (!TryGetPosition(eventData.position, out var position) || !_target.TryBeginDrag(_stone, _stone.Selection.IsGroupHandle(position)))
                 return;
 
             _offset = _stone.transform.position - position;

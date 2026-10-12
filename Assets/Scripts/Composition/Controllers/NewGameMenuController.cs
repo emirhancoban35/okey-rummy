@@ -7,23 +7,26 @@ namespace Okey.Composition
     public sealed class NewGameMenuController : IInitializable, IDisposable
     {
         private readonly GameSetup _settings;
+        private readonly MatchHistory _matches;
         private readonly NewGameMenuView _view;
         private readonly ITableNavigation _navigation;
-        public NewGameMenuController(GameSetup settings, NewGameMenuView view, ITableNavigation navigation)
+        public NewGameMenuController(GameSetup settings, NewGameMenuView view, ITableNavigation navigation, MatchHistory matches)
         {
             _settings = settings;
+            _matches = matches;
             _view = view;
             _navigation = navigation;
         }
         public void Initialize()
         {
             _view.RulesRequested += ToggleRules;
-            _view.PlayRequested += _navigation.StartTable;
+            _view.PlayRequested += StartMatch;
             _view.PartnershipRequested += TogglePartnership;
             _view.BotModeRequested += ToggleBots;
             _view.EscalatingRequested += ToggleEscalating;
             Render();
         }
+        private void StartMatch() { _matches.Reset(_settings); _navigation.StartTable(); }
         private void ToggleRules() { _settings.NextRules(); Render(); }
         private void TogglePartnership() { _settings.TogglePartnerships(); Render(); }
         private void ToggleBots() { _settings.ToggleBotMode(); Render(); }
@@ -40,7 +43,7 @@ namespace Okey.Composition
         public void Dispose()
         {
             _view.RulesRequested -= ToggleRules;
-            _view.PlayRequested -= _navigation.StartTable;
+            _view.PlayRequested -= StartMatch;
             _view.PartnershipRequested -= TogglePartnership;
             _view.BotModeRequested -= ToggleBots;
             _view.EscalatingRequested -= ToggleEscalating;

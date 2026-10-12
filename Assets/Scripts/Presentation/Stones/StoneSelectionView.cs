@@ -11,6 +11,14 @@ namespace Okey.Presentation.Stones
         [SerializeField] private Stone _stone;
         [SerializeField] private GameObject _highlight;
         [SerializeField] private GameObject _groupHighlight;
+        [SerializeField] private GameObject _groupHandle;
+        [SerializeField] private Vector2 _groupHandleMinimum = new Vector2(.18f, .18f);
+        public void SetGroupHandle(bool visible) => _groupHandle.SetActive(visible);
+        public bool IsGroupHandle(Vector3 position)
+        {
+            var point = transform.InverseTransformPoint(position);
+            return _groupHandle.activeSelf && point.x >= _groupHandleMinimum.x && point.y >= _groupHandleMinimum.y;
+        }
         public void SetGrouped(bool grouped)
         {
             if (_groupHighlight != null) _groupHighlight.SetActive(grouped);

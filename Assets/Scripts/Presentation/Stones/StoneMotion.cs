@@ -17,7 +17,12 @@ namespace Okey.Presentation.Stones
                 throw new ArgumentOutOfRangeException(nameof(delay));
 
             StopMovement();
-            _moveTween = transform.DOLocalMove(localPosition, _settings.MoveDuration)
+            var from = transform.localPosition;
+            var movement = _settings.ArcHeight > 0 && Vector3.Distance(from, localPosition) >= _settings.ArcMinimumDistance
+                ? (Tween)transform.DOLocalPath(new[] { (from + localPosition) * .5f + Vector3.up * _settings.ArcHeight, localPosition },
+                    _settings.MoveDuration, PathType.CatmullRom)
+                : transform.DOLocalMove(localPosition, _settings.MoveDuration);
+            _moveTween = movement
                 .SetEase(_settings.MoveEase)
                 .SetDelay(delay)
                 .SetUpdate(_settings.UseUnscaledTime)

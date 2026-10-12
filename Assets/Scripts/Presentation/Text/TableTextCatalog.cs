@@ -5,6 +5,14 @@ namespace Okey.Presentation.Text
     [CreateAssetMenu(menuName = "Okey/Presentation/Table Text")]
     public sealed class TableTextCatalog : ScriptableObject
     {
+        [SerializeField] private string _yourTurnNotice;
+        public string YourTurnNotice => _yourTurnNotice;
+        [SerializeField] private string _openingNoticeFormat;
+        public string OpeningNoticeFormat => _openingNoticeFormat;
+        [SerializeField] private string _penaltyNoticeFormat;
+        public string PenaltyNoticeFormat => _penaltyNoticeFormat;
+        [SerializeField] private string _thresholdFormat;
+        public string ThresholdFormat => _thresholdFormat;
         [SerializeField] private string[] _seatNames;
         [SerializeField] private string[] _playerNames;
         public string PlayerName(int seat) => seat == 0 ? _localSeatName : _playerNames[seat - 1];

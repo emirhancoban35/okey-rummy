@@ -21,7 +21,8 @@ MonoBehaviour:
   _invalidOpeningPenalty: 0
   _unopenedScore: 2
   _jokerScore: 0
-  _discardPenalty: 0
+  _playableDiscardPenalty: 0
+  _jokerDiscardPenalty: 0
   _winnerScore: 0
   _pairMultiplier: 2
   _jokerFinishMultiplier: 2
