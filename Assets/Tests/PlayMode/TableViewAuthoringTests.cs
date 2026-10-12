@@ -88,5 +88,23 @@ namespace Okey.Tests.PlayMode
                 Object.Destroy(copy);
             }
         }
+        [Test]
+        public void OpeningThresholdHeadersAreVisibleAndRemainEditable()
+        {
+            foreach (var board in new[] { _view.Surface.SeriesBoard, _view.Surface.PairsBoard })
+            {
+                var text = board.ThresholdText;
+                Assert.That(text.isActiveAndEnabled, Is.True);
+                Assert.That(text.GetComponent<Renderer>().enabled, Is.True);
+                Assert.That(text.raycastTarget, Is.False);
+                var original = text.rectTransform.localPosition;
+                text.rectTransform.localPosition = original + Vector3.right * .1f;
+                board.RenderThreshold("137");
+                Assert.That(text.text, Is.EqualTo("137"));
+                Assert.That(text.rectTransform.localPosition, Is.EqualTo(original + Vector3.right * .1f));
+                text.rectTransform.localPosition = original;
+            }
+        }
+
     }
 }

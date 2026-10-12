@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Okey.Core.Games;
 using Okey.Core.Dealing;
+using Okey.Core.Stones;
 using Okey.Core.Rules;
 using Okey.Core.Tables;
 using Okey.Presentation.Racks;
@@ -45,7 +46,14 @@ namespace Okey.Composition
             if (_initialized) return;
             _initialized = true;
             _controls.Surface.DrawSource.DrawRequested += Draw;
-            foreach (var area in _controls.Surface.DiscardAreas) area.Clicked += TakeDiscard;
+            foreach (var area in _controls.Surface.DiscardAreas)
+            {
+                area.Clicked += TakeDiscard;
+                area.DragStarted += BeginDiscardDrag;
+                area.Dragged += DragDraw;
+                area.DragEnded += EndDrawDrag;
+                area.DragCancelled += CancelDrawDrag;
+            }
             _controls.Surface.DrawSource.DragStarted += BeginDrawDrag;
             _controls.Surface.DrawSource.Dragged += DragDraw;
             _controls.Surface.DrawSource.DragEnded += EndDrawDrag;
@@ -64,25 +72,39 @@ namespace Okey.Composition
 
         }
 
+        private bool TryTakeDiscard(DiscardAreaView area, out StoneInstance stone)
+        {
+            stone = null;
+            if (_disposed || _interaction.IsDragging || _session.ActiveSeat != _local.Seat || _session.Phase == TurnPhase.Finished) return false;
+            if (area != _controls.Surface.DiscardAreas[_session.Players.Count - 1] || !_session.CanTakeDiscard(_local.Seat))
+            {
+                _controls.Feedback.Show(_controls.Texts.PreviousDiscardHelp, false);
+                return false;
+            }
+            var previous = _session.Players[(_local.Seat + _session.Players.Count - 1) % _session.Players.Count];
+            stone = previous.Discards[previous.Discards.Count - 1];
+            return _session.TryTakeDiscard(_local.Seat);
+        }
+
         private void TakeDiscard(DiscardAreaView area)
         {
-            if (_disposed || _interaction.IsDragging || _session.ActiveSeat != _local.Seat || _session.Phase == TurnPhase.Finished) return;
-            if (area != _controls.Surface.DiscardAreas[_session.Players.Count - 1])
-            {
-                _controls.Feedback.Show(_controls.Texts.PreviousDiscardHelp, false);
-                return;
-            }
-            if (_session.TryReturnDiscard(_local.Seat)) return;
-            var previous = _session.Players[(_local.Seat + _session.Players.Count - 1) % _session.Players.Count];
-            if (previous.Discards.Count == 0) return;
-            var stone = previous.Discards[previous.Discards.Count - 1];
-            var origin = area.StoneRoot.position;
-            if (!_session.TryTakeDiscard(_local.Seat))
-            {
-                _controls.Feedback.Show(_controls.Texts.PreviousDiscardHelp, false);
-                return;
-            }
-            _hand.AnimateDraw(stone.Id, origin);
+            if (!_disposed && !_interaction.IsDragging && area == _controls.Surface.DiscardAreas[_session.Players.Count - 1] &&
+                _session.TryReturnDiscard(_local.Seat)) return;
+            if (TryTakeDiscard(area, out var stone)) _hand.AnimateDraw(stone.Id, area.StoneRoot.position);
+        }
+
+        private bool BeginDiscardDrag(DiscardAreaView area, Vector3 position)
+        {
+            if (!TryTakeDiscard(area, out var stone)) return false;
+            return BeginPickupDrag(stone, position);
+        }
+
+        private bool BeginPickupDrag(StoneInstance stone, Vector3 position)
+        {
+            _drawnDragView = _hand.Views.Single(view => view.Instance.Id == stone.Id);
+            _interaction.TryBeginDrag(_drawnDragView);
+            _interaction.DragTo(_drawnDragView, position);
+            return true;
         }
 
         private bool PrepareDraw()
@@ -101,10 +123,7 @@ namespace Okey.Composition
         private bool BeginDrawDrag(Vector3 position)
         {
             if (!PrepareDraw() || !_session.TryDraw(_local.Seat, out var stone)) return false;
-            _drawnDragView = _hand.Views.Single(view => view.Instance.Id == stone.Id);
-            _interaction.TryBeginDrag(_drawnDragView);
-            _interaction.DragTo(_drawnDragView, position);
-            return true;
+            return BeginPickupDrag(stone, position);
         }
 
         private void DragDraw(Vector3 position)
@@ -203,7 +222,14 @@ namespace Okey.Composition
             _disposed = true;
             CancelDrawDrag();
             _controls.Surface.DrawSource.DrawRequested -= Draw;
-            foreach (var area in _controls.Surface.DiscardAreas) area.Clicked -= TakeDiscard;
+            foreach (var area in _controls.Surface.DiscardAreas)
+            {
+                area.Clicked -= TakeDiscard;
+                area.DragStarted -= BeginDiscardDrag;
+                area.Dragged -= DragDraw;
+                area.DragEnded -= EndDrawDrag;
+                area.DragCancelled -= CancelDrawDrag;
+            }
             _controls.Surface.DrawSource.DragStarted -= BeginDrawDrag;
             _controls.Surface.DrawSource.Dragged -= DragDraw;
             _controls.Surface.DrawSource.DragEnded -= EndDrawDrag;

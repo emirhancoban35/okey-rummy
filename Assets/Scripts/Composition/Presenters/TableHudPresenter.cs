@@ -76,6 +76,11 @@ namespace Okey.Composition
             var canDraw = !_interaction.IsDragging && (hasBorrowedTile && _table.RemainingCount > 0 || _table.CanDraw(_local.Seat) || _table.CanEndDrawnRound(_local.Seat));
             var penalty = finished ? local.Score : local.Penalty;
             var text = _view.Texts;
+            if (publicMelds)
+            {
+                _view.Surface.SeriesBoard.RenderThreshold(string.Format(text.ThresholdFormat, _table.SeriesThreshold));
+                _view.Surface.PairsBoard.RenderThreshold(string.Format(text.ThresholdFormat, _table.PairThreshold));
+            }
             _view.Surface.Render(publicMelds, _table.Melds.Count == 0, !publicMelds && _table.Winner < 0,
                 canDraw, _table.ActiveSeat == _local.Seat && _table.Phase == TurnPhase.AwaitingDiscard && _table.PendingDiscard == null,
                 !_interaction.IsDragging && (_table.CanTakeDiscard(_local.Seat) || hasBorrowedTile), _table.Players.Count);
@@ -91,7 +96,7 @@ namespace Okey.Composition
                 view.gameObject.SetActive(visible);
                 if (!visible) continue;
                 var action = _actions.Actions[index];
-                var label = action.Kind == RackActionKind.OpenMelds ? text.OpenLabel :
+                var label = action.Kind == RackActionKind.OpenMelds ? (action.AdditionalGroups ? text.AddLabel : text.OpenLabel) :
                     action.Kind == RackActionKind.Finish ? text.FinishLabel : text.PairsLabel;
                 var progress = publicMelds ? string.Format(text.ThresholdFormat, action.Required) :
                     action.AdditionalGroups ? string.Format(text.AdditionalGroupFormat, action.Progress) :

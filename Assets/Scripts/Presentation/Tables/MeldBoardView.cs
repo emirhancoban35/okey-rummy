@@ -9,6 +9,9 @@ namespace Okey.Presentation.Tables
 {
     public sealed class MeldBoardView : MonoBehaviour, IScrollHandler
     {
+        [SerializeField] private TMP_Text _thresholdText;
+        public TMP_Text ThresholdText => _thresholdText;
+        public void RenderThreshold(string value) => _thresholdText.text = value;
         [SerializeField, Min(1)] private int _rows = 8;
         [SerializeField, Min(1)] private int _lanes = 2;
         [SerializeField] private Vector2 _size;

@@ -48,7 +48,7 @@ The main menu is the first scene in Build Settings. **SampleScene.unity** can al
 | Return a trial tile in 101 | Click the previous tray again, or click the closed pile to return it and draw instead. |
 | Reclaim a public joker | Once opened, drag the tile matching its assigned color and value onto the public joker. Enable **Reclaim** in the new-game menu. |
 | Add a pair to the table | Once opened, drag the pair by its group handle onto the pair board. A pair opening must already exist. |
-| Take the previous discard | Classic: click the previous player's tray to take the tile into your rack. 101: click it to try the tile in your rack; use it in an opening, new meld, pair or legal layoff before discarding. |
+| Take the previous discard | Classic: click or drag from the previous player's highlighted tray to take the tile into your rack. 101: click or drag it to try the tile in your rack; use it in an opening, new meld, pair or legal layoff before discarding. |
 | Start another game | Open table settings and select **New Game** to return to the menu. |
 
 Rack rearrangement is available during other players' turns. Draws, openings, layoffs and discards always pass through the table's legality checks.
@@ -76,6 +76,8 @@ The base hand, meld and pickup rules follow the [Okey rules reference](https://w
 The default table uses a 106-tile deck. A random starting seat receives 22 tiles; the other seats receive 21. An indicator is set aside and 20 tiles remain in the stock. Subsequent tables rotate the starting seat. The indicator determines the real joker; fake jokers represent that fixed color and value.
 
 An initial series opening needs **101 points**, or a pair opening needs **five pairs**. The local opening evaluator uses adjacent tiles on the same rack row and reserves a tile for the final discard. Invalid opening attempts apply a configurable penalty and preserve the hand. Additional series melds use the player's existing opening mode. After anyone opens pairs, a series-opened player may also add pairs without changing their original opening mode or score treatment. Joker assignments in public melds remain fixed. Each series or set occupies its own row. Runs use number-aligned columns: 1–2–3 starts at the left edge, while 3–4–5 reserves two positions on its left and the remaining values on its right. Sets pack their three tiles side by side; the fourth color appends to the right without moving the existing tiles. Adding tiles keeps existing tiles and other melds in place. Rows fill downward through separate lanes; page buttons or the mouse wheel keep a full board accessible without shrinking tiles.
+
+The board headers show the live opening thresholds beside the run and pair examples. Once opened, the action cards change to **Add**; an empty additional-meld action is disabled and cannot charge an opening penalty.
 
 Rising openings increase the series and pair thresholds independently. Each successful initial opening sets its corresponding next threshold to the opened total plus a configurable increment, which defaults to one. Additional melds and invalid attempts do not raise thresholds.
 

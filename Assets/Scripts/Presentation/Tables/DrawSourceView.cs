@@ -16,11 +16,7 @@ namespace Okey.Presentation.Tables
         [SerializeField] private Color _waitingColor;
         [SerializeField] private Color _hoverColor;
         private bool _canDraw;
-        private bool _dragging;
-        private bool _suppressClick;
-        private int _pointerId;
-        private Camera _camera;
-        private Plane _plane;
+        private readonly TileSourceDragGesture _gesture = new TileSourceDragGesture();
         public bool CanDraw
         {
             get => _canDraw;
@@ -32,47 +28,28 @@ namespace Okey.Presentation.Tables
             }
         }
         public event Action DrawRequested;
-        public event Func<Vector3, bool> DragStarted;
-        public event Action<Vector3> Dragged;
-        public event Action<Vector3> DragEnded;
-        public event Action DragCancelled;
+        public event Func<Vector3, bool> DragStarted { add => _gesture.Started += value; remove => _gesture.Started -= value; }
+        public event Action<Vector3> Dragged { add => _gesture.Moved += value; remove => _gesture.Moved -= value; }
+        public event Action<Vector3> DragEnded { add => _gesture.Ended += value; remove => _gesture.Ended -= value; }
+        public event Action DragCancelled { add => _gesture.Cancelled += value; remove => _gesture.Cancelled -= value; }
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            if (eventData.button == PointerEventData.InputButton.Left) _suppressClick = false;
+            if (eventData.button == PointerEventData.InputButton.Left) _gesture.ResetPress();
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (CanDraw && !_suppressClick && !eventData.dragging && eventData.button == PointerEventData.InputButton.Left)
+            if (CanDraw && !_gesture.SuppressClick && !eventData.dragging && eventData.button == PointerEventData.InputButton.Left)
                 DrawRequested?.Invoke();
         }
 
-        public void OnBeginDrag(PointerEventData eventData)
+        public void OnBeginDrag(PointerEventData data)
         {
-            if (!CanDraw || _dragging || eventData.button != PointerEventData.InputButton.Left) return;
-            _camera = eventData.pressEventCamera;
-            if (_camera == null) return;
-            _plane = new Plane(transform.forward, transform.position);
-            if (!TryGetPosition(eventData.position, out var position)) return;
-            _pointerId = eventData.pointerId;
-            _suppressClick = true;
-            _dragging = DragStarted?.Invoke(position) == true;
+            if (CanDraw) _gesture.Begin(data, transform);
         }
-
-        public void OnDrag(PointerEventData eventData)
-        {
-            if (_dragging && eventData.pointerId == _pointerId && TryGetPosition(eventData.position, out var position))
-                Dragged?.Invoke(position);
-        }
-
-        public void OnEndDrag(PointerEventData eventData)
-        {
-            if (!_dragging || eventData.pointerId != _pointerId) return;
-            _dragging = false;
-            if (TryGetPosition(eventData.position, out var position)) DragEnded?.Invoke(position);
-            else DragCancelled?.Invoke();
-        }
+        public void OnDrag(PointerEventData data) => _gesture.Move(data);
+        public void OnEndDrag(PointerEventData data) => _gesture.End(data);
 
         public void OnPointerEnter(PointerEventData eventData)
         {
@@ -84,25 +61,10 @@ namespace Okey.Presentation.Tables
             if (_highlight != null) _highlight.color = CanDraw ? _readyColor : _waitingColor;
         }
 
-        private bool TryGetPosition(Vector2 screenPosition, out Vector3 position)
-        {
-            var ray = _camera.ScreenPointToRay(screenPosition);
-            if (_plane.Raycast(ray, out var distance)) { position = ray.GetPoint(distance); return true; }
-            position = default;
-            return false;
-        }
-
-        private void Cancel()
-        {
-            if (!_dragging) return;
-            _dragging = false;
-            DragCancelled?.Invoke();
-        }
-
-        private void OnDisable() => Cancel();
+        private void OnDisable() => _gesture.Cancel();
         private void OnApplicationFocus(bool focused)
         {
-            if (!focused) Cancel();
+            if (!focused) _gesture.Cancel();
         }
     }
 }

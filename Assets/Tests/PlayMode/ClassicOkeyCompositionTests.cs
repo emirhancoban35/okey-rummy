@@ -218,6 +218,23 @@ namespace Okey.Tests.PlayMode
                 InputSystem.settings.editorInputBehaviorInPlayMode = editor;
                 if (originalMouse != null && originalMouse != mouse) originalMouse.MakeCurrent();
             }
+            table.TryDiscard(0, previous.Id);
+            for (var step = 0; table.ActiveSeat != 0 && step < 100; step++) bots.Act();
+            previous = table.Players[3].Discards.Last(); stock = table.RemainingCount;
+            var data = new PointerEventData(EventSystem.current) { pointerId = 37,
+                button = PointerEventData.InputButton.Left, position = camera.WorldToScreenPoint(area.StoneRoot.position),
+                pointerPressRaycast = new RaycastResult { module = camera.GetComponent<Physics2DRaycaster>() } };
+            area.OnPointerDown(data); area.OnBeginDrag(data);
+            var interaction = container.Resolve<RackInteractionController>();
+            Assert.That(interaction.IsDragging, Is.True);
+            var rack = container.Resolve<RackView>();
+            data.position = camera.WorldToScreenPoint(rack.StoneRoot.TransformPoint(rack.GetSlotLocalPosition(28)));
+            area.OnDrag(data); area.OnEndDrag(data); area.OnPointerClick(data);
+            Assert.That(interaction.IsDragging, Is.False);
+            Assert.That(table.Players[0].Hand.FindSlot(previous.Id), Is.EqualTo(28));
+            Assert.That(table.PendingDiscard, Is.Null);
+            Assert.That(table.RemainingCount, Is.EqualTo(stock));
+
         }
 
     }

@@ -89,7 +89,12 @@ namespace Okey.Tests.EditMode
             table.TryOpen(1, OpeningMode.Series, new[] { Meld(table, MeldKind.Run, deck[8], deck[9], deck[10]) });
             table.TryDiscard(1, 11); table.TryDraw(0);
             table.TryOpen(0, OpeningMode.Series, new[] { Meld(table, MeldKind.Run, deck[1], deck[2], deck[3]) });
-            table.TryDiscard(0, 4); table.TryTakeDiscard(1);
+            table.TryDiscard(0, 4);
+            var policy = new BotDecisionPolicy(new MeldPlayerStrategy(new MeldPlanner()), new SeededRandomSource(42));
+            var action = policy.Decide(table.ObserveTurn(1), new BotPreferences(false, 0, 0, 1, 2, .1, 2), false);
+            Assert.That(action.Kind, Is.EqualTo(PlayerActionKind.TakeDiscard));
+            Assert.That(action.MeldIndex, Is.EqualTo(1));
+            table.TryTakeDiscard(1);
             Assert.That(table.TryLayOff(1, 12, 1), Is.False);
             Assert.That(table.TryLayOff(1, 4, 1), Is.True);
             Assert.That(table.PendingDiscard, Is.Null);

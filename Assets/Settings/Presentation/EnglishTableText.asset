@@ -73,3 +73,4 @@ MonoBehaviour:
   _jokerReclaimOn: "RECLAIM ON"
   _jokerReclaimOff: "RECLAIM OFF"
   _previousDiscardHelp: Take from the highlighted tray before drawing.
+  _addLabel: ADD

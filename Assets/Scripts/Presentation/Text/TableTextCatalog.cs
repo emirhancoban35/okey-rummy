@@ -5,6 +5,8 @@ namespace Okey.Presentation.Text
     [CreateAssetMenu(menuName = "Okey/Presentation/Table Text")]
     public sealed class TableTextCatalog : ScriptableObject
     {
+        [SerializeField] private string _addLabel;
+        public string AddLabel => _addLabel;
         [SerializeField, TextArea] private string _discardTrialStatus;
         [SerializeField] private string _previousDiscardHelp;
         public string PreviousDiscardHelp => _previousDiscardHelp;

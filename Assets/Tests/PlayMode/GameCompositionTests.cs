@@ -1212,7 +1212,8 @@ namespace Okey.Tests.PlayMode
             deck[8] = Tile(8, 8); deck[9] = Tile(9, 1, StoneColor.Blue); deck[10] = Tile(10, 10);
             deck[11] = Tile(11, 11, StoneColor.Yellow); deck[12] = Tile(12, 11, StoneColor.Yellow);
             var session = new TableSession(new OkeyRules(2, 7, 1, 13, 1, 1, 101, 202, 101, -101, 101, 2, 2),
-                deck, Rack.Capacity, new Okey.Core.Games.Okey101Game(), startingSeat: 1);
+                deck, Rack.Capacity, new Okey.Core.Games.Okey101Game(), startingSeat: 1,
+                options: new TableOptions(escalatingOpenings: !reclaim));
             var local = new LocalPlayerContext(0, 2);
             var interaction = new RackInteractionController(session.Players[0].Layout, Rack);
             var factory = container.Resolve<StoneViewFactory>();
@@ -1233,6 +1234,14 @@ namespace Okey.Tests.PlayMode
                 session.MeldRules.TryCreate(new[] { deck[1], deck[2], deck[3] }, MeldKind.Run, out var localMeld);
                 Assert.That(session.TryOpen(0, OpeningMode.Series, new[] { localMeld }), Is.True);
                 DOTween.CompleteAll();
+                Assert.That(Controls.Actions[0].Button.interactable, Is.False);
+                Controls.Actions[0].Button.onClick.Invoke();
+                Assert.That(session.Players[0].Penalty, Is.Zero);
+                if (!reclaim)
+                {
+                    Assert.That(Controls.Surface.SeriesBoard.ThresholdText.text, Is.EqualTo("13"));
+                    Assert.That(Controls.Surface.PairsBoard.ThresholdText.text, Is.EqualTo("2"));
+                }
                 var handCount = session.Players[0].Hand.Count;
                 var dragged = hand.Views.Single(view => view.Instance.Id == (reclaim ? 6 : 5));
                 var position = reclaim ? Controls.Surface.SeriesBoard.GetComponentsInChildren<Stone>()
@@ -1259,6 +1268,31 @@ namespace Okey.Tests.PlayMode
                 }
             }
             finally { experience.Dispose(); controller.Dispose(); hud.Dispose(); table.Dispose(); hand.Dispose(); }
+        }
+
+        [Test]
+        public void PreviousDiscardCanBeDraggedIntoTheRackWithoutDrawingOrReturningItOnRelease()
+        {
+            var table = _context.Container.Resolve<TableSession>();
+            table.TryDiscard(0, HandViews[0].Instance.Id);
+            var bots = _context.Container.Resolve<BotTurnController>();
+            for (var step = 0; table.ActiveSeat != 0 && step < 100; step++) bots.Act();
+            var previous = table.Players[3].Discards.Last(); var stock = table.RemainingCount;
+            var source = Controls.Surface.DiscardAreas[3];
+            var camera = _context.Container.Resolve<Camera>();
+            var data = new PointerEventData(EventSystem.current) { pointerId = 13,
+                button = PointerEventData.InputButton.Left, position = camera.WorldToScreenPoint(source.StoneRoot.position),
+                pointerPressRaycast = new RaycastResult { module = camera.GetComponent<Physics2DRaycaster>() } };
+            source.OnPointerDown(data); source.OnBeginDrag(data); source.OnBeginDrag(data);
+            Assert.That(Interaction.IsDragging, Is.True);
+            Assert.That(table.PendingDiscard.Id, Is.EqualTo(previous.Id));
+            data.position = camera.WorldToScreenPoint(SlotWorldPosition(28));
+            source.OnDrag(data); source.OnEndDrag(data); source.OnPointerClick(data);
+            Assert.That(Interaction.IsDragging, Is.False);
+            Assert.That(table.Players[0].Hand.FindSlot(previous.Id), Is.EqualTo(28));
+            Assert.That(table.PendingDiscard.Id, Is.EqualTo(previous.Id));
+            Assert.That(table.RemainingCount, Is.EqualTo(stock));
+            Assert.That(table.TryDiscard(0, previous.Id), Is.False);
         }
 
     }
