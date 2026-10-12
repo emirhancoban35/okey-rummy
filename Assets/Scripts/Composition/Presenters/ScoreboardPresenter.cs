@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using Okey.Core.Dealing;
 using Okey.Core.Rules;
 using Okey.Core.Tables;
 using Okey.Presentation.Tables;

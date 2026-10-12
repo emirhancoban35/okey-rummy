@@ -3,7 +3,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Okey.Core.Games;
-using Okey.Core.Dealing;
 using Okey.Core.Stones;
 using Okey.Core.Rules;
 using Okey.Core.Tables;
@@ -78,7 +77,7 @@ namespace Okey.Composition
             if (_disposed || _interaction.IsDragging || _session.ActiveSeat != _local.Seat || _session.Phase == TurnPhase.Finished) return false;
             if (area != _controls.Surface.DiscardAreas[_session.Players.Count - 1] || !_session.CanTakeDiscard(_local.Seat))
             {
-                _controls.Feedback.Show(_controls.Texts.PreviousDiscardHelp, false);
+                _controls.Feedback.ShowPreviousDiscardHelp();
                 return false;
             }
             var previous = _session.Players[(_local.Seat + _session.Players.Count - 1) % _session.Players.Count];
@@ -174,7 +173,7 @@ namespace Okey.Composition
             var origin = _controls.Surface.DiscardAreas[0].StoneRoot.InverseTransformPoint(stone.transform.position);
             if (!_session.TryDiscard(_local.Seat, stone.Instance.Id))
             {
-                if (_session.PendingDiscard != null) _controls.Feedback.Show(_controls.Texts.DiscardTrialHelp, false);
+                if (_session.PendingDiscard != null) _controls.Feedback.ShowDiscardTrialHelp(false);
                 return false;
             }
             _table.AnimateDiscard(_local.Seat, origin);

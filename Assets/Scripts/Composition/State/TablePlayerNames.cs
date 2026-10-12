@@ -1,13 +1,16 @@
 using System;
 using Okey.Core.Rooms;
 using Okey.Core.Tables;
-using Okey.Presentation.Text;
+using Okey.Presentation.Tables;
+using Okey.Configuration;
+using Okey.Core.Players;
 
 namespace Okey.Composition
 {
     public sealed class TablePlayerNames
     {
-        private readonly TableTextCatalog _texts;
+        private readonly TablePlayersView _view;
+        private readonly PlayerIdentity[] _roster;
         private readonly BotPreferences _bots;
         private readonly LocalPlayerContext _local;
         private readonly LocalRoomDirectory _rooms;
@@ -17,9 +20,10 @@ namespace Okey.Composition
             remove => _bots.Changed -= value;
         }
 
-        public TablePlayerNames(TableTextCatalog texts, BotPreferences bots, LocalPlayerContext local, LocalRoomDirectory rooms)
+        public TablePlayerNames(TablePlayersView view, BotPreferences bots, LocalPlayerContext local, LocalRoomDirectory rooms, RoomCatalog profiles)
         {
-            _texts = texts;
+            _view = view;
+            _roster = profiles.CreateRoster();
             _bots = bots;
             _local = local;
             _rooms = rooms;
@@ -29,7 +33,7 @@ namespace Okey.Composition
         {
             var viewSeat = _local.ViewSeat(seat);
             if (_bots.Humanlike && _rooms.Current != null) return _rooms.Current.Members[viewSeat].DisplayName;
-            return _bots.Humanlike ? _texts.PlayerName(viewSeat) : _texts.SeatName(viewSeat);
+            return _bots.Humanlike ? _roster[viewSeat].DisplayName : _view.SeatName(viewSeat);
         }
     }
 }

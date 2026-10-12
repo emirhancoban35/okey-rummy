@@ -9,7 +9,6 @@ using DG.Tweening;
 using NUnit.Framework;
 using Okey.Composition;
 using Okey.Core.Decks;
-using Okey.Core.Dealing;
 using Okey.Core.Tables;
 using Okey.Core.Rules;
 using Okey.Core.Stones;
@@ -41,16 +40,15 @@ namespace Okey.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            var existing = UnityEngine.Object.FindFirstObjectByType<GameFlowState>();
-            if (existing != null) UnityEngine.Object.DestroyImmediate(existing.gameObject);
-            _settings = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
+            if (ProjectContext.HasInstance) UnityEngine.Object.DestroyImmediate(ProjectContext.Instance.gameObject);
+            _settings = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Tables/Standard101Table.asset");
             _randomStart = _settings.RandomStartingSeat;
             _humanlike = _settings.HumanlikeBots;
             SetSetting("_randomStartingSeat", false);
             SetSetting("_humanlikeBots", false);
-            yield return SceneManager.LoadSceneAsync("SampleScene", LoadSceneMode.Additive);
+            yield return SceneManager.LoadSceneAsync("GameTable", LoadSceneMode.Additive);
             yield return null;
-            _scene = SceneManager.GetSceneByName("SampleScene");
+            _scene = SceneManager.GetSceneByName("GameTable");
             _context = _scene.GetRootGameObjects()
                 .Select(root => root.GetComponent<SceneContext>()).Single(context => context != null);
             var table = _context.Container.Resolve<TableSession>();
@@ -65,8 +63,7 @@ namespace Okey.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            var flow = UnityEngine.Object.FindFirstObjectByType<GameFlowState>();
-            if (flow != null) UnityEngine.Object.DestroyImmediate(flow.gameObject);
+            if (ProjectContext.HasInstance) UnityEngine.Object.DestroyImmediate(ProjectContext.Instance.gameObject);
             SetSetting("_randomStartingSeat", _randomStart);
             SetSetting("_humanlikeBots", _humanlike);
             if (_scene.IsValid() && _scene.isLoaded)
@@ -145,9 +142,9 @@ namespace Okey.Tests.PlayMode
             var sliders = serial.FindProperty("_turnSliders");
             var texts = serial.FindProperty("_opponentClockTexts");
             Assert.That(sliders.arraySize, Is.EqualTo(4));
-            _context.Container.Resolve<TurnClockController>().RenderClock(0, 22.5, false, 0, 45);
+            _context.Container.Resolve<TurnClockController>().RenderClock(0, 22.5, 45);
             Assert.That(((Slider)sliders.GetArrayElementAtIndex(0).objectReferenceValue).value, Is.EqualTo(.5f));
-            _context.Container.Resolve<TurnClockController>().RenderClock(2, 10, false, 0, 20);
+            _context.Container.Resolve<TurnClockController>().RenderClock(2, 10, 20);
             for (var seat = 0; seat < 4; seat++)
             {
                 var slider = (Slider)sliders.GetArrayElementAtIndex(seat).objectReferenceValue;
@@ -156,7 +153,7 @@ namespace Okey.Tests.PlayMode
                 Assert.That(slider.fillRect.sizeDelta.x, Is.Zero);
             }
             Assert.That(((TMP_Text)texts.GetArrayElementAtIndex(1).objectReferenceValue).text, Is.EqualTo("10s"));
-            _context.Container.Resolve<TurnClockController>().RenderClock(2, 0, false, 0, 20, true);
+            _context.Container.Resolve<TurnClockController>().RenderClock(2, 0, 20, true);
             Assert.That(((Slider)sliders.GetArrayElementAtIndex(2).objectReferenceValue).value, Is.Zero);
             Assert.That(((TMP_Text)texts.GetArrayElementAtIndex(1).objectReferenceValue).text, Is.Empty);
         }
@@ -277,8 +274,8 @@ namespace Okey.Tests.PlayMode
             var interaction = new RackInteractionController(session.Players[localSeat].Layout, Rack);
             var factory = _context.Container.Resolve<StoneViewFactory>();
             var hand = new HandPresenter(session.Players[localSeat].Hand, factory, Rack, interaction);
-            var names = new TablePlayerNames(Controls.Texts, _context.Container.Resolve<BotPreferences>(), local,
-                _context.Container.Resolve<Okey.Core.Rooms.LocalRoomDirectory>());
+            var names = new TablePlayerNames(Controls.Players, _context.Container.Resolve<BotPreferences>(), local,
+                _context.Container.Resolve<Okey.Core.Rooms.LocalRoomDirectory>(), _context.Container.Resolve<RoomCatalog>());
             var table = new TablePresenter(session, Controls, factory, local, names);
             var controller = new TurnController(session, hand, interaction, Controls, table, Rack, local);
             var hud = new TableHudPresenter(session, Controls, hand, interaction, table, Rack, local, names, new RackMeldEvaluator());
@@ -287,8 +284,8 @@ namespace Okey.Tests.PlayMode
                 hand.Initialize(); table.Initialize(); hud.Initialize(); controller.Initialize();
                 Assert.That(hand.Views.Select(view => view.Instance.Id), Is.EquivalentTo(
                     session.Players[localSeat].Hand.Slots.Where(tile => tile != null).Select(tile => tile.Id)));
-                var clock = new TurnClockController(session, _context.Container.Resolve<TimeoutDiscardPolicy>(), Controls, interaction, local, names);
-                clock.RenderClock(localSeat, 20, false, 0, 40);
+                var clock = new TurnClockController(session, _context.Container.Resolve<TimeoutDiscardPolicy>(), Controls, interaction, local);
+                clock.RenderClock(localSeat, 20, 40);
                 var sliders = new SerializedObject(Controls.Clock).FindProperty("_turnSliders");
                 Assert.That(((Slider)sliders.GetArrayElementAtIndex(0).objectReferenceValue).value, Is.EqualTo(.5f));
                 var stone = hand.Views[0];
@@ -936,8 +933,8 @@ namespace Okey.Tests.PlayMode
             for (var count = 0; table.ActiveSeat != 0 && table.Phase != TurnPhase.Finished && count < 100; count++) bot.Act();
             if (table.Phase == TurnPhase.AwaitingDraw) table.TryDraw(0);
             var definition = _context.Container.Resolve<DeckDefinition>();
-            var deal = new OpeningDealFactory(new DeckFactory(),new SeededStoneShuffler()).Create(definition, rack.Capacity + 1, 42);
-            var hand = new RackArrangement(deal.InitialHand, rack.Capacity + 1);
+            var tiles = new DeckFactory().Create(definition).Take(rack.Capacity + 1);
+            var hand = new RackArrangement(tiles, rack.Capacity + 1);
             var interaction = new RackInteractionController(hand, rack);
             var presenter = new HandPresenter(hand, _context.Container.Resolve<StoneViewFactory>(), rack, interaction);
             var childCount = rack.StoneRoot.childCount;
@@ -1082,9 +1079,9 @@ namespace Okey.Tests.PlayMode
             var actions = Controls.Canvas.transform.Find("OpeningActions");
             var value = actions.Find("RemainingHandValue").GetComponent<TMP_Text>();
             Assert.That(value.gameObject.activeSelf, Is.True);
-            Assert.That(value.text, Is.EqualTo(string.Format(Controls.Texts.HandFormat, _context.Container.Resolve<TableSession>().RemainingHandValue(0))));
+            Assert.That(value.text, Is.EqualTo($"LEFT {_context.Container.Resolve<TableSession>().RemainingHandValue(0)}"));
             Assert.That(actions.Find("HandIcon").gameObject.activeSelf, Is.False);
-            Assert.That(Controls.Hud.StatusText.text, Is.EqualTo(Controls.Texts.YourTurnNotice));
+            Assert.That(Controls.Hud.StatusText.text, Is.EqualTo("YOUR TURN"));
             var view = _context.Container.Resolve<ScoreboardView>();
             view.Show();
             DOTween.CompleteAll();
@@ -1190,7 +1187,7 @@ namespace Okey.Tests.PlayMode
             Controls.Surface.DiscardAreas[3].OnPointerClick(new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left });
             Assert.That(table.PendingDiscard.Id, Is.EqualTo(borrowed.Id));
             Assert.That(Controls.Surface.DrawSource.CanDraw, Is.True);
-            Assert.That(Controls.Hud.StatusText.text, Is.EqualTo(Controls.Texts.DiscardTrialStatus));
+            Assert.That(Controls.Hud.StatusText.text, Is.EqualTo("USE BORROWED TILE"));
             if (timeout) _context.Container.Resolve<TurnClockController>().Advance(46);
             else _context.Container.Resolve<TurnController>().Draw();
             Assert.That(table.PendingDiscard, Is.Null);

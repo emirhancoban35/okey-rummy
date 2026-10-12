@@ -3,7 +3,6 @@ using System.Linq;
 using NUnit.Framework;
 using Okey.Composition;
 using Okey.Presentation.Tables;
-using Okey.Presentation.Text;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -21,9 +20,9 @@ namespace Okey.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            yield return SceneManager.LoadSceneAsync("SampleScene", LoadSceneMode.Additive);
+            yield return SceneManager.LoadSceneAsync("GameTable", LoadSceneMode.Additive);
             yield return null;
-            _scene = SceneManager.GetSceneByName("SampleScene");
+            _scene = SceneManager.GetSceneByName("GameTable");
             _context = _scene.GetRootGameObjects().Select(root => root.GetComponent<SceneContext>()).Single(value => value != null);
             _view = _context.Container.Resolve<TableView>();
             _context.Container.Resolve<TickableManager>().Remove(_context.Container.Resolve<BotTurnController>());
@@ -32,8 +31,7 @@ namespace Okey.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            var flow = Object.FindFirstObjectByType<GameFlowState>();
-            if (flow != null) Object.DestroyImmediate(flow.gameObject);
+            if (ProjectContext.HasInstance) UnityEngine.Object.DestroyImmediate(ProjectContext.Instance.gameObject);
             if (SceneManager.sceneCount == 1) SceneManager.CreateScene("ViewTestCleanup");
             yield return SceneManager.UnloadSceneAsync(_scene);
         }
@@ -62,32 +60,35 @@ namespace Okey.Tests.PlayMode
             }
         }
         [Test]
-        public void ReplacingThePrefabTextCatalogUpdatesDynamicLabelsWithoutCodeChanges()
+        public void RenderingPreservesTheAuthoredGameTitle()
         {
-            var original = _view.Texts;
-            var copy = Object.Instantiate(original);
-            var fields = new SerializedObject(copy);
-            fields.FindProperty("_openLabel").stringValue = "CUSTOM OPEN";
-            fields.FindProperty("_finishLabel").stringValue = "CUSTOM FINISH";
-            fields.FindProperty("_progressFormat").stringValue = "[{0} of {1}]";
-            fields.FindProperty("_additionalGroupFormat").stringValue = "[+{0}]";
-            fields.ApplyModifiedPropertiesWithoutUndo();
-            var viewFields = new SerializedObject(_view);
-            viewFields.FindProperty("_texts").objectReferenceValue = copy;
-            viewFields.ApplyModifiedPropertiesWithoutUndo();
+            var title = _view.Canvas.transform.Find("Brand/GameTitle").GetComponent<TMP_Text>();
+            title.text = "MY TABLE";
+            title.fontSize = 27;
+            _context.Container.Resolve<TableHudPresenter>().Refresh();
+            Assert.That(title.text, Is.EqualTo("MY TABLE"));
+            Assert.That(title.fontSize, Is.EqualTo(27));
+        }
+
+        [Test]
+        public void NumberTemplatesComeFromThePrefabTextComponents()
+        {
+            var prefab = PrefabUtility.LoadPrefabContents("Assets/Prefabs/GameControls.prefab");
             try
             {
-                _context.Container.Resolve<TableHudPresenter>().Refresh();
-                Assert.That(_view.Actions[0].Label.text, Is.EqualTo(_context.Container.Resolve<Okey.Core.Tables.TableSession>().Game.AllowsPublicMelds ? "CUSTOM OPEN" : "CUSTOM FINISH"));
-                Assert.That(_view.Actions[0].ProgressText.text, Does.StartWith("["));
+                var hud = prefab.GetComponent<TableView>().Hud;
+                var fields = new SerializedObject(hud);
+                ((TMP_Text)fields.FindProperty("_handText").objectReferenceValue).text = "Remaining: {0}";
+                typeof(TableHudView).GetMethod("Awake", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(hud, null);
+                hud.RenderValues(31, 20, 0);
+                Assert.That(((TMP_Text)fields.FindProperty("_handText").objectReferenceValue).text, Is.EqualTo("Remaining: 31"));
             }
             finally
             {
-                viewFields.FindProperty("_texts").objectReferenceValue = original;
-                viewFields.ApplyModifiedPropertiesWithoutUndo();
-                Object.Destroy(copy);
+                PrefabUtility.UnloadPrefabContents(prefab);
             }
         }
+
         [Test]
         public void OpeningThresholdHeadersAreVisibleAndRemainEditable()
         {

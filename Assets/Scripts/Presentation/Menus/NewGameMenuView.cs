@@ -1,4 +1,3 @@
-using Okey.Presentation.Text;
 using System;
 using DG.Tweening;
 using TMPro;
@@ -8,8 +7,6 @@ namespace Okey.Presentation.Menus
 {
     public sealed class NewGameMenuView : MonoBehaviour
     {
-        [SerializeField] private TableTextCatalog _texts;
-        public TableTextCatalog Texts => _texts;
         [SerializeField] private Button _ruleButton;
         [SerializeField] private TMP_Text _ruleText;
         [SerializeField] private Button _createRoomButton;
@@ -25,7 +22,16 @@ namespace Okey.Presentation.Menus
         [SerializeField] private TMP_Text _jokerReclaimText;
         [SerializeField] private Button _handsButton;
         [SerializeField] private TMP_Text _handsText;
-        [SerializeField] private string _handsFormat = "{0} HANDS";
+        [SerializeField] private string _unavailable = "NOT USED";
+        [SerializeField] private string _partners = "PARTNERS";
+        [SerializeField] private string _individual = "INDIVIDUAL";
+        [SerializeField] private string _humanlike = "HUMANLIKE";
+        [SerializeField] private string _fast = "FAST";
+        [SerializeField] private string _rising = "RISING";
+        [SerializeField] private string _fixed = "FIXED";
+        [SerializeField] private string _reclaimOn = "RECLAIM ON";
+        [SerializeField] private string _reclaimOff = "RECLAIM OFF";
+        private string _handsFormat;
         public event Action HandsRequested;
         public event Action JokerReclaimRequested;
         public event Action RulesRequested;
@@ -35,18 +41,20 @@ namespace Okey.Presentation.Menus
         public event Action EscalatingRequested;
         private Tween _fade;
 
+        private void Awake() => _handsFormat = _handsText.text;
+
         public void RenderHands(int hands) => _handsText.text = string.Format(_handsFormat, hands);
-        public void Render(string rules, string partnerships, string bots, string openings, bool canChooseOpenings)
+        public void Render(string rules, bool partnerships, bool humanlike, bool rising, bool canChooseOpenings)
         {
             _ruleText.text = rules;
-            _partnershipText.text = partnerships;
-            _botModeText.text = bots;
-            _escalatingText.text = openings;
+            _partnershipText.text = partnerships ? _partners : _individual;
+            _botModeText.text = humanlike ? _humanlike : _fast;
+            _escalatingText.text = !canChooseOpenings ? _unavailable : rising ? _rising : _fixed;
             _escalatingButton.interactable = canChooseOpenings;
         }
-        public void RenderJokerReclaim(string label, bool available)
+        public void RenderJokerReclaim(bool enabled, bool available)
         {
-            _jokerReclaimText.text = label;
+            _jokerReclaimText.text = !available ? _unavailable : enabled ? _reclaimOn : _reclaimOff;
             _jokerReclaimButton.interactable = available;
         }
         private void NextHands() => HandsRequested?.Invoke();

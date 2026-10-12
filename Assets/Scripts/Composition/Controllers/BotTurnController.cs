@@ -1,4 +1,3 @@
-using Okey.Core.Dealing;
 using Okey.Core.Tables;
 using UnityEngine;
 using Zenject;

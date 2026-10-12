@@ -31,6 +31,8 @@ namespace Okey.Configuration
         public PlayerIdentity LocalPlayer => _localPlayer.CreateIdentity();
         public PlayerIdentity AvailableBot(LocalRoom room) => _botPlayers.Select(profile => profile.CreateIdentity())
             .FirstOrDefault(player => room.Members.All(member => member.Id != player.Id));
+        public PlayerIdentity[] CreateRoster() => new[] { LocalPlayer }.Concat(
+            _botPlayers.Select(profile => profile.CreateIdentity())).ToArray();
         public int NextHands(int current)
         {
             var index = Array.IndexOf(_handChoices, current);

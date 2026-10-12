@@ -4,7 +4,6 @@ using System.Linq;
 using Okey.Configuration;
 using Okey.Core.Decks;
 using Okey.Core.Games;
-using Okey.Core.Dealing;
 using Okey.Core.Stones;
 using Okey.Core.Tables;
 using Okey.Core.Rules;
@@ -22,30 +21,28 @@ namespace Okey.Composition
         [SerializeField] private ScoreboardBinding[] _scoreboards;
         [SerializeField] private SeatColorSettings _seatColors;
         [SerializeField] private Stone _stonePrefab;
-        [SerializeField] private OpeningDealSettings _openingDealSettings;
+        [Inject] private ShuffleSettings _shuffleSettings;
+        [Inject] private GameFlowState _flow;
         [SerializeField] private RackView _rackView;
         [SerializeField] private TableView _controlsView;
-        [SerializeField] private TableSettings _tableSettings;
         [SerializeField, Min(0)] private int _localSeat;
-        [SerializeField] private SceneNavigationSettings _navigationSettings;
 
         public override void InstallBindings()
         {
-            if (_tableCamera == null || _deckSettings == null || _stonePrefab == null || _openingDealSettings == null || _rackView == null || _controlsView == null || _tableSettings == null || _navigationSettings == null)
-                throw new InvalidOperationException("Table camera, deck settings, opening deal settings, stone prefab, rack view, table controls, table settings and navigation settings must be assigned to the game installer.");
+            if (_tableCamera == null || _deckSettings == null || _stonePrefab == null || _rackView == null || _controlsView == null)
+                throw new InvalidOperationException("Table camera, deck settings, stone prefab, rack view, table controls must be assigned to the game installer.");
 
+            var seed = _shuffleSettings.CreateSeed();
             Container.BindInstance(_deckSettings.CreateDefinition());
             Container.Bind<DeckFactory>().AsSingle();
             Container.Bind<IStoneShuffler>().To<SeededStoneShuffler>().AsSingle();
-            var flow = GameFlowState.Resolve(_tableSettings);
-            Container.BindInstance(flow.Rooms);
-            var setup = flow.Setup;
+            Container.BindInstance(_flow.Rooms);
+            var setup = _flow.Setup;
             Container.BindInstance(setup);
-            Container.BindInstance(flow.Matches.For(setup));
+            Container.BindInstance(_flow.Matches.For(setup));
             Container.BindInstance(_seatColors);
             Container.BindInstance(new LocalPlayerContext(_localSeat, setup.PlayerCount));
             Container.BindInstance(setup.CreateBotPreferences());
-            Container.BindInstance(_navigationSettings);
             Container.Bind<ITableNavigation>().To<SceneTableNavigation>().AsSingle();
             Container.BindInstance(setup.CreateRules());
             Container.Bind<MeldPlanner>().AsSingle();
@@ -53,13 +50,13 @@ namespace Okey.Composition
             Container.Bind<RackMeldEvaluator>().AsSingle();
             Container.Bind<IBotDecisionPolicy>().FromMethod(context => setup.ActiveProfile.CreateBotDecisions(
                 context.Container.Resolve<IPlayerStrategy>(), context.Container.Resolve<IRandomSource>())).AsSingle();
-            Container.Bind<IRandomSource>().To<SeededRandomSource>().AsSingle().WithArguments(_openingDealSettings.CreateSeed());
+            Container.Bind<IRandomSource>().To<SeededRandomSource>().AsSingle().WithArguments(seed);
             Container.Bind<ITableGame>().FromMethod(context => setup.ActiveProfile.CreateGame(context.Container.Resolve<MeldPlanner>())).AsSingle();
             Container.Bind<IPlayerStrategy>().FromMethod(context => setup.ActiveProfile.CreateStrategy(context.Container.Resolve<MeldPlanner>())).AsSingle();
             Container.Bind<TableSession>().FromMethod(context => new TableSession(
                 context.Container.Resolve<OkeyRules>(), context.Container.Resolve<IStoneShuffler>().Shuffle(
                     context.Container.Resolve<DeckFactory>().Create(context.Container.Resolve<DeckDefinition>()),
-                    _openingDealSettings.CreateSeed()), _rackView.Capacity, startingSeat: flow.StartingSeats.Next(setup.PlayerCount, setup.RandomStartingSeat),
+                    seed), _rackView.Capacity, startingSeat: _flow.StartingSeats.Next(setup.PlayerCount, setup.RandomStartingSeat),
                     options: setup.CreateOptions(), game: context.Container.Resolve<ITableGame>())).AsSingle();
             Container.Bind<Stone>().FromInstance(_stonePrefab).WhenInjectedInto<StoneViewFactory>();
             Container.Bind<StoneViewFactory>().AsSingle();
@@ -75,9 +72,8 @@ namespace Okey.Composition
             Container.BindInterfacesAndSelfTo<TableExperiencePresenter>().AsSingle();
             Container.BindInstance(_controlsView);
             Container.BindInstance(_tableCamera);
-            Container.BindInstance(_controlsView.Texts);
+            Container.BindInstance(_controlsView.Players);
             Container.Bind<TablePlayerNames>().AsSingle();
-            Container.BindInterfacesTo<TableCanvasPresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<HandPresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<TablePresenter>().AsSingle();
             Container.BindInterfacesAndSelfTo<TableHudPresenter>().AsSingle();

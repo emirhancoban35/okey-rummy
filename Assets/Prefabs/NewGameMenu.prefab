@@ -323,7 +323,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 5 HANDS
+  m_text: '{0} HANDS'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 249355da9e45b43c9a399a7de0495c83, type: 2}
   m_sharedMaterial: {fileID: -2785888994825977308, guid: 249355da9e45b43c9a399a7de0495c83, type: 2}
@@ -3611,7 +3611,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 754c408704974b3fba5cf143269d3a9f, type: 3}
   m_Name:
   m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Menus.NewGameMenuView
-  _texts: {fileID: 11400000, guid: 4044bd6d37bf4400ad856ea61c946730, type: 2}
   _ruleButton: {fileID: 4027267510539835886}
   _ruleText: {fileID: 4161668579044359576}
   _createRoomButton: {fileID: 2028920091242278451}
@@ -3627,7 +3626,15 @@ MonoBehaviour:
   _jokerReclaimText: {fileID: 245152505412498765}
   _handsButton: {fileID: 8068905866629312705}
   _handsText: {fileID: 7246242012258922955}
-  _handsFormat: '{0} HANDS'
+  _unavailable: NOT USED
+  _partners: PARTNERS
+  _individual: INDIVIDUAL
+  _humanlike: HUMANLIKE
+  _fast: FAST
+  _rising: RISING
+  _fixed: FIXED
+  _reclaimOn: RECLAIM ON
+  _reclaimOff: RECLAIM OFF
 --- !u!114 &6701806537991048111
 MonoBehaviour:
   m_ObjectHideFlags: 0

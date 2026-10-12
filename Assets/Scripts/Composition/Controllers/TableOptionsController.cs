@@ -34,10 +34,8 @@ namespace Okey.Composition
         private void TogglePartners() { _settings.TogglePartnerships(); Render(); }
         private void Render()
         {
-            var text = _controls.Texts;
-            _controls.Options.Render(_bots.Humanlike ? text.HumanlikeBotLabel : text.FastBotLabel,
-                _settings.Partnerships ? text.NextPartnerLabel : text.NextIndividualLabel,
-                _settings.EscalatingOpenings ? text.EscalatingOnLabel : text.EscalatingOffLabel, _table.Game.AllowsPublicMelds);
+            _controls.Options.Render(_bots.Humanlike, _settings.Partnerships,
+                _settings.EscalatingOpenings, _table.Game.AllowsPublicMelds);
         }
         private void NextHand() => _navigation.OpenMenu();
         public void Dispose()

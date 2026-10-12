@@ -34,8 +34,7 @@ namespace Okey.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            var existing = Object.FindFirstObjectByType<GameFlowState>();
-            if (existing != null) Object.DestroyImmediate(existing.gameObject);
+            if (ProjectContext.HasInstance) UnityEngine.Object.DestroyImmediate(ProjectContext.Instance.gameObject);
             yield return SceneManager.LoadSceneAsync("MainMenu", LoadSceneMode.Additive);
             yield return null;
             _context = Context(SceneManager.GetSceneByName("MainMenu"));
@@ -48,12 +47,11 @@ namespace Okey.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            var flow = Object.FindFirstObjectByType<GameFlowState>();
-            if (flow != null) Object.DestroyImmediate(flow.gameObject);
+            if (ProjectContext.HasInstance) UnityEngine.Object.DestroyImmediate(ProjectContext.Instance.gameObject);
             if (_settings.Partnerships != _partnerships) _settings.TogglePartnerships();
             if (_settings.HumanlikeBots != _humanlike) _settings.ToggleBotMode();
             if (_settings.EscalatingOpenings != _escalating) _settings.ToggleEscalatingOpenings();
-            foreach (var name in new[] { "MainMenu", "SampleScene" })
+            foreach (var name in new[] { "MainMenu", "GameTable" })
             {
                 var scene = SceneManager.GetSceneByName(name);
                 if (!scene.IsValid() || !scene.isLoaded) continue;
@@ -90,6 +88,7 @@ namespace Okey.Tests.PlayMode
         {
             Button("_partnershipButton").onClick.Invoke();
             Button("_escalatingButton").onClick.Invoke();
+            var flow = _context.Container.Resolve<GameFlowState>();
             var partners = _settings.Partnerships;
             var escalating = _settings.EscalatingOpenings;
             RoomButton("_createButton").onClick.Invoke();
@@ -101,10 +100,11 @@ namespace Okey.Tests.PlayMode
             Assert.That(RoomButton("_start").interactable, Is.True);
             RoomButton("_start").onClick.Invoke();
             var deadline = Time.realtimeSinceStartup + 15;
-            while (SceneManager.GetActiveScene().name != "SampleScene" && Time.realtimeSinceStartup < deadline) yield return null;
-            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("SampleScene"));
+            while (SceneManager.GetActiveScene().name != "GameTable" && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("GameTable"));
             yield return null;
-            var tableContext = Context(SceneManager.GetSceneByName("SampleScene"));
+            var tableContext = Context(SceneManager.GetSceneByName("GameTable"));
+            Assert.That(tableContext.Container.Resolve<GameFlowState>(), Is.SameAs(flow));
             var table = tableContext.Container.Resolve<TableSession>();
             Assert.That(tableContext.Container.Resolve<MatchScoreLedger>().RoundLimit, Is.EqualTo(hands));
             Assert.That(tableContext.Container.Resolve<TablePlayerNames>().ForSeat(1), Is.EqualTo(tableContext.Container.Resolve<LocalRoomDirectory>().Current.Members[1].DisplayName));
@@ -116,6 +116,7 @@ namespace Okey.Tests.PlayMode
             while (SceneManager.GetActiveScene().name != "MainMenu" && Time.realtimeSinceStartup < deadline) yield return null;
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
             yield return null;
+            Assert.That(Context(SceneManager.GetSceneByName("MainMenu")).Container.Resolve<GameFlowState>(), Is.SameAs(flow));
             Assert.That(_settings.Partnerships, Is.EqualTo(partners));
             Assert.That(_settings.EscalatingOpenings, Is.EqualTo(escalating));
         }

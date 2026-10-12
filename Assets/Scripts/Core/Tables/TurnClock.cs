@@ -1,5 +1,4 @@
 using System;
-using Okey.Core.Dealing;
 namespace Okey.Core.Tables
 {
     public sealed class TurnClock

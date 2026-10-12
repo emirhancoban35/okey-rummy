@@ -1,27 +1,21 @@
 using Okey.Configuration;
-using Okey.Core.Tables;
 using Okey.Core.Rooms;
-using UnityEngine;
+using Okey.Core.Tables;
 
 namespace Okey.Composition
 {
-    public sealed class GameFlowState : MonoBehaviour
+    public sealed class GameFlowState
     {
-        public LocalRoomDirectory Rooms { get; private set; }
+        public LocalRoomDirectory Rooms { get; }
         public MatchHistory Matches { get; } = new MatchHistory();
-        public GameSetup Setup { get; private set; }
-        public StartingSeatSequence StartingSeats { get; private set; }
+        public GameSetup Setup { get; }
+        public StartingSeatSequence StartingSeats { get; }
 
-        public static GameFlowState Resolve(TableSettings defaults)
+        public GameFlowState(TableSettings defaults, ShuffleSettings shuffle)
         {
-            var state = Object.FindFirstObjectByType<GameFlowState>();
-            if (state != null) return state;
-            state = new GameObject(nameof(GameFlowState)).AddComponent<GameFlowState>();
-            state.Setup = defaults.CreateSetup();
-            state.Rooms = defaults.Rooms.CreateDirectory(state.Setup.PlayerCount);
-            state.StartingSeats = new StartingSeatSequence(new SeededRandomSource(System.Guid.NewGuid().GetHashCode()));
-            DontDestroyOnLoad(state.gameObject);
-            return state;
+            Setup = defaults.CreateSetup();
+            Rooms = defaults.Rooms.CreateDirectory(Setup.PlayerCount);
+            StartingSeats = new StartingSeatSequence(new SeededRandomSource(shuffle.CreateSeed()));
         }
     }
 }

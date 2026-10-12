@@ -1,4 +1,4 @@
-namespace Okey.Core.Dealing
+namespace Okey.Core.Tables
 {
     public enum TurnPhase
     {

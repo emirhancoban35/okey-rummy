@@ -26,7 +26,7 @@ namespace Okey.Tests.EditMode
             Assert.That(hand.FindSlot(ids[0]), Is.EqualTo(7));
             Assert.That(hand.Slots.Where(tile => tile != null).Select(tile => tile.Id), Is.EquivalentTo(ids));
             Assert.That(table.RemainingCount, Is.EqualTo(22));
-            Assert.That(table.Phase, Is.EqualTo(Okey.Core.Dealing.TurnPhase.AwaitingDiscard));
+            Assert.That(table.Phase, Is.EqualTo(Okey.Core.Tables.TurnPhase.AwaitingDiscard));
         }
 
         [Test]

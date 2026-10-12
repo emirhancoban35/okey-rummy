@@ -2,7 +2,6 @@ using Okey.Presentation.Tables;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Okey.Core.Dealing;
 using Okey.Core.Tables;
 using Okey.Core.Stones;
 using Okey.Core.Rules;
@@ -181,9 +180,7 @@ namespace Okey.Composition
                 if (seat != _local.Seat)
                 {
                     var active = seat == _session.ActiveSeat && _session.Phase != TurnPhase.Finished;
-                    _controls.Players.RenderOpponent(_local.ViewSeat(seat), string.Format(_controls.Texts.OpponentFormat,
-                        _names.ForSeat(seat), player.Penalty, player.Score,
-                        active ? _controls.Texts.ActiveSeatText : string.Empty), active);
+                    _controls.Players.RenderOpponent(_local.ViewSeat(seat), _names.ForSeat(seat), active);
                 }
                 if (player.Discards.Count == 0)
                 {

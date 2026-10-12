@@ -12,8 +12,14 @@ namespace Okey.Presentation.Tables
         [SerializeField] private Button _closeHelpButton;
         [SerializeField] private GameObject _settingsPanel;
         [SerializeField] private GameObject _helpPanel;
-        [SerializeField] private TMP_Text _helpText;
-        public void RenderHelp(string text) => _helpText.text = text;
+        [SerializeField] private TMP_Text _seriesHelp;
+        [SerializeField] private TMP_Text _classicHelp;
+
+        public void RenderHelp(bool publicMelds)
+        {
+            _seriesHelp.gameObject.SetActive(publicMelds);
+            _classicHelp.gameObject.SetActive(!publicMelds);
+        }
         private void ToggleSettings()
         {
             _settingsPanel.SetActive(!_settingsPanel.activeSelf);

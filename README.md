@@ -15,7 +15,7 @@ Game rules and state live in a Unity-independent C# assembly. Zenject connects t
 5. Add bots in the lobby, then select **Start match** when all seats are occupied. Use **Remove** beside another player to free a seat.
 6. Alternatively, select **Join room** and click an available room. Open rooms join immediately; private rooms select their number and ask for a password. Joining by room number is also available.
 
-The main menu is the first scene in Build Settings. **SampleScene.unity** can also be opened directly for table development. Zenject and DOTween are included in the repository; no separate plugin installation is needed.
+The main menu is the first scene in Build Settings. **GameTable.unity** can also be opened directly for table development. Zenject and DOTween are included in the repository; no separate plugin installation is needed.
 
 ## Features
 
@@ -179,15 +179,15 @@ Multiplayer is not implemented. A future transport adapter can submit `PlayerAct
 
 | Asset | Editable values |
 | --- | --- |
-| `Assets/Settings/Dealing/Standard101Table.asset` | Available rule profiles, selected profile, player count, rising increment, partnerships, pickup and joker reclaim rules, starter selection, timers, match hand count and bot behavior. |
-| `Assets/Settings/Dealing/LocalRooms.asset` | Seeded rooms, passwords, profile lists, bot candidates, room numbering and available hand counts. |
+| `Assets/Settings/Tables/Standard101Table.asset` | Available rule profiles, selected profile, player count, rising increment, partnerships, pickup and joker reclaim rules, starter selection, timers, match hand count and bot behavior. |
+| `Assets/Settings/Rooms/LocalRooms.asset` | Seeded rooms, passwords, profile lists, bot candidates, room numbering and available hand counts. |
 | `Assets/Settings/Players/*.asset` | A stable ID and editable display name for each local/fake player. |
-| `Assets/Settings/Dealing/StandardBotStrategy.asset` | 101 bot discard connection weights and low-tile preference. |
-| `Assets/Settings/Dealing/Okey101Rules.asset` | 101 hand size, tile range, opening thresholds, indicator pairs, bot strategy, penalties (including joker reclaim) and score multipliers. |
-| `Assets/Settings/Dealing/ClassicOkeyRules.asset` | Classic hand size, tile range, pair count, round loss points and score multipliers. |
+| `Assets/Settings/Tables/StandardBotStrategy.asset` | 101 bot discard connection weights and low-tile preference. |
+| `Assets/Settings/Tables/Okey101Rules.asset` | 101 hand size, tile range, opening thresholds, indicator pairs, bot strategy, penalties (including joker reclaim) and score multipliers. |
+| `Assets/Settings/Tables/ClassicOkeyRules.asset` | Classic hand size, tile range, pair count, round loss points and score multipliers. |
 | `Assets/Settings/Decks/StandardOkeyDeck.asset` | Tile types, colors, number ranges and copies. |
-| `Assets/Settings/Dealing/StandardOpeningDeal.asset` | Fixed or random shuffle seed. Its practice-hand fields are separate from table settings. |
-| `Assets/Settings/Dealing/SceneNavigation.asset` | Menu and table scene names. |
+| `Assets/Settings/Tables/StandardShuffle.asset` | Fixed or random shuffle seed. Hand sizes belong to the rule profiles. |
+| `Assets/Settings/Navigation/SceneNavigation.asset` | Menu and table scene names. |
 | `Assets/Settings/Stones/DefaultStoneVisualSettings.asset` | Printed tile colors and fake-joker text. |
 | `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` | Movement duration, easing, arc height, arc distance and time scaling. |
 | `Assets/Prefabs/NewGameMenu.prefab` | Home/create/join/lobby layouts, inputs, seat removal, fonts, colors and transition. |
@@ -202,13 +202,16 @@ Multiplayer is not implemented. A future transport adapter can submit `PlayerAct
 
 ### Editing UI without changing code
 
-Open **Assets/Prefabs/GameControls.prefab** in Prefab Mode. Its root **TableView** contains references to the small views that own each part of the screen. The custom inspector includes an **Edit dynamic wording** button and a list of all text elements, including hidden panels. Selecting an element opens its own TextMeshPro and RectTransform settings.
+Open **Assets/Prefabs/GameControls.prefab** in Prefab Mode. Its root **TableView** contains references to the small views that own each part of the screen. Select the child text object to edit its TextMeshPro and RectTransform settings. Hidden panels remain editable in Prefab Mode.
 
 | Change | Edit here |
 | --- | --- |
 | Font asset, font size, alignment, wrapping, spacing or text color | The selected text object's TextMeshPro component inside the prefab |
 | Position, anchors, pivot, width or height | That object's RectTransform; moving the parent moves the whole card/panel |
-| Status messages, action labels, progress formats, seat/player names and menu options | **Assets/Settings/Presentation/EnglishTableText.asset**, referenced by both table and menu prefabs |
+| Game name | **GameControls > Canvas > Brand > GameTitle** and **NewGameMenu > Home > Brand**, directly in their TextMeshPro text fields |
+| Numeric formats | The relevant TextMeshPro text field: for example `LEFT {0}`, `{0} / {1}`, `{0:0}s` or `{0} HANDS` |
+| Status messages, changing button labels and notices | Serialized wording on **TableHudView**, **MeldActionView**, **TableOptionsView**, **TableFeedbackView** and **NewGameMenuView** |
+| Player names | **Assets/Settings/Players/** profiles; fast-mode seat labels live on **TablePlayersView** |
 | Fixed headings and instructions | Their own text objects inside the prefab; **ClassicTitle** and **ClassicDescription** have independent font sizes |
 | Opening-card behavior, examples and current/required text | **MeldActionView** on each series/pair card |
 | Clock bars and clock text references | **TurnClockView** on the turn clock |
@@ -217,7 +220,7 @@ Open **Assets/Prefabs/GameControls.prefab** in Prefab Mode. Its root **TableView
 | Opponent name/highlight | **OpponentSeatView** on the corresponding opponent |
 | Draw, discard, board and winning-hand geometry | **TableSurfaceView** on the root; board cells use each **MeldBoardView** |
 
-Save changes in Prefab Mode outside Play Mode. Scene-instance overrides take precedence over prefab values; changes made to runtime instances during Play Mode disappear when Play Mode ends. Dynamic text content is formatted from the assigned catalog, so editing a live label's text is temporary; its typography and placement are not overwritten by rendering. To customize one table independently, duplicate the text catalog and assign that copy on its TableView.
+Save changes in Prefab Mode outside Play Mode. Scene-instance overrides take precedence over prefab values; changes made to runtime instances during Play Mode disappear when Play Mode ends. Numeric text uses the template authored on its TextMeshPro component when the view starts. State-dependent wording lives on the responsible view in the same prefab. Static headings are never rewritten by the presenters. There is no separate text catalog or localization asset.
 
 ### Presentation boundaries and folders
 
@@ -230,14 +233,14 @@ The project uses a model, controller and presenter/view separation with Zenject.
 - **Composition/State/**: application flow state, local-seat mapping and table display names.
 - **Composition/Factories/** and **Navigation/**: prefab creation and scene transitions.
 - **Presentation/Tables/**, **Racks/**, **Stones/** and **Menus/**: feature views.
-- **Presentation/Text/**: the text-catalog type; **Settings/Presentation/** contains its editable assets.
-- **Scripts/Editor/**: authoring helpers, compiled only for the Unity Editor.
+- **Configuration/**: ScriptableObject definitions for rules, rooms, players and authored settings.
+- **Settings/**: asset instances grouped by feature; **Resources/ProjectContext.prefab** owns shared application bindings.
 
-**TableView** is a reference container. **TableHudPresenter** formats the action plans supplied by the game and combines them with local input availability. The prefab holds an ordered array of action cards; add enough cards for the selected game. **TurnController** submits player actions. **TablePresenter** synchronizes public physical tiles. Layout values live in prefabs, wording lives in serialized text assets, and game values live in rule profiles. Constants that describe structural rules, such as two tiles per pair, still belong in code.
+**TableView** is a reference container. **TableHudPresenter** formats the action plans supplied by the game and combines them with local input availability. The prefab holds an ordered array of action cards; add enough cards for the selected game. **TurnController** submits player actions. **TablePresenter** synchronizes public physical tiles. Layout values live in prefabs, wording lives in prefab text components and view fields, and game values live in rule profiles. Constants that describe structural rules, such as two tiles per pair, still belong in code.
 
 The table canvas uses its assigned scene camera so dragged tiles can render above ordinary controls. Its sorting order and each tile’s drag sorting order are authored in their prefabs. Both rack and pile drags restore the original order on drop or cancellation.
 
-Scene installers hold serialized asset and prefab references. Runtime controllers do not construct UI layouts or assign font sizes and RectTransform dimensions. DOTween handles movement and short transitions; views cancel their owned tweens when disabled. `TableSettings` contains authored defaults. `GameFlowState` owns the application’s menu choices in a `GameSetup` and its `StartingSeatSequence` across menu/table navigation. Each table receives its own rules/options snapshot and `BotPreferences`; live changes never mutate the authored asset. Bot-mode changes apply to the current table and become the next menu default. Partnership and rising-opening choices apply to the next table.
+**ProjectInstaller**, on **Assets/Resources/ProjectContext.prefab**, binds shared table defaults, shuffle settings, navigation settings, room profiles and a plain C# **GameFlowState**. Zenject owns its application lifetime; scene installers receive it through injection. Scene installers hold scene-specific camera and prefab references. Runtime controllers do not construct UI layouts or assign font sizes and RectTransform dimensions. DOTween handles movement and short transitions; views cancel their owned tweens when disabled. `TableSettings` contains authored defaults. `GameFlowState` owns the application’s menu choices in a `GameSetup` and its `StartingSeatSequence` across menu/table navigation. Each table receives its own rules/options snapshot and `BotPreferences`; live changes never mutate the authored asset. Bot-mode changes apply to the current table and become the next menu default. Partnership and rising-opening choices apply to the next table.
 
 ## Verification
 
@@ -251,7 +254,7 @@ Table and menu layouts are also checked at **1920 × 1080** and **1106 × 614**.
 
 - **Unity 6000.3.15f1**, Universal Render Pipeline 2D, Input System and TextMesh Pro.
 - **Zenject 9.2.0** and **DOTween 1.3.030**, vendored under `Assets/Plugins` with their license files.
-- **Nunito SemiBold and Bold**, distributed under the SIL Open Font License in `Assets/Art/Fonts/OFL.txt`.
+- **Nunito Bold**, distributed under the SIL Open Font License in `Assets/Art/Fonts/OFL.txt`.
 - AI-generated coffeehouse backdrop and oak rack. Their creation notes are in [Assets/Art/Table/README.md](Assets/Art/Table/README.md).
 
 Game code uses focused responsibilities, dependency injection at replaceable boundaries and editable configuration. Development commits use plain English descriptions.

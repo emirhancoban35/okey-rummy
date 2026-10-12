@@ -35,15 +35,10 @@ namespace Okey.Composition
         private void Render()
         {
             _view.RenderHands(_settings.MatchRounds);
-            var text = _view.Texts;
             var publicMelds = _settings.ActiveProfile.AllowsPublicMelds;
-            _view.RenderJokerReclaim(!publicMelds ? text.MenuUnavailable :
-                _settings.AllowJokerReclaim ? text.JokerReclaimOn : text.JokerReclaimOff, publicMelds);
-            _view.Render(_settings.ActiveProfile.Label,
-                _settings.Partnerships ? text.MenuPartners : text.MenuIndividual,
-                _settings.HumanlikeBots ? text.MenuHumanlike : text.MenuFast,
-                !_settings.ActiveProfile.AllowsPublicMelds ? text.MenuUnavailable : _settings.EscalatingOpenings ? text.MenuRising : text.MenuFixed,
-                _settings.ActiveProfile.AllowsPublicMelds);
+            _view.RenderJokerReclaim(_settings.AllowJokerReclaim, publicMelds);
+            _view.Render(_settings.ActiveProfile.Label, _settings.Partnerships,
+                _settings.HumanlikeBots, _settings.EscalatingOpenings, publicMelds);
         }
         public void Dispose()
         {

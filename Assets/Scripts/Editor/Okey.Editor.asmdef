@@ -1,6 +1,0 @@
-{
-    "name": "Okey.Editor",
-    "rootNamespace": "Okey.Editor",
-    "references": ["Okey.Presentation", "Unity.TextMeshPro"],
-    "includePlatforms": ["Editor"]
-}

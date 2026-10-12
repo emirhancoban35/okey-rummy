@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using NUnit.Framework;
-using Okey.Core.Dealing;
 using Okey.Core.Rules;
 using Okey.Core.Stones;
 using Okey.Core.Tables;

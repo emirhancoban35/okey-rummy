@@ -10,7 +10,7 @@ namespace Okey.Tests.EditMode
         [Test]
         public void IndependentSetupsAndTablesDoNotMutateDefaultsOrEachOther()
         {
-            var defaults = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
+            var defaults = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Tables/Standard101Table.asset");
             var original = EditorJsonUtility.ToJson(defaults);
             var first = defaults.CreateSetup();
             var second = defaults.CreateSetup();
@@ -34,7 +34,7 @@ namespace Okey.Tests.EditMode
         [Test]
         public void CatalogSessionsAndRoomSettingsDoNotMutateTheAuthoredAssets()
         {
-            var defaults = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
+            var defaults = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Tables/Standard101Table.asset");
             var catalog = defaults.Rooms;
             var before = EditorJsonUtility.ToJson(catalog);
             var first = catalog.CreateDirectory(4); var second = catalog.CreateDirectory(4);

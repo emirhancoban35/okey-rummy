@@ -1227,8 +1227,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fad07b8915c14a9296a9efe514e68e59, type: 3}
   m_Name:
   m_EditorClassIdentifier: Okey.Composition::Okey.Composition.NewGameMenuInstaller
-  _tableSettings: {fileID: 11400000, guid: 8d58160a6b0fa4c299aacf11ecd8bf09, type: 2}
-  _navigationSettings: {fileID: 11400000, guid: 0eec6c05a96494da6bbc7ac7ca24c429, type: 2}
   _menu: {fileID: 56775119}
   _rooms: {fileID: 56775120}
 --- !u!114 &1767636670

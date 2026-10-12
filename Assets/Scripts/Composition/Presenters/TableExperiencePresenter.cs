@@ -1,5 +1,4 @@
 using System;
-using Okey.Core.Dealing;
 using Okey.Core.Tables;
 using Okey.Presentation.Tables;
 using Zenject;
@@ -39,23 +38,21 @@ namespace Okey.Composition
             _turn = _table.TurnRevision;
             if (_table.ActiveSeat != _local.Seat) return;
             _view.Audio.Play(TableSoundCue.YourTurn);
-            _view.Feedback.Show(_view.Texts.YourTurnNotice, true);
+            _view.Feedback.ShowTurn();
         }
         private void Action(TableActionNotice notice)
         {
             if (notice.PenaltyKind != TablePenaltyKind.None)
             {
                 _view.Audio.Play(TableSoundCue.Penalty);
-                var format = notice.PenaltyKind == TablePenaltyKind.PlayableDiscard ? _view.Texts.PlayableDiscardNoticeFormat :
-                    notice.PenaltyKind == TablePenaltyKind.JokerDiscard ? _view.Texts.JokerDiscardNoticeFormat :
-                    notice.PenaltyKind == TablePenaltyKind.JokerReclaimed ? _view.Texts.JokerReclaimedNoticeFormat : _view.Texts.PenaltyNoticeFormat;
-                _view.Feedback.Show(string.Format(format, _names.ForSeat(notice.PenaltySeat), notice.Penalty, _names.ForSeat(notice.Seat)), false);
+                _view.Feedback.ShowPenalty(notice.PenaltyKind, _names.ForSeat(notice.PenaltySeat),
+                    notice.Penalty, _names.ForSeat(notice.Seat));
                 return;
             }
             switch (notice.Kind)
             {
                 case PlayerActionKind.TakeDiscard:
-                    if (notice.Seat == _local.Seat && _table.PendingDiscard != null) _view.Feedback.Show(_view.Texts.DiscardTrialHelp, true);
+                    if (notice.Seat == _local.Seat && _table.PendingDiscard != null) _view.Feedback.ShowDiscardTrialHelp();
                     _view.Audio.Play(TableSoundCue.Draw);
                     break;
                 case PlayerActionKind.Draw: _view.Audio.Play(TableSoundCue.Draw); break;
@@ -63,8 +60,7 @@ namespace Okey.Composition
                 case PlayerActionKind.LayOff: _view.Audio.Play(TableSoundCue.LayOff); break;
                 case PlayerActionKind.Open:
                     _view.Audio.Play(TableSoundCue.Open);
-                    if (notice.InitialOpening) _view.Feedback.Show(string.Format(_view.Texts.OpeningNoticeFormat,
-                        _names.ForSeat(notice.Seat), notice.Value), true);
+                    if (notice.InitialOpening) _view.Feedback.ShowOpening(_names.ForSeat(notice.Seat), notice.Value);
                     break;
             }
         }

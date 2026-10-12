@@ -4,7 +4,6 @@ using System.Linq;
 using NUnit.Framework;
 using Okey.Composition;
 using Okey.Configuration;
-using Okey.Core.Dealing;
 using Okey.Core.Games;
 using Okey.Core.Rules;
 using Okey.Core.Stones;
@@ -42,9 +41,8 @@ namespace Okey.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            var existing = Object.FindFirstObjectByType<GameFlowState>();
-            if (existing != null) Object.DestroyImmediate(existing.gameObject);
-            _defaults = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
+            if (ProjectContext.HasInstance) UnityEngine.Object.DestroyImmediate(ProjectContext.Instance.gameObject);
+            _defaults = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Tables/Standard101Table.asset");
             _randomStart = _defaults.RandomStartingSeat;
             Set("_randomStartingSeat",false);
             yield return SceneManager.LoadSceneAsync("MainMenu",LoadSceneMode.Additive);
@@ -57,12 +55,11 @@ namespace Okey.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
-            var flow = Object.FindFirstObjectByType<GameFlowState>();
-            if (flow != null) Object.DestroyImmediate(flow.gameObject);
+            if (ProjectContext.HasInstance) UnityEngine.Object.DestroyImmediate(ProjectContext.Instance.gameObject);
             while (_settings.RuleIndex != _originalIndex) _settings.NextRules();
             if (_settings.EscalatingOpenings != _originalEscalating) _settings.ToggleEscalatingOpenings();
             Set("_randomStartingSeat",_randomStart);
-            foreach(var name in new[] {"MainMenu","SampleScene"})
+            foreach(var name in new[] {"MainMenu","GameTable"})
             {
                 var scene=SceneManager.GetSceneByName(name);
                 if (!scene.IsValid() || !scene.isLoaded) continue;
@@ -85,9 +82,9 @@ namespace Okey.Tests.PlayMode
             for (var seat = 1; seat < _settings.PlayerCount; seat++) ((Button)rooms.FindProperty("_addBot").objectReferenceValue).onClick.Invoke();
             ((Button)rooms.FindProperty("_start").objectReferenceValue).onClick.Invoke();
             var deadline=Time.realtimeSinceStartup+15;
-            while(SceneManager.GetActiveScene().name!="SampleScene" && Time.realtimeSinceStartup<deadline) yield return null;
+            while(SceneManager.GetActiveScene().name!="GameTable" && Time.realtimeSinceStartup<deadline) yield return null;
             yield return null;
-            var context=Context("SampleScene");
+            var context=Context("GameTable");
             var table=context.Container.Resolve<TableSession>();
             var scores = context.Container.Resolve<ScoreboardView>();
             scores.Show();
@@ -123,9 +120,9 @@ namespace Okey.Tests.PlayMode
         public IEnumerator BotFinishesAClosedHandAndExposesAllFourteenTiles()
         {
             _settings.NextRules();
-            yield return SceneManager.LoadSceneAsync("SampleScene",LoadSceneMode.Additive);
+            yield return SceneManager.LoadSceneAsync("GameTable",LoadSceneMode.Additive);
             yield return null;
-            var container = Context("SampleScene").Container;
+            var container = Context("GameTable").Container;
             container.Resolve<TickableManager>().Remove(container.Resolve<BotTurnController>());
             container.Resolve<TickableManager>().Remove(container.Resolve<TurnClockController>());
             container.Resolve<TurnController>().Dispose();
@@ -175,12 +172,12 @@ namespace Okey.Tests.PlayMode
         public IEnumerator PreviousDiscardAcceptsRealPointerInputInClassicOkey()
         {
             _settings.NextRules();
-            yield return SceneManager.LoadSceneAsync("SampleScene", LoadSceneMode.Additive);
+            yield return SceneManager.LoadSceneAsync("GameTable", LoadSceneMode.Additive);
             yield return null;
             yield return SceneManager.UnloadSceneAsync("MainMenu");
             yield return null;
             Physics2D.SyncTransforms();
-            var container = Context("SampleScene").Container;
+            var container = Context("GameTable").Container;
             container.Resolve<TickableManager>().Remove(container.Resolve<BotTurnController>());
             container.Resolve<TickableManager>().Remove(container.Resolve<TurnClockController>());
             var table = container.Resolve<TableSession>();

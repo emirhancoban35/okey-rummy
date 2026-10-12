@@ -14,15 +14,21 @@ namespace Okey.Presentation.Tables
         [SerializeField] private TMP_Text _botModeLabel;
         [SerializeField] private TMP_Text _partnershipLabel;
         [SerializeField] private TMP_Text _escalatingLabel;
+        [SerializeField] private string _humanlike = "BOTS: HUMANLIKE";
+        [SerializeField] private string _fast = "BOTS: FAST";
+        [SerializeField] private string _partners = "NEXT: PARTNERS";
+        [SerializeField] private string _individual = "NEXT: INDIVIDUAL";
+        [SerializeField] private string _rising = "NEXT: RISING OPENINGS";
+        [SerializeField] private string _fixed = "NEXT: FIXED OPENINGS";
         public event Action BotModeRequested;
         public event Action PartnershipRequested;
         public event Action NewHandRequested;
         public event Action EscalatingRequested;
-        public void Render(string bots, string partners, string openings, bool showOpenings)
+        public void Render(bool humanlike, bool partners, bool rising, bool showOpenings)
         {
-            _botModeLabel.text = bots;
-            _partnershipLabel.text = partners;
-            _escalatingLabel.text = openings;
+            _botModeLabel.text = humanlike ? _humanlike : _fast;
+            _partnershipLabel.text = partners ? _partners : _individual;
+            _escalatingLabel.text = rising ? _rising : _fixed;
             _escalatingButton.gameObject.SetActive(showOpenings);
         }
         private void RequestBots() => BotModeRequested?.Invoke();

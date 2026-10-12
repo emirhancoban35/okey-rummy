@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Okey.Core.Dealing;
 namespace Okey.Core.Tables
 {
     public sealed class MatchScoreLedger

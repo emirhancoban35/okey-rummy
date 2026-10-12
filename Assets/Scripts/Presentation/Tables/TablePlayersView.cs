@@ -5,6 +5,9 @@ namespace Okey.Presentation.Tables
     public sealed class TablePlayersView : MonoBehaviour
     {
         [SerializeField] private OpponentSeatView[] _opponents;
+        [SerializeField] private string[] _seatNames = { "You", "East", "North", "West" };
+        public string SeatName(int seat) => _seatNames[seat];
+
         public void SetPlayerCount(int count)
         {
             for (var index = 0; index < _opponents.Length; index++) _opponents[index].SetVisible(index < count - 1);

@@ -123,7 +123,7 @@ namespace Okey.Tests.EditMode
             Assert.That(table.TryLayOff(0, 8, 0), Is.False);
             Assert.That(table.TryDiscard(0, 8), Is.True);
             Assert.That(table.Winner, Is.Zero);
-            Assert.That(table.Phase, Is.EqualTo(Okey.Core.Dealing.TurnPhase.Finished));
+            Assert.That(table.Phase, Is.EqualTo(Okey.Core.Tables.TurnPhase.Finished));
             Assert.That(table.Players.Select(player => player.Score), Is.EqualTo(new[] {-101, 202, 202, 202}));
             Assert.That(table.TryDraw(0), Is.False);
             Assert.That(table.TryDiscard(0, 8), Is.False);
@@ -161,10 +161,10 @@ namespace Okey.Tests.EditMode
             var steps = 0;
             PlayerObservation Observe(int seat) => new PlayerObservation(table.Players[seat].Hand.Slots.Where(tile => tile != null),
                 table.Melds, table.Players[seat].Opening, table.Rules, table.MeldRules);
-            while (table.Phase != Okey.Core.Dealing.TurnPhase.Finished && steps++ < 100)
+            while (table.Phase != Okey.Core.Tables.TurnPhase.Finished && steps++ < 100)
             {
                 var seat = table.ActiveSeat;
-                if (table.Phase == Okey.Core.Dealing.TurnPhase.AwaitingDraw) Assert.That(table.TryDraw(seat), Is.True);
+                if (table.Phase == Okey.Core.Tables.TurnPhase.AwaitingDraw) Assert.That(table.TryDraw(seat), Is.True);
                 var plan = strategy.PlanOpening(Observe(seat), out var mode);
                 if (plan.Melds.Count > 0 && (table.Players[seat].Opening != OpeningMode.Closed ||
                     (mode == OpeningMode.Pairs ? plan.Melds.Count >= table.Rules.PairThreshold : plan.Points >= table.Rules.SeriesThreshold)))
@@ -180,7 +180,7 @@ namespace Okey.Tests.EditMode
                 Assert.That(publicAndHands.Length + table.RemainingCount, Is.EqualTo(106));
             }
             Assert.That(steps, Is.LessThan(100));
-            Assert.That(table.Phase, Is.EqualTo(Okey.Core.Dealing.TurnPhase.Finished));
+            Assert.That(table.Phase, Is.EqualTo(Okey.Core.Tables.TurnPhase.Finished));
         }
 
     }

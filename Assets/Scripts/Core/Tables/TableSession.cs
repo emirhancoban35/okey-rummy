@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Okey.Core.Dealing;
 using Okey.Core.Games;
 using Okey.Core.Decks;
 using Okey.Core.Stones;

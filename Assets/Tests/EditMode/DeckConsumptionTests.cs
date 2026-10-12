@@ -2,13 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using Okey.Core.Dealing;
 using Okey.Core.Decks;
 using Okey.Core.Stones;
 
 namespace Okey.Tests.EditMode
 {
-    public sealed class DealingTests
+    public sealed class DeckConsumptionTests
     {
         private static DeckDefinition CreateDefinition()
         {
@@ -119,84 +118,5 @@ namespace Okey.Tests.EditMode
             }));
         }
 
-        [TestCase(0)]
-        [TestCase(2)]
-        [TestCase(12)]
-        public void OpeningDealPreservesEveryPhysicalStone(int handSize)
-        {
-            var factory = new OpeningDealFactory(new DeckFactory(), new SeededStoneShuffler());
-            var deal = factory.Create(CreateDefinition(), handSize, 42);
-
-            Assert.That(deal.Seed, Is.EqualTo(42));
-            Assert.That(deal.InitialHand.Count, Is.EqualTo(handSize));
-            Assert.That(deal.DrawPile.RemainingCount, Is.EqualTo(12 - handSize));
-            var remaining = deal.DrawPile.Draw(deal.DrawPile.RemainingCount);
-            var allIds = deal.InitialHand.Concat(remaining).Select(stone => stone.Id).ToArray();
-            Assert.That(allIds, Is.EquivalentTo(Enumerable.Range(0, 12)));
-            Assert.That(allIds.Distinct().Count(), Is.EqualTo(12));
-        }
-
-        [Test]
-        public void OpeningDealsHaveIndependentStateAndRepeatableOrder()
-        {
-            var factory = new OpeningDealFactory(new DeckFactory(), new SeededStoneShuffler());
-            var first = factory.Create(CreateDefinition(), 3, 42);
-            var second = factory.Create(CreateDefinition(), 3, 42);
-
-            first.DrawPile.Draw(2);
-
-            Assert.That(second.DrawPile.RemainingCount, Is.EqualTo(9));
-            Assert.That(first.InitialHand.Select(stone => stone.Id),
-                Is.EqualTo(second.InitialHand.Select(stone => stone.Id)));
-            Assert.That(first.InitialHand[0], Is.Not.SameAs(second.InitialHand[0]));
-            Assert.Throws<NotSupportedException>(() => ((IList<StoneInstance>)first.InitialHand).Clear());
-        }
-
-        [Test]
-        public void OpeningDealUsesInjectedShuffleStrategy()
-        {
-            var shuffler = new ReverseShuffler();
-            var factory = new OpeningDealFactory(new DeckFactory(), shuffler);
-
-            var deal = factory.Create(CreateDefinition(), 2, 17);
-
-            Assert.That(shuffler.ReceivedSeed, Is.EqualTo(17));
-            Assert.That(deal.InitialHand.Select(stone => stone.Id), Is.EqualTo(new[] { 11, 10 }));
-            Assert.That(deal.DrawPile.TryDraw(out var next), Is.True);
-            Assert.That(next.Id, Is.EqualTo(9));
-        }
-
-        [TestCase(-1)]
-        [TestCase(13)]
-        public void InvalidOpeningHandSizeFailsBeforeShuffle(int handSize)
-        {
-            var shuffler = new ReverseShuffler();
-            var factory = new OpeningDealFactory(new DeckFactory(), shuffler);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => factory.Create(CreateDefinition(), handSize, 17));
-            Assert.That(shuffler.ReceivedSeed, Is.Null);
-        }
-
-        [Test]
-        public void OpeningDealRejectsMissingDependenciesAndDefinition()
-        {
-            Assert.Throws<ArgumentNullException>(() => new OpeningDealFactory(null, new SeededStoneShuffler()));
-            Assert.Throws<ArgumentNullException>(() => new OpeningDealFactory(new DeckFactory(), null));
-            var factory = new OpeningDealFactory(new DeckFactory(), new SeededStoneShuffler());
-            Assert.Throws<ArgumentNullException>(() => factory.Create(null, 0, 0));
-        }
-
-        private sealed class ReverseShuffler : IStoneShuffler
-        {
-            public int? ReceivedSeed { get; private set; }
-
-            public IReadOnlyList<StoneInstance> Shuffle(IReadOnlyList<StoneInstance> stones, int seed)
-            {
-                ReceivedSeed = seed;
-                var reversed = new List<StoneInstance>(stones);
-                reversed.Reverse();
-                return reversed.AsReadOnly();
-            }
-        }
     }
 }

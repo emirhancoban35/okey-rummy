@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Okey.Presentation.Text;
 
 namespace Okey.Presentation.Tables
 {
@@ -10,7 +9,6 @@ namespace Okey.Presentation.Tables
         public TableAudioView Audio => _audio;
         [SerializeField] private Canvas _canvas;
         public Canvas Canvas => _canvas;
-        [SerializeField] private TableTextCatalog _texts;
         [SerializeField] private TableSurfaceView _surface;
         [SerializeField] private TableHudView _hud;
         [SerializeField] private MeldActionView[] _actions;
@@ -19,7 +17,6 @@ namespace Okey.Presentation.Tables
         [SerializeField] private OverlayPanelsView _panels;
         [SerializeField] private TableOptionsView _options;
         [SerializeField] private TableFeedbackView _feedback;
-        public TableTextCatalog Texts => _texts;
         public TableSurfaceView Surface => _surface;
         public TableHudView Hud => _hud;
         public IReadOnlyList<MeldActionView> Actions => _actions;
