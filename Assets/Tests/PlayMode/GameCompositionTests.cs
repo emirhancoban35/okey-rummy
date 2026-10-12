@@ -1074,12 +1074,11 @@ namespace Okey.Tests.PlayMode
         }
 
         [Test]
-        public void RemainingHandValueShowsPointsInsteadOfTileCountAndScoreSheetCanBeOpenedDuringPlay()
+        public void ClosedHandHidesRemainingValueAndScoreSheetCanBeOpenedDuringPlay()
         {
             var actions = Controls.Canvas.transform.Find("OpeningActions");
             var value = actions.Find("RemainingHandValue").GetComponent<TMP_Text>();
-            Assert.That(value.gameObject.activeSelf, Is.True);
-            Assert.That(value.text, Is.EqualTo($"LEFT {_context.Container.Resolve<TableSession>().RemainingHandValue(0)}"));
+            Assert.That(value.gameObject.activeSelf, Is.False);
             Assert.That(actions.Find("HandIcon").gameObject.activeSelf, Is.False);
             Assert.That(Controls.Hud.StatusText.text, Is.EqualTo("YOUR TURN"));
             var view = _context.Container.Resolve<ScoreboardView>();
@@ -1088,6 +1087,48 @@ namespace Okey.Tests.PlayMode
             Assert.That(view.transform.Find("ScorePanel").gameObject.activeSelf, Is.True);
             Assert.That(view.GetComponentsInChildren<TMP_Text>().Any(text => text.text.Contains("101 OKEY")), Is.True);
             Assert.That(view.GetComponentsInChildren<TMP_Text>().Any(text => text.text.Contains("Hand 1 / 5")), Is.True);
+        }
+
+        [TestCase(OpeningMode.Series, 7)]
+        [TestCase(OpeningMode.Pairs, 226)]
+        public void OpeningShowsRemainingPointsWithTheRuleMultiplier(OpeningMode mode, int expected)
+        {
+            _context.Container.Resolve<TableHudPresenter>().Dispose();
+            _context.Container.Resolve<HandPresenter>().Dispose();
+            _context.Container.Resolve<TablePresenter>().Dispose();
+            var deck = Enumerable.Range(0, 30).Select(id => new StoneInstance(id,
+                new StoneData(StoneType.Regular, StoneColor.Black, 8))).ToArray();
+            deck[0] = new StoneInstance(0, new StoneData(StoneType.Regular, StoneColor.Red, 9));
+            deck[1] = new StoneInstance(1, new StoneData(StoneType.Regular, StoneColor.Blue, 3));
+            deck[2] = new StoneInstance(2, new StoneData(StoneType.Regular, StoneColor.Blue, mode == OpeningMode.Pairs ? 3 : 4));
+            deck[3] = mode == OpeningMode.Pairs
+                ? new StoneInstance(3, new StoneData(StoneType.Regular, StoneColor.Red, 10))
+                : new StoneInstance(3, new StoneData(StoneType.Regular, StoneColor.Blue, 5));
+            deck[4] = new StoneInstance(4, new StoneData(StoneType.Regular, StoneColor.Black, mode == OpeningMode.Pairs ? 12 : 7));
+            var session = new TableSession(new OkeyRules(2, 3, 1, 13, 1, 1, 101, 202, 101, -101, 101, 2, 2),
+                deck, Rack.Capacity, new Okey.Core.Games.Okey101Game());
+            var local = new LocalPlayerContext(0, session.Players.Count);
+            var interaction = new RackInteractionController(session.Players[0].Layout, Rack);
+            var factory = _context.Container.Resolve<StoneViewFactory>();
+            var names = _context.Container.Resolve<TablePlayerNames>();
+            var hand = new HandPresenter(session.Players[0].Hand, factory, Rack, interaction);
+            var table = new TablePresenter(session, Controls, factory, local, names);
+            var hud = new TableHudPresenter(session, Controls, hand, interaction, table, Rack, local, names, new RackMeldEvaluator());
+            try
+            {
+                hand.Initialize();
+                table.Initialize();
+                hud.Initialize();
+                var value = Controls.Canvas.transform.Find("OpeningActions/RemainingHandValue").GetComponent<TMP_Text>();
+                Assert.That(value.gameObject.activeSelf, Is.False);
+                Assert.That(session.MeldRules.TryCreate(deck.Skip(1).Take(mode == OpeningMode.Pairs ? 2 : 3),
+                    mode == OpeningMode.Pairs ? MeldKind.Pair : MeldKind.Run, out var meld), Is.True);
+                Assert.That(session.TryOpen(0, mode, new[] { meld }), Is.True);
+                Assert.That(value.gameObject.activeSelf, Is.True);
+                Assert.That(value.text, Is.EqualTo($"LEFT {expected}"));
+                Assert.That(session.RemainingHandValue(0), Is.EqualTo(expected));
+            }
+            finally { hud.Dispose(); table.Dispose(); hand.Dispose(); }
         }
 
         [Test]

@@ -82,7 +82,7 @@ namespace Okey.Composition
             _view.Surface.Render(publicMelds, !publicMelds && _table.Winner < 0,
                 canDraw, _table.ActiveSeat == _local.Seat && _table.Phase == TurnPhase.AwaitingDiscard && _table.PendingDiscard == null,
                 !_interaction.IsDragging && (_table.CanTakeDiscard(_local.Seat) || hasBorrowedTile), _table.Players.Count);
-            _view.Hud.ShowHandValue(publicMelds);
+            _view.Hud.ShowHandValue(publicMelds && local.Opening != OpeningMode.Closed);
             RenderStatus();
             _view.Hud.RenderValues(_table.RemainingHandValue(_local.Seat), _table.RemainingCount, penalty);
             _view.Panels.RenderHelp(publicMelds);
