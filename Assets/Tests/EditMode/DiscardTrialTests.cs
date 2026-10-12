@@ -96,9 +96,30 @@ namespace Okey.Tests.EditMode
             Assert.That(action.MeldIndex, Is.EqualTo(1));
             table.TryTakeDiscard(1);
             Assert.That(table.TryLayOff(1, 12, 1), Is.False);
-            Assert.That(table.TryLayOff(1, 4, 1), Is.True);
+            var layoff = policy.Decide(table.ObserveTurn(1), new BotPreferences(false, 0, 0, 1, 2, .1, 2), false);
+            Assert.That(layoff.Kind, Is.EqualTo(PlayerActionKind.LayOff));
+            Assert.That(table.TryApply(1, layoff), Is.True);
             Assert.That(table.PendingDiscard, Is.Null);
             Assert.That(table.Melds[1].Tiles.Last().Stone.Id, Is.EqualTo(4));
+        }
+        [Test]
+        public void OpenBotProcessesAStockDrawIntoAnotherPlayersRunBeforeDiscarding()
+        {
+            var deck = Deck();
+            deck[8] = Tile(8, 3, StoneColor.Blue); deck[9] = Tile(9, 4, StoneColor.Blue); deck[10] = Tile(10, 5, StoneColor.Blue);
+            deck[12] = Tile(12, 6);
+            var table = Table(deck, start: 1);
+            table.TryOpen(1, OpeningMode.Series, new[] { Meld(table, MeldKind.Run, deck[8], deck[9], deck[10]) });
+            table.TryDiscard(1, 11); table.TryDraw(0);
+            table.TryOpen(0, OpeningMode.Series, new[] { Meld(table, MeldKind.Run, deck[1], deck[2], deck[3]) });
+            table.TryDiscard(0, 5); table.TryDraw(1);
+            var policy = new BotDecisionPolicy(new MeldPlayerStrategy(new MeldPlanner()), new SeededRandomSource(42));
+            var action = policy.Decide(table.ObserveTurn(1), new BotPreferences(false, 0, 0, 1, 2, .1, 2), false);
+            Assert.That(action.Kind, Is.EqualTo(PlayerActionKind.LayOff));
+            Assert.That(table.TryApply(1, action), Is.True);
+            Assert.That(table.Melds[1].Tiles.Last().Stone.Id, Is.EqualTo(12));
+            Assert.That(table.Players[1].Hand.FindSlot(12), Is.EqualTo(-1));
+            Assert.That(table.ActiveSeat, Is.EqualTo(1));
         }
         [Test]
         public void SeriesPlayerCanAddABorrowedPairOnlyAfterAPairOpeningAndKeepsSeriesScoring()
