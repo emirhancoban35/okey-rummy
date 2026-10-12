@@ -1,5 +1,4 @@
 using System;
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -8,13 +7,9 @@ namespace Okey.Presentation.Tables
     public sealed class DrawSourceView : MonoBehaviour, IPointerDownHandler, IPointerClickHandler,
         IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
     {
-        [SerializeField] private SpriteRenderer _highlight;
-        [SerializeField] private TMP_Text _hint;
-        [SerializeField] private string _readyText;
-        [SerializeField] private string _waitingText;
-        [SerializeField] private Color _readyColor;
-        [SerializeField] private Color _waitingColor;
-        [SerializeField] private Color _hoverColor;
+        [SerializeField] private GameObject _readyHighlight;
+        [SerializeField] private GameObject _hoverHighlight;
+        private bool _hovered;
         private bool _canDraw;
         private readonly TileSourceDragGesture _gesture = new TileSourceDragGesture();
         public bool CanDraw
@@ -23,8 +18,7 @@ namespace Okey.Presentation.Tables
             set
             {
                 _canDraw = value;
-                if (_highlight != null) _highlight.color = value ? _readyColor : _waitingColor;
-                if (_hint != null) _hint.text = value ? _readyText : _waitingText;
+                RenderHighlight();
             }
         }
         public event Action DrawRequested;
@@ -53,15 +47,28 @@ namespace Okey.Presentation.Tables
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (CanDraw && _highlight != null) _highlight.color = _hoverColor;
+            _hovered = true;
+            RenderHighlight();
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            if (_highlight != null) _highlight.color = CanDraw ? _readyColor : _waitingColor;
+            _hovered = false;
+            RenderHighlight();
         }
 
-        private void OnDisable() => _gesture.Cancel();
+        private void RenderHighlight()
+        {
+            _readyHighlight.SetActive(CanDraw && !_hovered);
+            _hoverHighlight.SetActive(CanDraw && _hovered);
+        }
+
+        private void OnDisable()
+        {
+            _hovered = false;
+            RenderHighlight();
+            _gesture.Cancel();
+        }
         private void OnApplicationFocus(bool focused)
         {
             if (!focused) _gesture.Cancel();

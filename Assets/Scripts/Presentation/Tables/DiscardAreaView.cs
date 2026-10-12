@@ -8,9 +8,7 @@ namespace Okey.Presentation.Tables
     {
         [SerializeField] private BoxCollider2D _dropArea;
         [SerializeField] private Transform _stoneRoot;
-        [SerializeField] private SpriteRenderer _highlight;
-        [SerializeField] private Color _availableColor;
-        [SerializeField] private Color _waitingColor;
+        [SerializeField] private GameObject _availableHighlight;
         private readonly TileSourceDragGesture _gesture = new TileSourceDragGesture();
         private bool _available;
         public event Action<DiscardAreaView> Clicked;
@@ -42,7 +40,7 @@ namespace Okey.Presentation.Tables
         public void SetAvailable(bool available)
         {
             _available = available;
-            if (_highlight != null) _highlight.color = available ? _availableColor : _waitingColor;
+            _availableHighlight.SetActive(available);
         }
         public bool Contains(Vector3 worldPosition)
         {

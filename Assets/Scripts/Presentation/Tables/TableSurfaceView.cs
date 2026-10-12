@@ -7,7 +7,6 @@ namespace Okey.Presentation.Tables
     {
         [SerializeField] private GameObject[] _publicMeldVisuals;
         [SerializeField] private GameObject _classicPanel;
-        [SerializeField] private GameObject _emptyMeldHint;
         [SerializeField] private DrawSourceView _drawSource;
         [SerializeField] private DiscardAreaView[] _discardAreas;
         [SerializeField] private GameObject _drawCue;
@@ -37,11 +36,10 @@ namespace Okey.Presentation.Tables
             ? new Vector3((group % _pairGroupsPerRow * (2 + _pairGroupGapColumns) + tile) * _winningTileSpacing.x,
                 -(group / _pairGroupsPerRow) * _winningTileSpacing.y, 0)
             : new Vector3(tile * _winningTileSpacing.x, -group * _winningTileSpacing.y, 0);
-        public void Render(bool publicMelds, bool emptyBoard, bool closedHandHint, bool canDraw, bool canDiscard, bool canTakeDiscard, int playerCount)
+        public void Render(bool publicMelds, bool closedHandHint, bool canDraw, bool canDiscard, bool canTakeDiscard, int playerCount)
         {
             foreach (var visual in _publicMeldVisuals) visual.SetActive(publicMelds);
             _classicPanel.SetActive(closedHandHint);
-            _emptyMeldHint.SetActive(publicMelds && emptyBoard);
             _drawCue.SetActive(canDraw);
             _discardCue.SetActive(canDiscard);
             _drawSource.CanDraw = canDraw;

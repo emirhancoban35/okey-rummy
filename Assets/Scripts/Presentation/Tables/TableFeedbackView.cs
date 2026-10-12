@@ -10,9 +10,7 @@ namespace Okey.Presentation.Tables
     {
         [SerializeField] private TMP_Text _feedbackText;
         [SerializeField] private CanvasGroup _panel;
-        [SerializeField] private UnityEngine.UI.Image _accent;
-        [SerializeField] private Color _successColor;
-        [SerializeField] private Color _failureColor;
+        [SerializeField] private GameObject _failureAccent;
         [SerializeField, Min(0)] private float _feedbackHold;
         [SerializeField, Min(0)] private float _feedbackFade;
         [SerializeField] private string _yourTurn = "YOUR TURN";
@@ -48,7 +46,7 @@ namespace Okey.Presentation.Tables
             if (_pending.Count == 0) return;
             var notice = _pending.Dequeue();
             _feedbackText.text = notice.Text;
-            _accent.color = notice.Success ? _successColor : _failureColor;
+            _failureAccent.SetActive(!notice.Success);
             _panel.alpha = 0;
             _feedback = DOTween.Sequence().SetUpdate(true)
                 .Append(DOTween.To(() => _panel.alpha, value => _panel.alpha = value, 1, _feedbackFade))

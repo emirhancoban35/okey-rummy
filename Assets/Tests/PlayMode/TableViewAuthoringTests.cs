@@ -7,6 +7,8 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using UnityEngine.TestTools;
 using Zenject;
 
@@ -87,6 +89,68 @@ namespace Okey.Tests.PlayMode
             {
                 PrefabUtility.UnloadPrefabContents(prefab);
             }
+        }
+
+        [Test]
+        public void AvailabilityAndHoverPreserveNativeRendererColors()
+        {
+            var custom = new Color(.24f, .63f, .82f, .9f);
+            foreach (var area in _view.Surface.DiscardAreas)
+            {
+                var highlight = (GameObject)new SerializedObject(area).FindProperty("_availableHighlight").objectReferenceValue;
+                var renderer = highlight.GetComponent<SpriteRenderer>();
+                renderer.color = custom;
+                area.SetAvailable(true);
+                Assert.That(highlight.activeSelf, Is.True);
+                Assert.That(renderer.color, Is.EqualTo(custom));
+                area.SetAvailable(false);
+                Assert.That(highlight.activeSelf, Is.False);
+                Assert.That(renderer.color, Is.EqualTo(custom));
+            }
+            var source = _view.Surface.DrawSource;
+            var fields = new SerializedObject(source);
+            var ready = (GameObject)fields.FindProperty("_readyHighlight").objectReferenceValue;
+            var hover = (GameObject)fields.FindProperty("_hoverHighlight").objectReferenceValue;
+            ready.GetComponent<SpriteRenderer>().color = custom;
+            hover.GetComponent<SpriteRenderer>().color = custom;
+            source.CanDraw = true;
+            source.OnPointerEnter(new PointerEventData(EventSystem.current));
+            Assert.That(hover.activeSelf, Is.True);
+            Assert.That(ready.activeSelf, Is.False);
+            source.CanDraw = false;
+            Assert.That(hover.activeSelf, Is.False);
+            source.CanDraw = true;
+            Assert.That(hover.activeSelf, Is.True);
+            source.OnPointerExit(new PointerEventData(EventSystem.current));
+            Assert.That(ready.activeSelf, Is.True);
+            Assert.That(hover.activeSelf, Is.False);
+            Assert.That(ready.GetComponent<SpriteRenderer>().color, Is.EqualTo(custom));
+            Assert.That(hover.GetComponent<SpriteRenderer>().color, Is.EqualTo(custom));
+        }
+
+        [Test]
+        public void OpponentAndNotificationStatesPreserveNativeColors()
+        {
+            var custom = new Color(.24f, .63f, .82f, .9f);
+            foreach (var seat in _view.GetComponentsInChildren<OpponentSeatView>(true))
+            {
+                var highlight = (GameObject)new SerializedObject(seat).FindProperty("_activeHighlight").objectReferenceValue;
+                highlight.GetComponent<SpriteRenderer>().color = custom;
+                seat.Render("Player", true);
+                Assert.That(highlight.activeSelf, Is.True);
+                seat.Render("Player", false);
+                Assert.That(highlight.activeSelf, Is.False);
+                Assert.That(highlight.GetComponent<SpriteRenderer>().color, Is.EqualTo(custom));
+            }
+            var feedback = _view.Feedback;
+            feedback.gameObject.SetActive(false);
+            feedback.gameObject.SetActive(true);
+            var failure = (GameObject)new SerializedObject(feedback).FindProperty("_failureAccent").objectReferenceValue;
+            var accent = failure.GetComponent<Image>();
+            accent.color = custom;
+            feedback.Show("Penalty", false);
+            Assert.That(failure.activeSelf, Is.True);
+            Assert.That(accent.color, Is.EqualTo(custom));
         }
 
         [Test]

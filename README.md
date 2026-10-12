@@ -217,10 +217,11 @@ Open **Assets/Prefabs/GameControls.prefab** in Prefab Mode. Its root **TableView
 | Clock bars and clock text references | **TurnClockView** on the turn clock |
 | Modal buttons and help text reference | **OverlayPanelsView** on the canvas |
 | Table settings buttons and labels | **TableOptionsView** on the canvas |
-| Opponent name/highlight | **OpponentSeatView** on the corresponding opponent |
+| Tray and opponent highlights | **DiscardTray > AvailableHighlight**, **DrawPileTray > ReadyHighlight / HoverHighlight**, and **SeatBadge > ActiveHighlight**: edit their SpriteRenderer components |
+| Notification accents | **Accent** and its **FailureAccent** child: edit their Image components |
 | Draw, discard, board and winning-hand geometry | **TableSurfaceView** on the root; board cells use each **MeldBoardView** |
 
-Save changes in Prefab Mode outside Play Mode. Scene-instance overrides take precedence over prefab values; changes made to runtime instances during Play Mode disappear when Play Mode ends. Numeric text uses the template authored on its TextMeshPro component when the view starts. State-dependent wording lives on the responsible view in the same prefab. Static headings are never rewritten by the presenters. There is no separate text catalog or localization asset.
+Save changes in Prefab Mode outside Play Mode. Scene-instance overrides take precedence over prefab values; changes made to runtime instances during Play Mode disappear when Play Mode ends. Numeric text uses the template authored on its TextMeshPro component when the view starts. State-dependent wording lives on the responsible view in the same prefab. Static headings are never rewritten by the presenters. There is no separate text catalog or localization asset. Availability, hover, active-seat and penalty views toggle authored visual objects; their colors stay on SpriteRenderer/Image components. Tile colors and shared player/team identity colors remain data-driven palettes.
 
 ### Presentation boundaries and folders
 

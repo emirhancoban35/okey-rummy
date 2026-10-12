@@ -79,7 +79,7 @@ namespace Okey.Composition
                 _view.Surface.SeriesBoard.RenderThreshold(_table.SeriesThreshold.ToString());
                 _view.Surface.PairsBoard.RenderThreshold(_table.PairThreshold.ToString());
             }
-            _view.Surface.Render(publicMelds, _table.Melds.Count == 0, !publicMelds && _table.Winner < 0,
+            _view.Surface.Render(publicMelds, !publicMelds && _table.Winner < 0,
                 canDraw, _table.ActiveSeat == _local.Seat && _table.Phase == TurnPhase.AwaitingDiscard && _table.PendingDiscard == null,
                 !_interaction.IsDragging && (_table.CanTakeDiscard(_local.Seat) || hasBorrowedTile), _table.Players.Count);
             _view.Hud.ShowHandValue(publicMelds);
