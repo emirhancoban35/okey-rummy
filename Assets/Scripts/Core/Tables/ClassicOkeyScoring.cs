@@ -8,6 +8,7 @@ namespace Okey.Core.Tables
     {
         private readonly OkeyRules _rules;
         public ClassicOkeyScoring(OkeyRules rules) => _rules = rules ?? throw new ArgumentNullException(nameof(rules));
+        public int RemainingValue(TablePlayer player) => 0;
         public IReadOnlyList<int> Calculate(IReadOnlyList<TablePlayer> players, int winner, bool jokerFinish)
         {
             var scores = new int[players.Count];

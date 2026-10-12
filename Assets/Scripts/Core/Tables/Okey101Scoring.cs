@@ -15,6 +15,10 @@ namespace Okey.Core.Tables
             _meldRules = meldRules;
         }
 
+        public int RemainingValue(TablePlayer player) => player.Hand.Slots.Where(stone => stone != null)
+            .Sum(stone => _meldRules.IsWild(stone) ? _rules.JokerScore : _meldRules.Resolve(stone).Value) *
+            (player.Opening == OpeningMode.Pairs ? _rules.PairMultiplier : 1);
+
         public IReadOnlyList<int> Calculate(IReadOnlyList<TablePlayer> players, int winner, bool jokerFinish)
         {
             var scores = new int[players.Count];
@@ -25,8 +29,7 @@ namespace Okey.Core.Tables
                 var hand = player.Hand.Slots.Where(stone => stone != null).ToArray();
                 var score = winner < 0 ? hand.Count(_meldRules.IsWild) * _rules.JokerScore :
                     seat == winner ? _rules.WinnerScore : player.Opening == OpeningMode.Closed ? _rules.UnopenedScore :
-                    hand.Sum(stone => _meldRules.IsWild(stone) ? _rules.JokerScore : _meldRules.Resolve(stone).Value) *
-                    (player.Opening == OpeningMode.Pairs ? _rules.PairMultiplier : 1);
+                    RemainingValue(player);
                 scores[seat] = score * multiplier + player.Penalty;
             }
             return Array.AsReadOnly(scores);

@@ -84,7 +84,8 @@ namespace Okey.Composition
             _view.Surface.Render(publicMelds, _table.Melds.Count == 0, !publicMelds && _table.Winner < 0,
                 canDraw, _table.ActiveSeat == _local.Seat && _table.Phase == TurnPhase.AwaitingDiscard && _table.PendingDiscard == null,
                 !_interaction.IsDragging && (_table.CanTakeDiscard(_local.Seat) || hasBorrowedTile), _table.Players.Count);
-            _view.Hud.Render(Status(), string.Empty, string.Format(text.PileFormat, _table.RemainingCount),
+            _view.Hud.ShowHandValue(publicMelds);
+            _view.Hud.Render(Status(), string.Format(text.HandFormat, _table.RemainingHandValue(_local.Seat)), string.Format(text.PileFormat, _table.RemainingCount),
                 string.Format(text.PenaltyFormat, penalty), penalty != 0);
             _view.Panels.RenderHelp(publicMelds ? text.OpenHelp : text.ClassicHelp);
             if (_actions.Actions.Count > _view.Actions.Count)

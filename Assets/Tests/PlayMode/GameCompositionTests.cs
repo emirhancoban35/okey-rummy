@@ -1076,10 +1076,12 @@ namespace Okey.Tests.PlayMode
         }
 
         [Test]
-        public void LocalHandCountIsHiddenAndScoreSheetCanBeOpenedDuringPlay()
+        public void RemainingHandValueShowsPointsInsteadOfTileCountAndScoreSheetCanBeOpenedDuringPlay()
         {
             var actions = Controls.Canvas.transform.Find("OpeningActions");
-            Assert.That(actions.Find("HandCount").gameObject.activeSelf, Is.False);
+            var value = actions.Find("RemainingHandValue").GetComponent<TMP_Text>();
+            Assert.That(value.gameObject.activeSelf, Is.True);
+            Assert.That(value.text, Is.EqualTo(string.Format(Controls.Texts.HandFormat, _context.Container.Resolve<TableSession>().RemainingHandValue(0))));
             Assert.That(actions.Find("HandIcon").gameObject.activeSelf, Is.False);
             Assert.That(Controls.Hud.StatusText.text, Is.EqualTo(Controls.Texts.YourTurnNotice));
             var view = _context.Container.Resolve<ScoreboardView>();

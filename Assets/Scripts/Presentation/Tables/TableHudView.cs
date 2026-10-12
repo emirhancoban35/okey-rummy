@@ -12,6 +12,7 @@ namespace Okey.Presentation.Tables
         [SerializeField] private TMP_Text _pileText;
         [SerializeField] private TMP_Text _penaltyText;
         [SerializeField] private TMP_Text _modeText;
+        public void ShowHandValue(bool visible) => _handText.gameObject.SetActive(visible);
         public TMP_Text StatusText => _statusText;
         public void Render(string status, string hand, string pile, string penalty, bool showPenalty)
         {

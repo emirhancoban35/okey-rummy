@@ -124,6 +124,7 @@ namespace Okey.Tests.EditMode
 
         private sealed class FixedScoring : IRoundScoring
         {
+            public int RemainingValue(TablePlayer player) => 0;
             public System.Collections.Generic.IReadOnlyList<int> Calculate(System.Collections.Generic.IReadOnlyList<TablePlayer> players, int winner, bool jokerFinish) => new[] { 10,20,30,40 };
         }
         [Test]

@@ -54,7 +54,7 @@ MonoBehaviour:
   _drawStatus: YOUR TURN
   _discardStatus: YOUR TURN
   _waitingFormat: '{0}'
-  _handFormat: '{0}'
+  _handFormat: 'LEFT {0}'
   _pileFormat: '{0}'
   _penaltyFormat: '{0}'
   _opponentFormat: '{0}'

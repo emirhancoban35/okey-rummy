@@ -7,6 +7,7 @@ namespace Okey.Core.Tables
     {
         private readonly IRoundScoring _individual;
         public PartnershipScoring(IRoundScoring individual) => _individual = individual ?? throw new ArgumentNullException(nameof(individual));
+        public int RemainingValue(TablePlayer player) => _individual.RemainingValue(player);
         public IReadOnlyList<int> Calculate(IReadOnlyList<TablePlayer> players, int winner, bool jokerFinish)
         {
             if (players.Count != 4) throw new ArgumentException("Partnerships require four seats.", nameof(players));

@@ -36,6 +36,7 @@ namespace Okey.Core.Tables
         public int ActiveSeat { get; private set; }
         public int Winner { get; private set; } = -1;
         public TurnPhase Phase { get; private set; } = TurnPhase.AwaitingDiscard;
+        public int RemainingHandValue(int seat) => _scoring.RemainingValue(Players[seat]);
         public int RemainingCount => _pile.RemainingCount;
         public event Action Changed;
         public event Action<TableActionNotice> ActionCompleted;
