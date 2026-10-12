@@ -12,6 +12,7 @@ namespace Okey.Core.Tables
         public IRackLayout Layout { get; }
         public IReadOnlyList<StoneInstance> Discards { get; }
         public OpeningMode Opening { get; internal set; }
+        public int OpeningValue { get; internal set; }
         public int Penalty { get; internal set; }
         public int Score { get; internal set; }
         internal TablePlayer(RackArrangement hand)

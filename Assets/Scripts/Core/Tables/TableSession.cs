@@ -34,6 +34,7 @@ namespace Okey.Core.Tables
         public TurnPhase Phase { get; private set; } = TurnPhase.AwaitingDiscard;
         public int RemainingCount => _pile.RemainingCount;
         public event Action Changed;
+        public event Action<TableActionNotice> ActionCompleted;
 
         public TableSession(OkeyRules rules, IReadOnlyList<StoneInstance> deck, int capacity, ITableGame game, IMeldRules meldRules = null, IRoundScoring scoring = null, int startingSeat = 0, TableOptions options = null)
         {
@@ -90,6 +91,7 @@ namespace Okey.Core.Tables
             previous.TakeDiscard();
             Phase = TurnPhase.AwaitingDiscard;
             Changed?.Invoke();
+            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.TakeDiscard, seat));
             return true;
         }
 
@@ -109,6 +111,7 @@ namespace Okey.Core.Tables
             Players[seat].OwnedHand.Add(stone);
             Phase = TurnPhase.AwaitingDiscard;
             Changed?.Invoke();
+            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Draw, seat));
             return true;
         }
 
@@ -139,6 +142,7 @@ namespace Okey.Core.Tables
             {
                 player.Penalty += decision.Penalty;
                 Changed?.Invoke();
+                ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Open, seat, penalty: decision.Penalty));
                 return false;
             }
             SeriesThreshold = decision.SeriesThreshold;
@@ -146,9 +150,13 @@ namespace Okey.Core.Tables
             var tiles = validated.SelectMany(meld => meld.Tiles).ToArray();
             foreach (var tile in tiles) player.OwnedHand.Remove(tile.Stone.Id);
             _melds.AddRange(validated);
+            var initialOpening = player.Opening == OpeningMode.Closed;
+            var openingValue = mode == OpeningMode.Pairs ? validated.Count : validated.Sum(meld => meld.Points);
+            if (initialOpening) player.OpeningValue = openingValue;
             player.Opening = mode;
             OpeningRevision++;
             Changed?.Invoke();
+            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Open, seat, openingValue, initialOpening: initialOpening));
             return true;
         }
 
@@ -163,6 +171,7 @@ namespace Okey.Core.Tables
             player.OwnedHand.Remove(stoneId);
             _melds[meldIndex] = extended;
             Changed?.Invoke();
+            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.LayOff, seat));
             return true;
         }
 
@@ -174,6 +183,13 @@ namespace Okey.Core.Tables
             return Game.TryFindFinish(hand, MeldRules, Rules, out discardId);
         }
 
+        private int DiscardPenaltyFor(TablePlayer player, StoneInstance stone)
+        {
+            if (!Game.PenalizesPlayableDiscards || player.Hand.Count == 0) return 0;
+            if (MeldRules.IsWild(stone)) return Rules.DiscardPenalties.Joker;
+            return _melds.Any(meld => MeldRules.TryExtend(meld, stone, out _)) ? Rules.DiscardPenalties.Playable : 0;
+        }
+
         public bool TryDiscard(int seat, int stoneId)
         {
             if (seat != ActiveSeat || Phase != TurnPhase.AwaitingDiscard) return false;
@@ -181,8 +197,8 @@ namespace Okey.Core.Tables
             if (player.Hand.FindSlot(stoneId) < 0) return false;
             var stone = player.OwnedHand.Remove(stoneId);
             player.Discard(stone);
-            if (Game.PenalizesPlayableDiscards && player.Hand.Count > 0 && (MeldRules.IsWild(stone) || _melds.Any(meld => MeldRules.TryExtend(meld, stone, out _))))
-                player.Penalty += Rules.DiscardPenalty;
+            var discardPenalty = DiscardPenaltyFor(player, stone);
+            player.Penalty += discardPenalty;
             if (Game.TryFinish(player.Hand.Slots.Where(tile => tile != null).ToArray(), MeldRules, Rules, out var finish, out var mode))
             {
                 WinningHand = finish;
@@ -198,6 +214,7 @@ namespace Okey.Core.Tables
             }
             if (Phase == TurnPhase.Finished) ApplyScores(Winner >= 0 && MeldRules.IsWild(stone));
             Changed?.Invoke();
+            ActionCompleted?.Invoke(new TableActionNotice(PlayerActionKind.Discard, seat, penalty: discardPenalty));
             return true;
         }
 

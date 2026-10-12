@@ -16,12 +16,13 @@ namespace Okey.Core.Rules
         public int JokerScore { get; }
         public int WinnerScore { get; }
         public int DiscardPenalty { get; }
+        public DiscardPenalties DiscardPenalties { get; }
         public int PairMultiplier { get; }
         public int JokerFinishMultiplier { get; }
 
         public OkeyRules(int playerCount, int handSize, int minimumValue, int maximumValue,
             int seriesThreshold, int pairThreshold, int invalidOpeningPenalty, int unopenedScore,
-            int jokerScore, int winnerScore, int discardPenalty, int pairMultiplier, int jokerFinishMultiplier, bool allowsHighOne = false)
+            int jokerScore, int winnerScore, int discardPenalty, int pairMultiplier, int jokerFinishMultiplier, bool allowsHighOne = false, DiscardPenalties discardPenalties = null)
         {
             if (playerCount < 2 || playerCount > 4 || handSize < 1 || minimumValue < 1 ||
                 maximumValue < minimumValue || seriesThreshold < 1 || pairThreshold < 1 ||
@@ -39,6 +40,7 @@ namespace Okey.Core.Rules
             JokerScore = jokerScore;
             WinnerScore = winnerScore;
             DiscardPenalty = discardPenalty;
+            DiscardPenalties = discardPenalties ?? new DiscardPenalties(discardPenalty, discardPenalty);
             PairMultiplier = pairMultiplier;
             JokerFinishMultiplier = jokerFinishMultiplier;
         }

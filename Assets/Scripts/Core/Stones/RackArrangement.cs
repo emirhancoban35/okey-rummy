@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Okey.Core.Stones
 {
@@ -93,6 +94,49 @@ namespace Okey.Core.Stones
             _slots[destination] = stone;
             _positions[stoneId] = destination;
             moved.Add(stone);
+            return moved.AsReadOnly();
+        }
+
+        public IReadOnlyList<StoneInstance> MoveGroup(IReadOnlyList<int> stoneIds, int destination, int rowCapacity)
+        {
+            if (stoneIds == null || stoneIds.Count < 2 || stoneIds.Distinct().Count() != stoneIds.Count ||
+                stoneIds.Any(id => !_positions.ContainsKey(id))) throw new ArgumentException("A group needs distinct rack tiles.", nameof(stoneIds));
+            if (rowCapacity < 1 || destination < 0 || destination >= Capacity) throw new ArgumentOutOfRangeException(nameof(destination));
+            var start = destination / rowCapacity * rowCapacity;
+            var end = Math.Min(start + rowCapacity, Capacity);
+            if (destination + stoneIds.Count > end) return Array.Empty<StoneInstance>();
+            var ids = new HashSet<int>(stoneIds);
+            var remaining = Enumerable.Range(start, end - start).Where(slot => _slots[slot] != null && !ids.Contains(_slots[slot].Id)).ToArray();
+            if (remaining.Length + stoneIds.Count > end - start) return Array.Empty<StoneInstance>();
+            var next = (StoneInstance[])_slots.Clone();
+            var group = stoneIds.Select(id => _slots[_positions[id]]).ToArray();
+            foreach (var id in stoneIds) next[_positions[id]] = null;
+            for (var slot = start; slot < end; slot++) next[slot] = null;
+            var leftCount = Math.Max(remaining.Count(slot => slot < destination), remaining.Length - (end - destination - group.Length));
+            var previous = start - 1;
+            for (var index = 0; index < leftCount; index++)
+            {
+                var slot = Math.Max(previous + 1, Math.Min(remaining[index], destination - leftCount + index));
+                next[slot] = _slots[remaining[index]];
+                previous = slot;
+            }
+            for (var index = 0; index < group.Length; index++) next[destination + index] = group[index];
+            previous = destination + group.Length - 1;
+            for (var index = leftCount; index < remaining.Length; index++)
+            {
+                var slot = Math.Max(previous + 1, Math.Min(remaining[index], end - remaining.Length + index));
+                next[slot] = _slots[remaining[index]];
+                previous = slot;
+            }
+            var moved = new List<StoneInstance>();
+            for (var slot = 0; slot < Capacity; slot++)
+            {
+                var tile = next[slot];
+                if (tile != null && _positions[tile.Id] != slot) moved.Add(tile);
+                _slots[slot] = tile;
+            }
+            for (var slot = 0; slot < Capacity; slot++)
+                if (_slots[slot] != null) _positions[_slots[slot].Id] = slot;
             return moved.AsReadOnly();
         }
 
