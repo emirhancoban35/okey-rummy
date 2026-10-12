@@ -35,9 +35,9 @@ namespace Okey.Core.Games
             return new RackActionState(new[]
             {
                 new RackActionPlan(RackActionKind.OpenMelds, OpeningMode.Series, series,
-                    closed ? series.Points : series.TileCount, request.SeriesThreshold, request.Opening != OpeningMode.Pairs, !closed),
+                    closed ? series.Points : series.TileCount, request.SeriesThreshold, request.Opening != OpeningMode.Pairs && (closed || series.Melds.Count > 0), !closed),
                 new RackActionPlan(RackActionKind.OpenMelds, OpeningMode.Pairs, pairs,
-                    pairs.Melds.Count, request.PairThreshold, request.Opening != OpeningMode.Series || request.PairBoardOpen, !closed)
+                    pairs.Melds.Count, request.PairThreshold, (request.Opening != OpeningMode.Series || request.PairBoardOpen) && (closed || pairs.Melds.Count > 0), !closed)
             }, grouped);
         }
 

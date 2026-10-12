@@ -24,7 +24,7 @@ namespace Okey.Core.Games
                 if (pairs) pairCount = request.Melds.Count + request.Options.OpeningIncrement;
                 else series = points + request.Options.OpeningIncrement;
             }
-            return new OpeningDecision(valid, valid ? 0 : request.Rules.InvalidOpeningPenalty, series, pairCount);
+            return new OpeningDecision(valid, valid || !initial ? 0 : request.Rules.InvalidOpeningPenalty, series, pairCount);
         }
 
         public bool CanLayOff(OpeningMode opening, int handCount) => opening != OpeningMode.Closed && handCount > 1;

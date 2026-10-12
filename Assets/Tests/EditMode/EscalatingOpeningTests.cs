@@ -73,5 +73,26 @@ namespace Okey.Tests.EditMode
         }
         [Test]
         public void OpeningIncrementMustBePositive() => Assert.Throws<ArgumentOutOfRangeException>(() => new TableOptions(openingIncrement:0));
+        [TestCase(false)]
+        [TestCase(true)]
+        public void PairThresholdControlsTheNextPlayersOpening(bool escalating)
+        {
+            var table = Table(escalating);
+            table.TryOpen(0, OpeningMode.Pairs, new[] { Meld(table, 0, MeldKind.Pair, 7, 8), Meld(table, 0, MeldKind.Pair, 9, 10) });
+            table.TryDiscard(0, 11); table.TryDraw(1);
+            var accepted = table.TryOpen(1, OpeningMode.Pairs, new[] { Meld(table, 1, MeldKind.Pair, 18, 19), Meld(table, 1, MeldKind.Pair, 20, 21) });
+            Assert.That(accepted, Is.EqualTo(!escalating));
+            Assert.That(table.PairThreshold, Is.EqualTo(escalating ? 3 : 2));
+            Assert.That(table.Players[1].Penalty, Is.EqualTo(escalating ? 101 : 0));
+        }
+        [Test]
+        public void EmptyAdditionalOpeningDoesNotChargeAnAlreadyOpenedPlayer()
+        {
+            var table = Table();
+            table.TryOpen(0, OpeningMode.Series, new[] { Meld(table, 0, MeldKind.Run, 1, 2, 3) });
+            Assert.That(table.TryOpen(0, OpeningMode.Series, Array.Empty<Meld>()), Is.False);
+            Assert.That(table.Players[0].Penalty, Is.Zero);
+        }
+
     }
 }
