@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d7583a04a664a85824ced9843b8ad8, type: 3}
   m_Name: Standard101Table
   m_EditorClassIdentifier: Okey.Configuration::Okey.Configuration.TableSettings
+  _rooms: {fileID: 11400000, guid: 6df1cb95d8c4f4fba86e0f4623ffb447, type: 2}
   _playerCount: 4
   _ruleProfiles:
   - {fileID: 11400000, guid: 9a407ce9f10d4c7781e02d037e5a1e98, type: 2}
   - {fileID: 11400000, guid: 9f5d95ad7e014525a0743f14224917fd, type: 2}
   _ruleIndex: 0
-  _botActionDelay: 0.8
   _partnerships: 0
   _escalatingOpenings: 0
   _openingIncrement: 1
@@ -28,5 +28,7 @@ MonoBehaviour:
   _botMistakeChance: 0.01
   _openingPatience: 0.35
   _thinkingSeconds: {x: 1.2, y: 3.8}
+  _botActionDelay: 0.8
+  _botLateHandMargin: 2
   _matchRounds: 5
   _allowJokerReclaim: 1

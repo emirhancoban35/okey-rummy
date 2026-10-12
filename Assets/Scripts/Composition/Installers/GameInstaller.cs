@@ -38,6 +38,7 @@ namespace Okey.Composition
             Container.Bind<DeckFactory>().AsSingle();
             Container.Bind<IStoneShuffler>().To<SeededStoneShuffler>().AsSingle();
             var flow = GameFlowState.Resolve(_tableSettings);
+            Container.BindInstance(flow.Rooms);
             var setup = flow.Setup;
             Container.BindInstance(setup);
             Container.BindInstance(flow.Matches.For(setup));

@@ -32,6 +32,20 @@ namespace Okey.Tests.EditMode
         }
 
         [Test]
+        public void CatalogSessionsAndRoomSettingsDoNotMutateTheAuthoredAssets()
+        {
+            var defaults = AssetDatabase.LoadAssetAtPath<TableSettings>("Assets/Settings/Dealing/Standard101Table.asset");
+            var catalog = defaults.Rooms;
+            var before = EditorJsonUtility.ToJson(catalog);
+            var first = catalog.CreateDirectory(4); var second = catalog.CreateDirectory(4);
+            var setup = defaults.CreateSetup(); setup.SetHands(7);
+            first.Create("New room", "secret", setup.CreateRoomOptions(), catalog.LocalPlayer);
+            Assert.That(second.Current, Is.Null);
+            Assert.That(second.Rooms.Count, Is.EqualTo(first.Rooms.Count - 1));
+            Assert.That(EditorJsonUtility.ToJson(catalog), Is.EqualTo(before));
+            Assert.That(defaults.MatchRounds, Is.Not.EqualTo(7));
+        }
+        [Test]
         public void StartingSeatHistoryBelongsToItsOwnGameFlow()
         {
             var first = new StartingSeatSequence(new SeededRandomSource(42));

@@ -12,7 +12,7 @@ namespace Okey.Presentation.Menus
         public TableTextCatalog Texts => _texts;
         [SerializeField] private Button _ruleButton;
         [SerializeField] private TMP_Text _ruleText;
-        [SerializeField] private Button _playButton;
+        [SerializeField] private Button _createRoomButton;
         [SerializeField] private Button _partnershipButton;
         [SerializeField] private Button _botModeButton;
         [SerializeField] private Button _escalatingButton;
@@ -23,13 +23,19 @@ namespace Okey.Presentation.Menus
         [SerializeField, Min(0)] private float _fadeDuration = .25f;
         [SerializeField] private Button _jokerReclaimButton;
         [SerializeField] private TMP_Text _jokerReclaimText;
+        [SerializeField] private Button _handsButton;
+        [SerializeField] private TMP_Text _handsText;
+        [SerializeField] private string _handsFormat = "{0} HANDS";
+        public event Action HandsRequested;
         public event Action JokerReclaimRequested;
-        private Tween _fade;
         public event Action RulesRequested;
-        public event Action PlayRequested;
+        public event Action CreateRoomRequested;
         public event Action PartnershipRequested;
         public event Action BotModeRequested;
         public event Action EscalatingRequested;
+        private Tween _fade;
+
+        public void RenderHands(int hands) => _handsText.text = string.Format(_handsFormat, hands);
         public void Render(string rules, string partnerships, string bots, string openings, bool canChooseOpenings)
         {
             _ruleText.text = rules;
@@ -43,17 +49,19 @@ namespace Okey.Presentation.Menus
             _jokerReclaimText.text = label;
             _jokerReclaimButton.interactable = available;
         }
+        private void NextHands() => HandsRequested?.Invoke();
         private void ToggleJokerReclaim() => JokerReclaimRequested?.Invoke();
         private void ToggleRules() => RulesRequested?.Invoke();
-        private void Play() => PlayRequested?.Invoke();
+        private void CreateRoom() => CreateRoomRequested?.Invoke();
         private void TogglePartnership() => PartnershipRequested?.Invoke();
         private void ToggleBots() => BotModeRequested?.Invoke();
         private void ToggleEscalating() => EscalatingRequested?.Invoke();
         private void OnEnable()
         {
+            _handsButton.onClick.AddListener(NextHands);
             _jokerReclaimButton.onClick.AddListener(ToggleJokerReclaim);
             _ruleButton.onClick.AddListener(ToggleRules);
-            _playButton.onClick.AddListener(Play);
+            _createRoomButton.onClick.AddListener(CreateRoom);
             _partnershipButton.onClick.AddListener(TogglePartnership);
             _botModeButton.onClick.AddListener(ToggleBots);
             _escalatingButton.onClick.AddListener(ToggleEscalating);
@@ -63,9 +71,10 @@ namespace Okey.Presentation.Menus
         private void OnDisable()
         {
             _fade?.Kill();
+            _handsButton.onClick.RemoveListener(NextHands);
             _jokerReclaimButton.onClick.RemoveListener(ToggleJokerReclaim);
             _ruleButton.onClick.RemoveListener(ToggleRules);
-            _playButton.onClick.RemoveListener(Play);
+            _createRoomButton.onClick.RemoveListener(CreateRoom);
             _partnershipButton.onClick.RemoveListener(TogglePartnership);
             _botModeButton.onClick.RemoveListener(ToggleBots);
             _escalatingButton.onClick.RemoveListener(ToggleEscalating);

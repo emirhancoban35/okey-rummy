@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceda810a93b98407e88ceef18f605658, type: 3}
+  m_Name: LocalRooms
+  m_EditorClassIdentifier: Okey.Configuration::Okey.Configuration.RoomCatalog
+  _rooms:
+  - Number: 102301
+    Name: Morning coffee
+    Password:
+    RuleIndex: 0
+    Hands: 3
+    Partnerships: 0
+    Rising: 0
+    Humanlike: 1
+    Reclaim: 1
+    Players:
+    - {fileID: 11400000, guid: 07baf29b032e0455288ee5b4d14b7939, type: 2}
+    - {fileID: 11400000, guid: 3c84e2e589915417186be55e9016ce7c, type: 2}
+  - Number: 102302
+    Name: Classic corner
+    Password:
+    RuleIndex: 1
+    Hands: 5
+    Partnerships: 0
+    Rising: 0
+    Humanlike: 1
+    Reclaim: 1
+    Players:
+    - {fileID: 11400000, guid: 0418df839802d45748f1f633f907b446, type: 2}
+    - {fileID: 11400000, guid: 8edf0f5fb7ea44af2bc1188efdc8b051, type: 2}
+    - {fileID: 11400000, guid: 683e3919784d0476c992f8e423a354f8, type: 2}
+  - Number: 102303
+    Name: Friends table
+    Password: coffee
+    RuleIndex: 0
+    Hands: 5
+    Partnerships: 1
+    Rising: 1
+    Humanlike: 1
+    Reclaim: 1
+    Players:
+    - {fileID: 11400000, guid: 232cb12ff8102437d97589fbe28b2a81, type: 2}
+    - {fileID: 11400000, guid: 366c35345729d4446a907c4d9970fe4a, type: 2}
+  _handChoices: 010000000300000005000000070000000b000000
+  _firstRoomNumber: 100001
+  _localPlayer: {fileID: 11400000, guid: 55f275b9b8d654699b4599c78420ea96, type: 2}
+  _botPlayers:
+  - {fileID: 11400000, guid: 07baf29b032e0455288ee5b4d14b7939, type: 2}
+  - {fileID: 11400000, guid: 3c84e2e589915417186be55e9016ce7c, type: 2}
+  - {fileID: 11400000, guid: 0418df839802d45748f1f633f907b446, type: 2}
+  - {fileID: 11400000, guid: 8edf0f5fb7ea44af2bc1188efdc8b051, type: 2}
+  - {fileID: 11400000, guid: 683e3919784d0476c992f8e423a354f8, type: 2}
+  - {fileID: 11400000, guid: 232cb12ff8102437d97589fbe28b2a81, type: 2}
+  - {fileID: 11400000, guid: 366c35345729d4446a907c4d9970fe4a, type: 2}
+  - {fileID: 11400000, guid: 20f5699608955416fbfa337374998a8d, type: 2}
+  - {fileID: 11400000, guid: 69a63d7fcc02b4a5ab88184b35e0c88e, type: 2}
+  - {fileID: 11400000, guid: c3242560fab694f338e8b7932ec6c6f6, type: 2}

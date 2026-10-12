@@ -371,6 +371,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 754c408704974b3fba5cf143269d3a9f, type: 3}
   m_Name:
   m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Menus.NewGameMenuView
+--- !u!114 &56775120 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6701806537991048111, guid: 384760ec561544a0080ad8916969b559, type: 3}
+  m_PrefabInstance: {fileID: 56775118}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91c1c85ee63094c7fa54dacba07fcd29, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Okey.Presentation::Okey.Presentation.Menus.RoomMenuView
 --- !u!114 &93587871
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1219,6 +1230,7 @@ MonoBehaviour:
   _tableSettings: {fileID: 11400000, guid: 8d58160a6b0fa4c299aacf11ecd8bf09, type: 2}
   _navigationSettings: {fileID: 11400000, guid: 0eec6c05a96494da6bbc7ac7ca24c429, type: 2}
   _menu: {fileID: 56775119}
+  _rooms: {fileID: 56775120}
 --- !u!114 &1767636670
 MonoBehaviour:
   m_ObjectHideFlags: 0

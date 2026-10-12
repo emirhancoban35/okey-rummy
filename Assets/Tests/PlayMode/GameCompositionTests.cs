@@ -277,7 +277,8 @@ namespace Okey.Tests.PlayMode
             var interaction = new RackInteractionController(session.Players[localSeat].Layout, Rack);
             var factory = _context.Container.Resolve<StoneViewFactory>();
             var hand = new HandPresenter(session.Players[localSeat].Hand, factory, Rack, interaction);
-            var names = new TablePlayerNames(Controls.Texts, _context.Container.Resolve<BotPreferences>(), local);
+            var names = new TablePlayerNames(Controls.Texts, _context.Container.Resolve<BotPreferences>(), local,
+                _context.Container.Resolve<Okey.Core.Rooms.LocalRoomDirectory>());
             var table = new TablePresenter(session, Controls, factory, local, names);
             var controller = new TurnController(session, hand, interaction, Controls, table, Rack, local);
             var hud = new TableHudPresenter(session, Controls, hand, interaction, table, Rack, local, names, new RackMeldEvaluator());

@@ -11,7 +11,9 @@ Game rules and state live in a Unity-independent C# assembly. Zenject connects t
 1. Clone the repository and open it with **Unity 6000.3.15f1** through Unity Hub.
 2. Let Unity restore the packages and import the assets.
 3. Open **Assets/Scenes/MainMenu.unity** and press Play.
-4. Choose Classic Okey or 101 Okey, individual or partnership play, and humanlike or fast opponents. 101 tables also support fixed or rising opening thresholds and an optional joker reclaim rule. Select **Play** to start a table.
+4. Select **Create room**, choose Classic Okey or 101 Okey, the number of hands, individual or partnership play and opponent behavior. A password is optional. 101 rooms also support rising openings and joker reclaim.
+5. Add bots in the lobby, then select **Start match** when all seats are occupied. Use **Remove** beside another player to free a seat.
+6. Alternatively, select **Join room** and click an available room. Open rooms join immediately; private rooms select their number and ask for a password. Joining by room number is also available.
 
 The main menu is the first scene in Build Settings. **SampleScene.unity** can also be opened directly for table development. Zenject and DOTween are included in the repository; no separate plugin installation is needed.
 
@@ -27,9 +29,22 @@ The main menu is the first scene in Build Settings. **SampleScene.unity** can al
 - Public melds on separate series and pair boards, with reserved extension slots, compatible drop-target highlights and paging.
 - Plain tile backs, manual tile flipping, distinct color settings and editable typography.
 - Remaining seconds and progress bars for the active seat, with automatic legal play on timeout.
-- A small new-game menu, contextual help and table settings.
+- Local room browsing, room numbers, optional passwords, configurable match length, a player lobby and adding/removing bots.
+- Per-player profile ScriptableObjects, with immutable runtime identities shared by room and table presentation.
+- Live remaining-hand value in 101, including the held-joker value and pair-opening multiplier.
+- An optional indicator-copy pair rule, configured in the rule profile.
 
 ![New game menu](Docs/Images/new-game-menu.png)
+
+## Local rooms
+
+Rooms simulate a PvP lobby locally: every non-local seat is controlled by AI. There is no online discovery or transport. The room directory and match history survive menu/table navigation for the current application session.
+
+`LocalRooms.asset` defines the starting rooms, player profile references, available bot profiles, room-number sequence and selectable hand counts (currently 1, 3, 5, 7 and 11). The bundled private room **#102303** uses **coffee**. Creating rooms, adding/removing players and joining never modify these authored assets.
+
+`Assets/Settings/Players/LocalPlayer.asset` defines the local identity; every seeded opponent also has a separate `PlayerProfile` asset. Stable IDs are distinct from display names. Profile fields can be extended with level or avatar data in configuration and its runtime adapter without changing room membership or join logic.
+
+![Room lobby](Docs/Images/room-lobby.png)
 
 ## Controls
 
@@ -93,17 +108,19 @@ Successful openings refresh the turn timer. When time expires, the game cancels 
 
 Layout preview: three-tile sets stay contiguous and each meld occupies its own row.
 
+The 101 profile enables **Allow Indicator Pairs**: the remaining physical copy of the indicator can pair with one other tile, adopting that tile's assigned pair identity. It keeps its printed value in runs, sets and remaining-hand scoring, and cannot be reclaimed as a real joker. Turning this profile setting off restores identical-pair rules. The same validator is used by adjacent rack grouping, opening checks and bot planning. The center indicator remains on the table.
+
 These are the project's explicit rule choices. Other regional variants and indicator-show bonuses are not implemented.
 
 ## Matches, feedback and scoring
 
-Matches default to five hands, configured by `Match Rounds` on the table settings asset. The score-sheet button shows live penalties, each player's first opening, completed hand scores and cumulative totals. A finished hand opens the sheet automatically. **Next hand** retains the current match; after the configured number of hands, **New match** returns to the menu. Lowest totals win. History lives in memory for the current session and is reset when starting a new match from the menu.
+Matches default to five hands. The create-room screen selects the match length from `LocalRooms.asset`; `Match Rounds` on the table settings asset supplies the initial choice. The score-sheet button shows live penalties, each player's first opening, completed hand scores and cumulative totals. A finished hand opens the sheet automatically. **Next hand** retains the current match; after the configured number of hands, **New match** returns to the menu. Lowest totals win. History lives in memory for the current session and is reset when starting a new match from the menu.
 
 101 and Classic use separate `IRoundScoring` implementations and authored score-sheet prefabs. `MatchHistory` keys score ledgers by rule profile and partnership setting. Partners share a color and a team total; the winner's partner contributes only their existing penalties for that hand. Classic does not display 101 opening or penalty columns.
 
 101 defaults to **−101 for finishing**, **101 for discarding a real joker**, and **101 for discarding a tile that extends a public meld**. The rule profile exposes `Winner Score`, `Joker Discard Penalty` and `Playable Discard Penalty` independently. Zero disables either discard charge. Final-tile finishes retain the scoring policy's joker/pair bonuses rather than receiving an extra discard charge.
 
-No player's hand count appears on the table. Fixed openings show the required threshold alone; rising openings show the current increased requirement. Initial openings announce the player and public opening value. Local turns show **YOUR TURN** and play a short cue. Drawing, discarding, opening, laying off, penalties and finishing have quieter event sounds; all bundled clips are procedurally synthesized and can be replaced in the audio asset. Playable discards, joker discards and joker reclaims announce the affected player and charge explicitly. Notices queue so an opening or turn announcement cannot erase a penalty. Long tile moves use a configurable shallow arc.
+No player's hand count appears on the table. In 101, **LEFT** shows the local hand's remaining value: ordinary tile values plus the configured held-joker value (default 101), multiplied for a pair-opened hand. It updates after draws, openings, layoffs and discards. Existing action penalties remain separate. Classic hides this 101-specific value. Fixed openings show the required threshold alone; rising openings show the current increased requirement. Initial openings announce the player and public opening value. Local turns show **YOUR TURN** and play a short cue. Drawing, discarding, opening, laying off, penalties and finishing have quieter event sounds; all bundled clips are procedurally synthesized and can be replaced in the audio asset. Playable discards, joker discards and joker reclaims announce the affected player and charge explicitly. Notices queue so an opening or turn announcement cannot erase a penalty. Long tile moves use a configurable shallow arc.
 
 Rack group handles use a mixed run/set/pair evaluation independent of whether an opening is legal yet. Whole-group drops remain within one shelf, shift neighboring tiles and preserve physical tile identity. Group drags never discard a group. A pair can be dropped onto the pair board when pair processing is legal; other outside-rack group drops return to the rack.
 
@@ -126,12 +143,14 @@ flowchart TD
 
 | Assembly | Responsibility |
 | --- | --- |
-| `Okey.Core` | Immutable tile definitions, physical identities, decks, rack arrangement, meld validation, table state, scoring and AI observations. It has no Unity engine references. |
-| `Okey.Configuration` | Converts editable assets into rule, deck, table and navigation settings. |
+| `Okey.Core` | Immutable tile definitions, physical identities, decks, rack arrangement, meld validation, table state, scoring, AI observations, room membership and player identities. It has no Unity engine references. |
+| `Okey.Configuration` | Converts editable assets into rule, deck, table, room, player identity and navigation settings. |
 | `Okey.Presentation` | Passive table views, tile faces, pointer input, rack anchors, progress bars, menus and animations. |
 | `Okey.Composition` | Creates dependencies, coordinates views with the table and routes local, bot and timeout actions. |
 
 `TableSession` owns hands, turn phase, public melds and discard histories. `ITableGame` supplies public-meld permissions, discard behavior, finish validation, rack action plans and scoring through `Okey101Game` or `ClassicOkeyGame`. Its `IOpeningPolicy` owns opening acceptance, penalties, rising thresholds and layoff eligibility. The table has no game-name or mode-enum branches. Presentation does not decide move legality. Immutable `TableActionNotice` events drive public announcements and sound cues. `TimeoutDiscardPolicy` owns timeout choices; `MatchScoreLedger` records immutable round snapshots without Unity dependencies. The table retains ownership mutation internally; published hands expose `IReadOnlyRack` and a separate `IRackLayout` for local reordering. `RackArrangement` manages single-tile and atomic group placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
+
+Room data follows the same separation. `Core/Rooms` owns membership, capacity, password checks and immutable room options; `Core/Players/PlayerIdentity` carries stable player identity. `Configuration/RoomCatalog` and `PlayerProfile` adapt ScriptableObjects into runtime data. `RoomMenuController` coordinates joins, removals, setup snapshots and navigation. `RoomMenuView`, `RoomListItemView` and `RoomSeatView` only render supplied values and emit input events. Room list rows reuse a prefab and are pooled when browsing again. Layout, fonts, colors and button styling stay in prefabs.
 
 `StoneInstance` gives each physical tile an ID; duplicate printed tiles remain separate objects. Deck generation, shuffling, distribution and view creation are separate responsibilities. `IStoneShuffler` supports replaceable ordering, and seeded implementations support deterministic tests.
 
@@ -141,17 +160,18 @@ flowchart TD
 | --- | --- |
 | Deck composition, tile range or copy count | `DeckSettings` / `DeckDefinition` |
 | A new game mode | Derive a `TableRuleProfile`, supply an `ITableGame` with an opening policy and rack action plans, then add the asset to `TableSettings` and assign its score-sheet prefab in `GameInstaller` |
-| Run, set, pair or joker validation | `IMeldRules` / `OkeyRules.AllowsHighOne` |
+| Run, set, pair or joker validation | `IMeldRules` / `OkeyRules.AllowsHighOne` / `OkeyRules.AllowsIndicatorPairs` |
 | End-of-round scoring | `IRoundScoring` |
 | Opponent decisions | `IBotDecisionPolicy`; `IPlayerStrategy` provides meld planning and discard ranking |
 | Behavioral randomness | `IRandomSource` |
+| Room presets and player profile fields | `RoomCatalog` / `PlayerProfile` → `PlayerIdentity` |
 | Local player and seat-relative presentation | `LocalPlayerContext`, assigned by the game installer |
 | Menu and table navigation | `ITableNavigation` |
 | Tile art, text, colors and animation | Prefabs and visual settings assets |
 
-Opponent hand counts are hidden. Humanlike opponents use player names authored in the table text catalog; fast mode uses seat names. Name changes update opponent cards, turn status and winner text together.
+Opponent hand counts are hidden. Humanlike opponents use the joined room's player profiles; direct table development falls back to names in the text catalog. Fast mode uses seat names. Name changes update opponent cards, turn status and winner text together.
 
-Fast opponents play at a fixed pace. Humanlike opponents use configurable thinking delays, opening patience and a default 1% mistake chance per discard decision. Their strategies receive snapshots of their own hand and public information; they cannot inspect opponents' hands or the stock. `BotDecisionPolicy` chooses draw/pickup/open/layoff/discard actions from a `PlayerTurnObservation`. `BotTurnController` only schedules and submits those decisions. A rule profile can replace the whole decision policy through `CreateBotDecisions`. Bot decisions use current rising thresholds; `TableSession.TryApply` validates submitted `PlayerAction` values.
+Fast opponents play at a fixed pace. Humanlike opponents use configurable thinking delays, opening patience and a default 1% mistake chance per discard decision. Their strategies receive snapshots of their own hand and public information; they cannot inspect opponents' hands or the stock. `BotDecisionPolicy` chooses draw/pickup/open/layoff/discard actions from a `PlayerTurnObservation`. `BotTurnController` only schedules and submits those decisions. A rule profile can replace the whole decision policy through `CreateBotDecisions`. The 101 discard strategy protects complete melds, real jokers and tiles that extend public melds. It ranks remaining tiles by weighted adjacent/gap/set/duplicate connections, preferring lower isolated values. Connection weights live in `StandardBotStrategy.asset`. Public layoffs prioritize higher ordinary values; a real joker is retained for new melds until only a layoff and final discard remain. The configured humanlike mistake chance can still produce a poor move. Bot decisions use current rising thresholds; `TableSession.TryApply` validates submitted `PlayerAction` values.
 
 Multiplayer is not implemented. A future transport adapter can submit `PlayerAction` values to the table boundary and distribute public and seat-private state. It must add session identity, authoritative validation, synchronization and visibility handling. Variants that keep the draw/open/layoff/discard turn flow can replace opening policies, finish logic, scoring, bot decisions and rack action plans. A different turn lifecycle requires extending the turn flow; numeric configuration alone does not implement every variant.
 
@@ -160,14 +180,18 @@ Multiplayer is not implemented. A future transport adapter can submit `PlayerAct
 | Asset | Editable values |
 | --- | --- |
 | `Assets/Settings/Dealing/Standard101Table.asset` | Available rule profiles, selected profile, player count, rising increment, partnerships, pickup and joker reclaim rules, starter selection, timers, match hand count and bot behavior. |
-| `Assets/Settings/Dealing/Okey101Rules.asset` | 101 hand size, tile range, opening thresholds, penalties (including joker reclaim) and score multipliers. |
+| `Assets/Settings/Dealing/LocalRooms.asset` | Seeded rooms, passwords, profile lists, bot candidates, room numbering and available hand counts. |
+| `Assets/Settings/Players/*.asset` | A stable ID and editable display name for each local/fake player. |
+| `Assets/Settings/Dealing/StandardBotStrategy.asset` | 101 bot discard connection weights and low-tile preference. |
+| `Assets/Settings/Dealing/Okey101Rules.asset` | 101 hand size, tile range, opening thresholds, indicator pairs, bot strategy, penalties (including joker reclaim) and score multipliers. |
 | `Assets/Settings/Dealing/ClassicOkeyRules.asset` | Classic hand size, tile range, pair count, round loss points and score multipliers. |
 | `Assets/Settings/Decks/StandardOkeyDeck.asset` | Tile types, colors, number ranges and copies. |
 | `Assets/Settings/Dealing/StandardOpeningDeal.asset` | Fixed or random shuffle seed. Its practice-hand fields are separate from table settings. |
 | `Assets/Settings/Dealing/SceneNavigation.asset` | Menu and table scene names. |
 | `Assets/Settings/Stones/DefaultStoneVisualSettings.asset` | Printed tile colors and fake-joker text. |
 | `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` | Movement duration, easing, arc height, arc distance and time scaling. |
-| `Assets/Prefabs/NewGameMenu.prefab` | Menu layout, labels, buttons and transition. |
+| `Assets/Prefabs/NewGameMenu.prefab` | Home/create/join/lobby layouts, inputs, seat removal, fonts, colors and transition. |
+| `Assets/Prefabs/RoomListItem.prefab` | Clickable room row layout, label, enter affordance and button styling. |
 | `Assets/Prefabs/GameControls.prefab` | Draw surface, discard trays, opening cards, boards, opponent cards, timers, help and settings. |
 | `Assets/Prefabs/Istaka.prefab` | Rack geometry, row capacity, slot anchors and tile scale. |
 | `Assets/Prefabs/Stone.prefab` | Tile body, font, symbol, face visibility, selection, group handle and hold behavior. |
@@ -186,7 +210,7 @@ Open **Assets/Prefabs/GameControls.prefab** in Prefab Mode. Its root **TableView
 | Position, anchors, pivot, width or height | That object's RectTransform; moving the parent moves the whole card/panel |
 | Status messages, action labels, progress formats, seat/player names and menu options | **Assets/Settings/Presentation/EnglishTableText.asset**, referenced by both table and menu prefabs |
 | Fixed headings and instructions | Their own text objects inside the prefab; **ClassicTitle** and **ClassicDescription** have independent font sizes |
-| Opening-card behavior and progress fill | **MeldActionView** on each series/pair card |
+| Opening-card behavior, examples and current/required text | **MeldActionView** on each series/pair card |
 | Clock bars and clock text references | **TurnClockView** on the turn clock |
 | Modal buttons and help text reference | **OverlayPanelsView** on the canvas |
 | Table settings buttons and labels | **TableOptionsView** on the canvas |
@@ -219,7 +243,7 @@ Scene installers hold serialized asset and prefab references. Runtime controller
 
 Open **Window > General > Test Runner** and run both **EditMode** and **PlayMode** suites.
 
-EditMode tests cover definitions, deck generation, rack insertion, adjacent grouping, meld rules, penalties, rising thresholds, AI decisions, timers, ownership boundaries, replaceable opening policies and independent setup snapshots. PlayMode tests load actual scenes and verify Zenject bindings, prefab wiring, pointer interactions, drawing, Classic discard pickup through real mouse input, trial returns, joker exchanges, pair group drops, queued feedback, discarding, layoffs, visibility, menu navigation, UI progress and local players in every supported seat.
+EditMode tests cover definitions, deck generation, rack insertion, adjacent grouping, meld rules, penalties, rising thresholds, AI decisions, timers, ownership boundaries, replaceable opening policies and independent setup snapshots. PlayMode tests load actual scenes and verify Zenject bindings, prefab wiring, pointer interactions, drawing, Classic discard pickup through real mouse input, trial returns, joker exchanges, pair group drops, queued feedback, discarding, layoffs, visibility, menu navigation, UI progress, clickable room joining, private-room passwords, seat removal, match lengths and local players in every supported seat.
 
 Table and menu layouts are also checked at **1920 × 1080** and **1106 × 614**. Preview images live in `Docs/Images`.
 

@@ -5,6 +5,8 @@ namespace Okey.Configuration
     [CreateAssetMenu(menuName = "Okey/Table Settings")]
     public sealed class TableSettings : ScriptableObject
     {
+        [SerializeField] private RoomCatalog _rooms;
+        public RoomCatalog Rooms => _rooms;
         [SerializeField, Range(2, 4)] private int _playerCount = 4;
         [SerializeField] private TableRuleProfile[] _ruleProfiles;
         [SerializeField] private int _ruleIndex;

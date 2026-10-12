@@ -80,7 +80,10 @@ namespace Okey.Tests.PlayMode
             Assert.That(((TMP_Text)menu.FindProperty("_ruleText").objectReferenceValue).text,Is.EqualTo("CLASSIC OKEY"));
             Assert.That(((Button)menu.FindProperty("_escalatingButton").objectReferenceValue).interactable,Is.False);
             if (!_settings.EscalatingOpenings) _settings.ToggleEscalatingOpenings();
-            ((Button)menu.FindProperty("_playButton").objectReferenceValue).onClick.Invoke();
+            ((Button)menu.FindProperty("_createRoomButton").objectReferenceValue).onClick.Invoke();
+            var rooms = new SerializedObject(Context("MainMenu").Container.Resolve<RoomMenuView>());
+            for (var seat = 1; seat < _settings.PlayerCount; seat++) ((Button)rooms.FindProperty("_addBot").objectReferenceValue).onClick.Invoke();
+            ((Button)rooms.FindProperty("_start").objectReferenceValue).onClick.Invoke();
             var deadline=Time.realtimeSinceStartup+15;
             while(SceneManager.GetActiveScene().name!="SampleScene" && Time.realtimeSinceStartup<deadline) yield return null;
             yield return null;
