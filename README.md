@@ -37,8 +37,10 @@ The main menu is the first scene in Build Settings. **SampleScene.unity** can al
 | --- | --- |
 | Draw | Click the closed pile, or drag its top tile to the rack during your turn. |
 | Arrange | Drag a tile to a rack slot. Occupied slots shift toward the nearest gap. |
+| Move a group | Drag the small upper-right handle on the last tile of a run, set or pair. |
+| Scores | Use the bar-chart button at the top right; the sheet also opens when a hand ends. |
 | Separate groups | Leave an empty slot between groups. Groups do not cross rack rows. |
-| Open series or pairs in 101 | Use the opening card showing the matching tile example and current total. |
+| Open series or pairs in 101 | Use the opening card showing the matching tile example and opening threshold. |
 | Finish Classic Okey | Discard the spare tile from a complete hand, or select **Finish** when enabled. |
 | Lay off a tile | Drag it into the highlighted empty cell of a compatible public meld. |
 | Discard | Drop a tile into the bottom-right tray, or double-tap it during your discard phase. |
@@ -76,13 +78,31 @@ Rising openings increase the series and pair thresholds independently. Each succ
 
 101 forbids taking a discard while closed. An opened player may take only the previous seat's latest discard, and only to immediately extend a public meld. Failed pickups change neither the discard nor the stock.
 
-Successful openings refresh the turn timer. When time expires, the game cancels any drag, draws if required and discards legally. Discarding the final tile finishes the round. Partnership scoring groups opposite seats and excludes the winning partner's remaining hand.
+Successful openings refresh the turn timer. When time expires, the game cancels any drag, draws once if required and discards the lowest non-joker tile that cannot extend a public meld. If none is safe, a playable tile is preferred over a joker. Discarding the final tile finishes the round. Partnership scoring groups opposite seats and excludes the winning partner's remaining hand.
 
 ![Reserved meld rows and paging](Docs/Images/meld-board-layout.png)
 
 Layout preview using a custom stress-test deck: number-aligned runs, fixed color slots and twenty public melds across two pages.
 
-These are the project's explicit rule choices. Other regional variants, indicator-show bonuses and cumulative multi-round matches are not implemented.
+These are the project's explicit rule choices. Other regional variants and indicator-show bonuses are not implemented.
+
+## Matches, feedback and scoring
+
+Matches default to five hands, configured by `Match Rounds` on the table settings asset. The score-sheet button shows live penalties, each player's first opening, completed hand scores and cumulative totals. A finished hand opens the sheet automatically. **Next hand** retains the current match; after the configured number of hands, **New match** returns to the menu. Lowest totals win. History lives in memory for the current session and is reset when starting a new match from the menu.
+
+101 and Classic use separate `IRoundScoring` implementations and authored score-sheet prefabs. `MatchHistory` keys score ledgers by rule profile and partnership setting. Partners share a color and a team total; the winner's partner contributes only their existing penalties for that hand. Classic does not display 101 opening or penalty columns.
+
+101 defaults to **−101 for finishing**, **101 for discarding a real joker**, and **101 for discarding a tile that extends a public meld**. The rule profile exposes `Winner Score`, `Joker Discard Penalty` and `Playable Discard Penalty` independently. Zero disables either discard charge. Final-tile finishes retain the scoring policy's joker/pair bonuses rather than receiving an extra discard charge.
+
+No player's hand count appears on the table. Fixed openings show the required threshold alone; rising openings show the current increased requirement. Initial openings announce the player and public opening value. Local turns show **YOUR TURN** and play a short cue. Drawing, discarding, opening, laying off, penalties and finishing have quieter event sounds; all bundled clips are procedurally synthesized and can be replaced in the audio asset. Long tile moves use a configurable shallow arc.
+
+Rack group handles use a mixed run/set/pair evaluation independent of whether an opening is legal yet. Whole-group drops remain within one shelf, shift neighboring tiles and preserve physical tile identity. Group drags never trigger discard or layoff actions.
+
+![101 score sheet](Docs/Images/score-sheet.png)
+
+Score-sheet layout preview using a custom short test hand.
+
+![Classic score sheet](Docs/Images/classic-score-sheet.png)
 
 ## Architecture
 
@@ -102,7 +122,7 @@ flowchart TD
 | `Okey.Presentation` | Passive table views, tile faces, pointer input, rack anchors, progress bars, menus and animations. |
 | `Okey.Composition` | Creates dependencies, coordinates views with the table and routes local, bot and timeout actions. |
 
-`TableSession` owns hands, turn phase, public melds and discard histories. `ITableGame` supplies public-meld permissions, discard behavior, finish validation, rack action plans and scoring through `Okey101Game` or `ClassicOkeyGame`. Its `IOpeningPolicy` owns opening acceptance, penalties, rising thresholds and layoff eligibility. The table has no game-name or mode-enum branches. Presentation does not decide move legality. The table retains ownership mutation internally; published hands expose `IReadOnlyRack` and a separate `IRackLayout` for local reordering. `RackArrangement` manages physical tile placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
+`TableSession` owns hands, turn phase, public melds and discard histories. `ITableGame` supplies public-meld permissions, discard behavior, finish validation, rack action plans and scoring through `Okey101Game` or `ClassicOkeyGame`. Its `IOpeningPolicy` owns opening acceptance, penalties, rising thresholds and layoff eligibility. The table has no game-name or mode-enum branches. Presentation does not decide move legality. Immutable `TableActionNotice` events drive public announcements and sound cues. `TimeoutDiscardPolicy` owns timeout choices; `MatchScoreLedger` records immutable round snapshots without Unity dependencies. The table retains ownership mutation internally; published hands expose `IReadOnlyRack` and a separate `IRackLayout` for local reordering. `RackArrangement` manages single-tile and atomic group placement independently of turn rules, and `RackMeldEvaluator` evaluates the local arrangement without Unity APIs.
 
 `StoneInstance` gives each physical tile an ID; duplicate printed tiles remain separate objects. Deck generation, shuffling, distribution and view creation are separate responsibilities. `IStoneShuffler` supports replaceable ordering, and seeded implementations support deterministic tests.
 
@@ -111,7 +131,7 @@ flowchart TD
 | Change | Boundary |
 | --- | --- |
 | Deck composition, tile range or copy count | `DeckSettings` / `DeckDefinition` |
-| A new game mode | Derive a `TableRuleProfile`, supply an `ITableGame` with an opening policy and rack action plans, then add the asset to `TableSettings` |
+| A new game mode | Derive a `TableRuleProfile`, supply an `ITableGame` with an opening policy and rack action plans, then add the asset to `TableSettings` and assign its score-sheet prefab in `GameInstaller` |
 | Run, set, pair or joker validation | `IMeldRules` / `OkeyRules.AllowsHighOne` |
 | End-of-round scoring | `IRoundScoring` |
 | Opponent decisions | `IBotDecisionPolicy`; `IPlayerStrategy` provides meld planning and discard ranking |
@@ -130,18 +150,22 @@ Multiplayer is not implemented. A future transport adapter can submit `PlayerAct
 
 | Asset | Editable values |
 | --- | --- |
-| `Assets/Settings/Dealing/Standard101Table.asset` | Available rule profiles, selected profile, player count, rising increment, partnerships, pickup rules, starter selection, timers and bot behavior. |
+| `Assets/Settings/Dealing/Standard101Table.asset` | Available rule profiles, selected profile, player count, rising increment, partnerships, pickup rules, starter selection, timers, match hand count and bot behavior. |
 | `Assets/Settings/Dealing/Okey101Rules.asset` | 101 hand size, tile range, opening thresholds, penalties and score multipliers. |
 | `Assets/Settings/Dealing/ClassicOkeyRules.asset` | Classic hand size, tile range, pair count, round loss points and score multipliers. |
 | `Assets/Settings/Decks/StandardOkeyDeck.asset` | Tile types, colors, number ranges and copies. |
 | `Assets/Settings/Dealing/StandardOpeningDeal.asset` | Fixed or random shuffle seed. Its practice-hand fields are separate from table settings. |
 | `Assets/Settings/Dealing/SceneNavigation.asset` | Menu and table scene names. |
 | `Assets/Settings/Stones/DefaultStoneVisualSettings.asset` | Printed tile colors and fake-joker text. |
-| `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` | Movement duration, easing and time scaling. |
+| `Assets/Settings/Animations/DefaultStoneMotionSettings.asset` | Movement duration, easing, arc height, arc distance and time scaling. |
 | `Assets/Prefabs/NewGameMenu.prefab` | Menu layout, labels, buttons and transition. |
 | `Assets/Prefabs/GameControls.prefab` | Draw surface, discard trays, opening cards, boards, opponent cards, timers, help and settings. |
 | `Assets/Prefabs/Istaka.prefab` | Rack geometry, row capacity, slot anchors and tile scale. |
-| `Assets/Prefabs/Stone.prefab` | Tile body, font, symbol, face visibility, selection and hold behavior. |
+| `Assets/Prefabs/Stone.prefab` | Tile body, font, symbol, face visibility, selection, group handle and hold behavior. |
+| `Assets/Prefabs/Okey101Scoreboard.prefab` | 101 score-sheet layout, opening values, penalties, hand scores, totals and wording. |
+| `Assets/Prefabs/ClassicOkeyScoreboard.prefab` | Separate Classic score sheet with hand loss points and totals. |
+| `Assets/Settings/Presentation/SeatColors.asset` | Individual and partner team colors. |
+| `Assets/Settings/Presentation/TableAudio.asset` | Event clips, individual gains and master gain; zero gain mutes sounds. |
 
 ### Editing UI without changing code
 
@@ -168,7 +192,7 @@ The project uses a model, controller and presenter/view separation with Zenject.
 
 - **Core/**: Unity-independent game model, rules, scoring and AI strategies.
 - **Composition/Controllers/**: input actions, bot turns, timeouts, options and navigation requests.
-- **Composition/Presenters/**: hand/public-tile synchronization and HUD state formatting.
+- **Composition/Presenters/**: hand/public-tile synchronization, HUD state, score-sheet formatting and event feedback.
 - **Composition/Installers/**: Zenject bindings and startup order.
 - **Composition/State/**: application flow state, local-seat mapping and table display names.
 - **Composition/Factories/** and **Navigation/**: prefab creation and scene transitions.
