@@ -98,13 +98,11 @@ namespace Okey.Composition
                 var action = _actions.Actions[index];
                 var label = action.Kind == RackActionKind.OpenMelds ? (action.AdditionalGroups ? text.AddLabel : text.OpenLabel) :
                     action.Kind == RackActionKind.Finish ? text.FinishLabel : text.PairsLabel;
-                var progress = publicMelds ? string.Format(text.ThresholdFormat, action.Required) :
-                    action.AdditionalGroups ? string.Format(text.AdditionalGroupFormat, action.Progress) :
+                var progress = action.AdditionalGroups ? string.Format(text.AdditionalGroupFormat, action.Progress) :
                     string.Format(text.ProgressFormat, action.Progress, action.Required);
-                var fill = action.AdditionalGroups ? (action.Progress > 0 ? 1 : 0) : (float)action.Progress / action.Required;
                 var usesBorrowed = !hasBorrowedTile || action.Kind == RackActionKind.OpenMelds &&
                     action.Plan.Melds.SelectMany(meld => meld.Tiles).Any(tile => tile.Stone.Id == _table.PendingDiscard.Id);
-                view.Render(label, progress, fill, canAct && action.CanExecute && usesBorrowed);
+                view.Render(label, progress, canAct && action.CanExecute && usesBorrowed);
             }
             var groupedIds = _rackGroups.Melds.SelectMany(meld => meld.Tiles).Select(tile => tile.Stone.Id).ToHashSet();
             foreach (var stone in _hand.Views) stone.Selection.SetGrouped(groupedIds.Contains(stone.Instance.Id));

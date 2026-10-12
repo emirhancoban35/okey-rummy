@@ -8,6 +8,8 @@ namespace Okey.Presentation.Tables
     public sealed class TableFeedbackView : MonoBehaviour
     {
         [SerializeField] private TMP_Text _feedbackText;
+        [SerializeField] private CanvasGroup _panel;
+        [SerializeField] private UnityEngine.UI.Image _accent;
         [SerializeField] private Color _successColor;
         [SerializeField] private Color _failureColor;
         [SerializeField, Min(0)] private float _feedbackHold;
@@ -24,10 +26,13 @@ namespace Okey.Presentation.Tables
             if (_pending.Count == 0) return;
             var notice = _pending.Dequeue();
             _feedbackText.text = notice.Text;
-            _feedbackText.color = notice.Success ? _successColor : _failureColor;
-            _feedbackText.alpha = 1;
-            _feedback = DOTween.To(() => _feedbackText.alpha, value => _feedbackText.alpha = value, 0, _feedbackFade)
-                .SetDelay(_feedbackHold).SetLink(gameObject, LinkBehaviour.KillOnDisable)
+            _accent.color = notice.Success ? _successColor : _failureColor;
+            _panel.alpha = 0;
+            _feedback = DOTween.Sequence().SetUpdate(true)
+                .Append(DOTween.To(() => _panel.alpha, value => _panel.alpha = value, 1, _feedbackFade))
+                .AppendInterval(_feedbackHold)
+                .Append(DOTween.To(() => _panel.alpha, value => _panel.alpha = value, 0, _feedbackFade))
+                .SetLink(gameObject, LinkBehaviour.KillOnDisable)
                 .OnComplete(() => { _feedback = null; ShowNext(); });
         }
         private void OnDisable()
@@ -35,6 +40,7 @@ namespace Okey.Presentation.Tables
             _feedback?.Kill();
             _feedback = null;
             _pending.Clear();
+            _panel.alpha = 0;
         }
     }
 }

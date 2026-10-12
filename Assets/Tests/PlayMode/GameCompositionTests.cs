@@ -331,15 +331,14 @@ namespace Okey.Tests.PlayMode
                 hand.Initialize();table.Initialize();hud.Initialize();controller.Initialize();
                 var serialized = new SerializedObject(Controls.Actions[0]);
                 var points = (TMPro.TMP_Text)serialized.FindProperty("_progressText").objectReferenceValue;
-                Assert.That(points.text, Is.EqualTo("66"));
+                Assert.That(points.text, Is.EqualTo("66 / 66"));
                 var moved = hand.Views.Single(view=>view.Instance.Id==2);
                 interaction.TryBeginDrag(moved);
                 interaction.EndDrag(moved,SlotWorldPosition(20));
-                Assert.That(points.text, Is.EqualTo("66"));
-                Assert.That(((Image)serialized.FindProperty("_progress").objectReferenceValue).fillAmount, Is.EqualTo(.5f).Within(.001f));
+                Assert.That(points.text, Is.EqualTo("33 / 66"));
                 interaction.TryBeginDrag(moved);
                 interaction.EndDrag(moved,SlotWorldPosition(1));
-                Assert.That(points.text, Is.EqualTo("66"));
+                Assert.That(points.text, Is.EqualTo("66 / 66"));
                 ((Button)serialized.FindProperty("_button").objectReferenceValue).onClick.Invoke();
                 Assert.That(session.Melds.Count, Is.EqualTo(2));
                 Assert.That(session.Players[0].Hand.Count, Is.EqualTo(2));
@@ -1168,6 +1167,10 @@ namespace Okey.Tests.PlayMode
             feedback.Show("Playable discard +101", false);
             feedback.Show("Your turn", true);
             Assert.That(text.text, Is.EqualTo("Playable discard +101"));
+            var panel = (CanvasGroup)new SerializedObject(feedback).FindProperty("_panel").objectReferenceValue;
+            ((Tween)field.GetValue(feedback)).Goto(.3f, false);
+            Assert.That(panel.alpha, Is.EqualTo(1));
+            Assert.That(panel.blocksRaycasts, Is.False);
             ((Tween)field.GetValue(feedback)).Complete();
             Assert.That(text.text, Is.EqualTo("Your turn"));
         }

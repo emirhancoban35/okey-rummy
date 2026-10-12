@@ -15,3 +15,7 @@ Edit this okey tile rack asset: preserve its exact wide silhouette, two empty ho
 Generated with the built-in imagegen tool.
 
 Use case: stylized-concept. Asset type: production 2D Unity Okey Rummy rack sprite. Create one empty flat straight TWO-ROW golden honey oak tile rack in pure front elevation orthographic. Long horizontal rectangle with actual rack aspect ratio 6:1, centered tightly in a wide image. Perfectly vertical short left and right edges, perfectly horizontal top and bottom edges. Thin central straight horizontal ledge divides two equal empty seating rows. Warm polished oak grain, cozy premium casual game illustration, subtle cream brass edge caps, delicate highlights. No perspective, no trapezoid, no angled edges, no tiles, no symbols, no lettering, no logo, no ornament, no extra objects. Actual transparent background, minimal transparent margin, no cast shadow outside silhouette.
+
+## Tile and panel shapes
+
+`IvoryTile.png`, `TileDot.png` and `RoundedPanel.png` are original geometric sprites baked with antialiased edges. The tile uses a restrained ivory bevel and a plain circular color marker; its reverse stays unmarked. The panel supports nine-slicing. No third-party game artwork is included. Sprite references, typography, colors and placement are authored in the Stone and GameControls prefabs.
